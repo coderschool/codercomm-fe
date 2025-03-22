@@ -9,6 +9,9 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { mockServer } from './mockApi/server';
 
+// Import Tailwind CSS
+import './index.css';
+
 // Start mock server if API URL is not set
 if (!import.meta.env.VITE_API_URL) {
   mockServer({ environment: 'development' });

@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Box, CardHeader, CardContent, CardActions, Avatar, IconButton, Typography, Menu, MenuItem } from '@mui/material';
 import { Link } from 'react-router-dom';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import ThumbUpAltIcon from '@mui/icons-material/ThumbUpAlt';
-import ThumbDownAltIcon from '@mui/icons-material/ThumbDownAlt';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import ShareIcon from '@mui/icons-material/Share';
+import { MoreVertical, ThumbsUp, ThumbsDown, MessageCircle, Share } from 'lucide-react';
 
 import { useReactPost } from './postHooks';
 import { useAuth } from '../../lib/auth';
@@ -13,11 +8,15 @@ import { formatDate } from '../../lib/formatters';
 import CommentList from '../comment/CommentList';
 import CommentForm from '../comment/CommentForm';
 
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { DEFAULT_AVATAR } from '../../lib/config';
+
 function PostCard({ post }) {
   const { user } = useAuth();
   const { mutate: reactPost } = useReactPost();
   
-  const [anchorEl, setAnchorEl] = useState(null);
   const [showComments, setShowComments] = useState(false);
   
   // Handle reaction
@@ -38,132 +37,102 @@ function PostCard({ post }) {
   const likesCount = post?.reactions?.filter((reaction) => reaction.emoji === 'like').length || 0;
   const dislikesCount = post?.reactions?.filter((reaction) => reaction.emoji === 'dislike').length || 0;
   
-  // Menu operations
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-  
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-  
-  const handleEditPost = () => {
-    handleMenuClose();
-    // Implement edit functionality
-  };
-  
-  const handleDeletePost = () => {
-    handleMenuClose();
-    // Implement delete functionality
-  };
-  
   // Check if post belongs to the current user
   const isPostAuthor = post?.author?._id === user?._id;
   
+  // Get initials for avatar fallback
+  const getInitials = (name) => {
+    return name
+      ? name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+      : 'U';
+  };
+  
   return (
-    <Card sx={{ mb: 3 }}>
-      <CardHeader
-        avatar={
-          <Avatar 
-            src={post?.author?.avatarUrl}
-            alt={post?.author?.name}
-            component={Link}
-            to={`/user/${post?.author?._id}`}
-            sx={{ textDecoration: 'none' }}
+    <Card className="mb-6">
+      <CardHeader className="flex flex-row items-center gap-4 pb-2">
+        <Avatar className="h-12 w-12">
+          <AvatarImage 
+            src={post?.author?.avatarUrl || DEFAULT_AVATAR} 
+            alt={post?.author?.name} 
           />
-        }
-        title={
+          <AvatarFallback>{getInitials(post?.author?.name)}</AvatarFallback>
+        </Avatar>
+        
+        <div className="flex flex-col">
           <Link 
             to={`/user/${post?.author?._id}`}
-            style={{ textDecoration: 'none', color: 'inherit' }}
+            className="font-semibold hover:underline"
           >
             {post?.author?.name}
           </Link>
-        }
-        subheader={formatDate(post?.createdAt)}
-        action={
-          isPostAuthor && (
-            <IconButton onClick={handleMenuOpen}>
-              <MoreVertIcon />
-            </IconButton>
-          )
-        }
-      />
-      
-      <Menu
-        id="post-menu"
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleEditPost}>Edit</MenuItem>
-        <MenuItem onClick={handleDeletePost}>Delete</MenuItem>
-      </Menu>
+          <span className="text-xs text-muted-foreground">{formatDate(post?.createdAt)}</span>
+        </div>
+        
+        {isPostAuthor && (
+          <Button variant="ghost" size="icon" className="ml-auto" aria-label="More options">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        )}
+      </CardHeader>
       
       <CardContent>
-        <Typography variant="body1" color="text.primary">
-          {post?.content}
-        </Typography>
+        <p className="mb-4">{post?.content}</p>
         
         {post?.image && (
-          <Box 
-            component="img"
-            sx={{
-              mt: 2,
-              borderRadius: 1,
-              width: '100%',
-              height: 'auto',
-              maxHeight: 400,
-              objectFit: 'cover',
-            }}
-            src={post.image}
-            alt="Post"
-          />
+          <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+            <img
+              src={post.image}
+              alt="Post attachment"
+              className="h-full w-full object-cover"
+            />
+          </div>
         )}
       </CardContent>
       
-      <CardActions>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton 
-            onClick={() => handleReact('like')}
-            color={isLiked ? 'primary' : 'default'}
-          >
-            <ThumbUpAltIcon fontSize="small" />
-          </IconButton>
-          <Typography variant="body2" sx={{ mr: 2 }}>
-            {likesCount}
-          </Typography>
-          
-          <IconButton 
-            onClick={() => handleReact('dislike')}
-            color={isDisliked ? 'primary' : 'default'}
-          >
-            <ThumbDownAltIcon fontSize="small" />
-          </IconButton>
-          <Typography variant="body2" sx={{ mr: 2 }}>
-            {dislikesCount}
-          </Typography>
-        </Box>
+      <CardFooter className="flex justify-between border-t p-4">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={isLiked ? "text-primary" : ""}
+              onClick={() => handleReact('like')}
+            >
+              <ThumbsUp className="mr-1 h-4 w-4" />
+              <span>{likesCount}</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={isDisliked ? "text-primary" : ""}
+              onClick={() => handleReact('dislike')}
+            >
+              <ThumbsDown className="mr-1 h-4 w-4" />
+              <span>{dislikesCount}</span>
+            </Button>
+          </div>
+        </div>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
-          <IconButton onClick={() => setShowComments(!showComments)}>
-            <ChatBubbleIcon fontSize="small" />
-          </IconButton>
-          <Typography variant="body2" sx={{ mr: 2 }}>
-            {post?.commentCount || 0}
-          </Typography>
-          
-          <IconButton>
-            <ShareIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </CardActions>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setShowComments(!showComments)}
+        >
+          <MessageCircle className="mr-1 h-4 w-4" />
+          <span>{post?.commentCount || 0}</span>
+        </Button>
+      </CardFooter>
       
       {showComments && (
-        <Box sx={{ px: 2, pb: 2 }}>
+        <div className="border-t p-4">
           <CommentForm postId={post?._id} />
           <CommentList postId={post?._id} />
-        </Box>
+        </div>
       )}
     </Card>
   );

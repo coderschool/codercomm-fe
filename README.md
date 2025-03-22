@@ -34,7 +34,8 @@ CoderComm is a social media web application with core features inspired by Faceb
 - **React 18** - Modern React with hooks and concurrent features
 - **Vite** - Next-generation build tool for faster development
 - **React Router 6** - Declarative routing for React
-- **Material UI v5** - Component library with emotion styling
+- **Tailwind CSS** - Utility-first CSS framework for rapid UI development
+- **Shadcn UI** - Component collection built with Radix UI and Tailwind CSS
 
 ### State Management & Data Fetching
 - **React Query** - Data fetching, caching, and state management for server state
@@ -54,6 +55,7 @@ CoderComm is a social media web application with core features inspired by Faceb
 ```
 src/
 ├── components/         # Reusable components
+│   └── ui/             # UI components using Shadcn UI / Radix
 ├── features/           # Feature-based modules
 │   ├── comment/        # Comment-related components and hooks
 │   ├── friend/         # Friend-related components and hooks
@@ -67,6 +69,7 @@ src/
 │   ├── cloudinary.js   # Cloudinary integration
 │   ├── config.js       # Application configuration
 │   ├── formatters.js   # Formatting utilities
+│   ├── utils.js        # Utility functions for Tailwind
 │   └── store.js        # Zustand store
 ├── mockApi/            # Mock API server and data
 │   ├── data.js         # Mock data for development
@@ -133,14 +136,29 @@ VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-upload-preset
 npm run build
 ```
 
+## Component Architecture
+
+This project uses a component-first approach inspired by Shadcn UI. Instead of importing pre-built components from a library, we:
+
+1. Copy and adapt components from Shadcn UI as needed
+2. Style them with Tailwind CSS
+3. Customize them to fit our application
+
+This approach gives students:
+- Full control over the components
+- Better understanding of how components work
+- Ability to customize without fighting against a library
+- Experience with modern Tailwind-based workflows
+
 ## Learn More
 
 This project demonstrates modern React best practices:
 
 - **React Query** for data fetching and caching
 - **Zustand** for simple, flexible state management
+- **Tailwind CSS** for utility-first styling
+- **Shadcn UI pattern** for component architecture
 - **React Hook Form** for efficient form handling
 - **Component composition** for reusable UI
 - **Custom hooks** for shared logic
-- **Material UI** theming and styling
 - **MirageJS** for API mocking
