@@ -1,75 +1,66 @@
-import React, { useState } from 'react';
-import { Box, Typography, Button, CircularProgress } from '@mui/material';
-import { useGetComments } from './commentHooks';
-import CommentCard from './CommentCard';
+import React, { useState } from "react";
+import { useGetComments } from "./commentHooks";
+import CommentCard from "./CommentCard";
+import { COMMENTS_PER_POST } from "@/lib/config";
 
 function CommentList({ postId }) {
   const [page, setPage] = useState(1);
-  
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useGetComments(postId, page);
+  const { data, isLoading } = useGetComments(postId, page);
   
   const comments = data?.comments || [];
-  const totalComments = data?.count || 0;
-  const totalPages = data?.totalPages || 0;
-  
-  const handleLoadMore = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
-  };
-  
-  if (isLoading && page === 1) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-        <CircularProgress size={24} />
-      </Box>
+  const totalComments = data?.totalComments || 0;
+  const totalPages = Math.ceil(totalComments / COMMENTS_PER_POST);
+
+  let renderComments;
+
+  if (isLoading) {
+    renderComments = (
+      <div className="flex justify-center py-4">
+        <div className="animate-pulse h-6 w-6 rounded-full bg-muted"></div>
+      </div>
     );
-  }
-  
-  if (isError) {
-    return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body2" color="error" textAlign="center">
-          {error?.message || 'Something went wrong'}
-        </Typography>
-      </Box>
+  } else if (comments.length > 0) {
+    renderComments = (
+      <div className="space-y-3">
+        {comments.map((comment) => (
+          <CommentCard key={comment._id} comment={comment} />
+        ))}
+      </div>
     );
+  } else {
+    renderComments = null;
   }
-  
-  if (comments.length === 0) {
-    return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body2" color="text.secondary" textAlign="center">
-          No comments yet
-        </Typography>
-      </Box>
-    );
-  }
-  
+
   return (
-    <Box>
-      {comments.map((comment) => (
-        <CommentCard key={comment._id} comment={comment} postId={postId} />
-      ))}
-      
-      {totalComments > comments.length && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-          <Button
-            size="small"
-            color="primary"
-            onClick={handleLoadMore}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Load more comments'}
-          </Button>
-        </Box>
-      )}
-    </Box>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">
+          {totalComments > 1
+            ? `${totalComments} comments`
+            : totalComments === 1
+            ? `${totalComments} comment`
+            : "No comment"}
+        </p>
+        {totalComments > COMMENTS_PER_POST && (
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`h-7 w-7 rounded-md text-xs ${
+                  page === pageNum 
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {renderComments}
+    </div>
   );
 }
 

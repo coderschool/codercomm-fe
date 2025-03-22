@@ -1,7 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
-import { cloudinaryUpload } from '../../lib/cloudinary';
 import { POSTS_PER_PAGE } from '../../lib/config';
 
 // Get posts for feed (home page - posts from current user and friends)
@@ -36,17 +35,10 @@ export const useCreatePost = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ content, image }) => {
-      // Upload image if provided
-      let imageUrl = null;
-      if (image) {
-        imageUrl = await cloudinaryUpload(image);
-      }
-      
-      // Create post
+    mutationFn: async ({ content }) => {
+      // Create post without image
       const response = await apiService.post('/posts', {
         content,
-        image: imageUrl,
       });
       
       return response;

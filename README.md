@@ -10,17 +10,16 @@ CoderComm is a social media web application with core features inspired by Faceb
 
 ### User Profiles
 - View and edit personal profile
-- Update avatar, cover photo, and personal information
+- Update avatar and cover photo via URLs
 - View other users' profiles
 
 ### Posts
-- Create, edit, and delete posts
-- Attach images to posts
+- Create, and view posts
 - Like and dislike posts
 - View posts from friends
 
 ### Comments
-- Create, edit, and delete comments on posts
+- Create comments on posts
 - Like and dislike comments
 
 ### Friends
@@ -35,7 +34,7 @@ CoderComm is a social media web application with core features inspired by Faceb
 - **Vite** - Next-generation build tool for faster development
 - **React Router 6** - Declarative routing for React
 - **Tailwind CSS** - Utility-first CSS framework for rapid UI development
-- **Shadcn UI** - Component collection built with Radix UI and Tailwind CSS
+- **shadcn/ui** - Component collection built with Radix UI and Tailwind CSS
 
 ### State Management & Data Fetching
 - **React Query** - Data fetching, caching, and state management for server state
@@ -44,9 +43,9 @@ CoderComm is a social media web application with core features inspired by Faceb
 
 ### Other Technologies
 - **Axios** - HTTP client for API requests
-- **Cloudinary** - Cloud storage for images
 - **date-fns** - Date utilities
 - **yup** - Schema validation
+- **Lucide React** - Modern icon library
 - **react-helmet-async** - Document head manager
 - **MirageJS** - Mock API server for development and testing
 
@@ -55,7 +54,7 @@ CoderComm is a social media web application with core features inspired by Faceb
 ```
 src/
 ├── components/         # Reusable components
-│   └── ui/             # UI components using Shadcn UI / Radix
+│   └── ui/             # UI components from shadcn/ui
 ├── features/           # Feature-based modules
 │   ├── comment/        # Comment-related components and hooks
 │   ├── friend/         # Friend-related components and hooks
@@ -66,7 +65,6 @@ src/
 ├── lib/                # Core utilities and configurations
 │   ├── apiService.js   # Axios instance and interceptors
 │   ├── auth.js         # Authentication utilities
-│   ├── cloudinary.js   # Cloudinary integration
 │   ├── config.js       # Application configuration
 │   ├── formatters.js   # Formatting utilities
 │   ├── utils.js        # Utility functions for Tailwind
@@ -118,17 +116,63 @@ This project includes a mock API server using MirageJS, which provides in-memory
 
 You can log in with any of the sample user emails (e.g., `john@example.com`, `jane@example.com`) using the password `password` for all users.
 
-## Cloudinary Setup (for real API)
+## Simplified Architecture
 
-If using a real API:
+This project has been intentionally simplified to focus on modern React patterns:
 
-1. Sign up for a [Cloudinary](https://cloudinary.com/) account
-2. Create an **unsigned** upload preset in your Cloudinary dashboard
-3. Uncomment and set the Cloudinary environment variables in your `.env` file:
+- No image upload functionality (uses URLs for profile images)
+- Clean component architecture with shadcn/ui
+- Direct use of React Hook Form with shadcn/ui form components
+- Zustand for global state management
+- React Query for server state and data fetching
+
+## UI Component System
+
+This project uses the [shadcn/ui](https://ui.shadcn.com/) component system, which provides:
+
+- Accessible, customizable components based on Radix UI primitives
+- Fully styled with Tailwind CSS
+- No external runtime dependencies, everything is part of your project
+- Components are copied and pasted directly into your project, not installed as a dependency
+- Components are maintained within the codebase, allowing full customization
+
+### shadcn/ui Components Included
+
+- Avatar - User avatars with image and fallback
+- Button - Versatile buttons with variants
+- Card - Card containers with header, content, footer
+- Checkbox - Form checkbox inputs
+- Dialog - Modal dialog boxes
+- Dropdown Menu - Contextual dropdown menus
+- Form - Complete form validation system
+- Input - Text input fields
+- Label - Accessible form labels
+- Select - Dropdown select components
+- Sheet - Slide-out panels
+- Tabs - Tabbed interface components
+
+### Adding shadcn/ui Components
+
+If needed, more components can be added using the shadcn CLI:
+
+```bash
+npx shadcn@latest add [component-name]
 ```
-VITE_CLOUDINARY_CLOUD_NAME=your-cloud-name
-VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-upload-preset
-```
+
+## Component Architecture
+
+This project follows a component-first approach. Instead of importing components from a library:
+
+1. Components are added directly to the project using the shadcn/ui CLI
+2. Components are fully editable and customizable
+3. The structure encourages learning how components work
+4. Components are built using Radix UI for accessibility and Tailwind CSS for styling
+
+This approach gives students:
+- Full control over the components
+- Better understanding of how components work
+- Ability to customize without fighting against a library
+- Experience with modern Tailwind CSS-based workflows
 
 ## Build for Production
 
@@ -136,29 +180,16 @@ VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-upload-preset
 npm run build
 ```
 
-## Component Architecture
-
-This project uses a component-first approach inspired by Shadcn UI. Instead of importing pre-built components from a library, we:
-
-1. Copy and adapt components from Shadcn UI as needed
-2. Style them with Tailwind CSS
-3. Customize them to fit our application
-
-This approach gives students:
-- Full control over the components
-- Better understanding of how components work
-- Ability to customize without fighting against a library
-- Experience with modern Tailwind-based workflows
-
 ## Learn More
 
 This project demonstrates modern React best practices:
 
 - **React Query** for data fetching and caching
-- **Zustand** for simple, flexible state management
+- **Zustand** for simple state management
 - **Tailwind CSS** for utility-first styling
-- **Shadcn UI pattern** for component architecture
+- **shadcn/ui pattern** for component architecture
 - **React Hook Form** for efficient form handling
+- **Radix UI** for accessible UI components
 - **Component composition** for reusable UI
 - **Custom hooks** for shared logic
 - **MirageJS** for API mocking

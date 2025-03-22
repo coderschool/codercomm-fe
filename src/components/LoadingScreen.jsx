@@ -1,24 +1,10 @@
-import React from 'react';
-import { Box, CircularProgress } from '@mui/material';
+import React from "react";
 
 function LoadingScreen() {
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-      }}
-    >
-      <CircularProgress />
-    </Box>
+    <div className="absolute inset-0 w-full h-full flex justify-center items-center">
+      <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
+    </div>
   );
 }
 

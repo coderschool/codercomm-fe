@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
-import { cloudinaryUpload } from '../../lib/cloudinary';
 import useStore from '../../lib/store';
 
 // Get current user profile
@@ -55,9 +54,12 @@ export const useUpdateUserProfile = () => {
       instagramLink,
       linkedinLink,
       twitterLink,
+      phoneNumber,
+      address,
     }) => {
       const data = {
         name,
+        avatarUrl,
         coverUrl,
         aboutMe,
         city,
@@ -68,13 +70,9 @@ export const useUpdateUserProfile = () => {
         instagramLink,
         linkedinLink,
         twitterLink,
+        phoneNumber,
+        address,
       };
-      
-      // Handle avatar upload if it's a File
-      if (avatarUrl instanceof File) {
-        const imageUrl = await cloudinaryUpload(avatarUrl);
-        data.avatarUrl = imageUrl;
-      }
       
       const response = await apiService.put(`/users/${userId}`, data);
       return response;

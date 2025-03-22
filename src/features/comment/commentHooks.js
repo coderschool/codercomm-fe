@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
 import { COMMENTS_PER_POST } from '../../lib/config';
 

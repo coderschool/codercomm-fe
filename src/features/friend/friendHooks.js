@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
 import { USERS_PER_PAGE } from '../../lib/config';
 

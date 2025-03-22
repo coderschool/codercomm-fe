@@ -1,64 +1,58 @@
-import React, { useState } from 'react';
-import { Stack, Avatar, TextField, IconButton } from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
+import React, { useState } from "react";
+import { Send } from "lucide-react";
 
-import { useCreateComment } from './commentHooks';
-import { useAuth } from '../../lib/auth';
+import { 
+  Avatar, 
+  AvatarImage, 
+  AvatarFallback 
+} from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+import useAuth from "@/hooks/useAuth";
+import { useCreateComment } from "./commentHooks";
 
 function CommentForm({ postId }) {
   const { user } = useAuth();
-  const { mutate: createComment, isPending } = useCreateComment();
-  
-  const [content, setContent] = useState('');
-  
-  const handleContentChange = (event) => {
-    setContent(event.target.value);
-  };
-  
-  const handleSubmit = () => {
+  const [content, setContent] = useState("");
+  const createCommentMutation = useCreateComment();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!content.trim()) return;
     
-    createComment({ postId, content }, {
-      onSuccess: () => {
-        setContent('');
+    createCommentMutation.mutate(
+      { postId, content },
+      {
+        onSuccess: () => setContent("")
       }
-    });
+    );
   };
-  
-  // Handle enter key to submit
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSubmit();
-    }
-  };
-  
+
   return (
-    <Stack direction="row" spacing={2} alignItems="center" sx={{ my: 2 }}>
-      <Avatar src={user?.avatarUrl} alt={user?.name} sx={{ width: 32, height: 32 }} />
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={user.avatarUrl} alt={user.name} />
+        <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+      </Avatar>
       
-      <TextField
-        fullWidth
-        size="small"
-        placeholder="Write a comment..."
+      <Input
         value={content}
-        onChange={handleContentChange}
-        onKeyPress={handleKeyPress}
-        disabled={isPending}
-        InputProps={{
-          endAdornment: (
-            <IconButton
-              onClick={handleSubmit}
-              disabled={!content.trim() || isPending}
-              edge="end"
-              color="primary"
-            >
-              <SendIcon fontSize="small" />
-            </IconButton>
-          ),
-        }}
+        placeholder="Write a comment…"
+        onChange={(event) => setContent(event.target.value)}
+        className="flex-1"
+        disabled={createCommentMutation.isPending}
       />
-    </Stack>
+      
+      <Button 
+        type="submit" 
+        size="icon" 
+        variant="ghost"
+        disabled={createCommentMutation.isPending || !content.trim()}
+      >
+        <Send className="h-5 w-5" />
+      </Button>
+    </form>
   );
 }
 

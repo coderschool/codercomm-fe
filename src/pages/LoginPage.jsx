@@ -1,134 +1,174 @@
-import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
-import { Container, Box, Typography, Stack, Link, Alert, IconButton, InputAdornment, Card } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import { Helmet } from 'react-helmet-async';
+import React, { useState } from "react";
+import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
 
-import Logo from '../components/Logo';
-import { useAuth } from '../lib/auth';
-import { FormProvider, FTextField } from '../components/form';
+import { 
+  Card, 
+  CardHeader, 
+  CardContent, 
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  Button,
+  Input,
+  Label,
+  Checkbox,
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage
+} from "@/components/ui";
+import { Eye, EyeOff } from "lucide-react";
+import useAuth from "../hooks/useAuth";
 
-const schema = yup.object().shape({
-  email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().required('Password is required'),
+/**
+ * LoginPage - User login page component
+ * Handles user authentication with email and password
+ */
+const LoginSchema = Yup.object().shape({
+  email: Yup.string().email("Invalid email").required("Email is required"),
+  password: Yup.string().required("Password is required"),
+  remember: Yup.boolean()
 });
+
+const defaultValues = {
+  email: "",
+  password: "",
+  remember: true,
+};
 
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
-  
+  const auth = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const from = location.state?.from?.pathname || '/';
-  
-  const methods = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+
+  const form = useForm({
+    resolver: yupResolver(LoginSchema),
+    defaultValues,
   });
-  
-  const { handleSubmit } = methods;
+
+  const [error, setErrorMsg] = useState("");
   
   const onSubmit = async (data) => {
-    setLoading(true);
-    setError('');
-    
+    const from = location.state?.from?.pathname || "/";
+    let { email, password } = data;
+
     try {
-      await login(data.email, data.password);
-      navigate(from, { replace: true });
+      await auth.login({ email, password }, () => {
+        navigate(from, { replace: true });
+      });
     } catch (error) {
-      setError(error.message || 'Invalid credentials');
-    } finally {
-      setLoading(false);
+      form.reset();
+      setErrorMsg(error.message);
     }
   };
-  
+
   return (
-    <>
-      <Helmet>
-        <title>Login | CoderComm</title>
-      </Helmet>
-      
-      <Container maxWidth="xs">
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            minHeight: '100vh',
-            justifyContent: 'center',
-            py: 5,
-          }}
-        >
-          <Card sx={{ p: 4, width: '100%', maxWidth: 500 }}>
-            <Box sx={{ textAlign: 'center', mb: 4 }}>
-              <Logo sx={{ width: 60, height: 60, mb: 2 }} />
-              <Typography variant="h4" gutterBottom>
-                Sign In
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Don't have an account?{' '}
-                <Link component={RouterLink} to="/register" variant="subtitle2">
-                  Get started
-                </Link>
-              </Typography>
-            </Box>
-            
-            <FormProvider methods={methods} onSubmit={handleSubmit(onSubmit)}>
-              <Stack spacing={3}>
-                {error && <Alert severity="error">{error}</Alert>}
-                
-                <FTextField 
-                  name="email" 
-                  label="Email address" 
-                  autoComplete="email" 
-                />
-                
-                <FTextField
-                  name="password"
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
+    <div className="container mx-auto px-4 py-10 flex justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Login</CardTitle>
+          <CardDescription>
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive text-destructive p-3 rounded-md mb-4">
+              {error}
+            </div>
+          )}
+          
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6">
+            Don't have an account?{" "}
+            <RouterLink to="/register" className="font-medium underline">
+              Get started
+            </RouterLink>
+          </div>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="your.email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password" 
+                          {...field} 
+                        />
+                        <button
+                          type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          tabIndex={-1}
                         >
-                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
+                          {showPassword ? 
+                            <EyeOff className="h-4 w-4" /> : 
+                            <Eye className="h-4 w-4" />
+                          }
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name="remember"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox 
+                          checked={field.value} 
+                          onCheckedChange={field.onChange} 
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm cursor-pointer">Remember me</FormLabel>
+                    </FormItem>
+                  )}
                 />
-              </Stack>
-              
-              <LoadingButton
-                fullWidth
-                size="large"
-                type="submit"
-                variant="contained"
-                loading={loading}
-                sx={{ mt: 3 }}
-              >
-                Login
-              </LoadingButton>
-            </FormProvider>
-          </Card>
-        </Box>
-      </Container>
-    </>
+                <RouterLink 
+                  to="/forgot-password" 
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </RouterLink>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

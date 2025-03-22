@@ -1,72 +1,71 @@
 import React from 'react';
-import { Card, Box, Avatar, Typography, Stack, Link as MuiLink } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import EmailIcon from '@mui/icons-material/Email';
-import PersonIcon from '@mui/icons-material/Person';
-import ArticleIcon from '@mui/icons-material/Article';
+import { Link } from 'react-router-dom';
+import { User, Mail, FileText } from 'lucide-react';
 import { DEFAULT_AVATAR } from '../lib/config';
 
+/**
+ * A card displaying a user's profile information
+ */
 function ProfileCard({ profile }) {
   if (!profile) return null;
   
   return (
-    <Card sx={{ p: 2 }}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Avatar
-          src={profile.avatarUrl || DEFAULT_AVATAR}
-          alt={profile.name}
-          sx={{ 
-            width: 100, 
-            height: 100,
-            mb: 2,
-            border: '1px solid #ddd'
-          }}
-        />
+    <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="flex flex-col items-center">
+        {/* Avatar */}
+        <div className="w-24 h-24 rounded-full border border-gray-200 mb-4 overflow-hidden">
+          <img 
+            src={profile.avatarUrl || DEFAULT_AVATAR}
+            alt={profile.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
         
-        <Typography variant="h6" sx={{ mb: 0.5 }}>
+        {/* Name */}
+        <h2 className="text-xl font-semibold mb-1">
           {profile.name}
-        </Typography>
+        </h2>
         
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {/* Email */}
+        <p className="text-sm text-gray-500 mb-4">
           {profile.email}
-        </Typography>
+        </p>
         
-        <Stack direction="column" spacing={1} sx={{ width: '100%' }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <PersonIcon color="primary" fontSize="small" />
-            <Typography variant="body2">
+        {/* Stats */}
+        <div className="w-full space-y-2">
+          <div className="flex items-center space-x-2">
+            <User className="w-5 h-5 text-blue-500" />
+            <span className="text-sm">
               {profile.friendCount || 0} {profile.friendCount === 1 ? 'friend' : 'friends'}
-            </Typography>
-          </Stack>
+            </span>
+          </div>
           
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <ArticleIcon color="primary" fontSize="small" />
-            <Typography variant="body2">
+          <div className="flex items-center space-x-2">
+            <FileText className="w-5 h-5 text-blue-500" />
+            <span className="text-sm">
               {profile.postCount || 0} {profile.postCount === 1 ? 'post' : 'posts'}
-            </Typography>
-          </Stack>
+            </span>
+          </div>
           
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <EmailIcon color="primary" fontSize="small" />
-            <Typography variant="body2">
+          <div className="flex items-center space-x-2">
+            <Mail className="w-5 h-5 text-blue-500" />
+            <span className="text-sm">
               {profile.email}
-            </Typography>
-          </Stack>
-        </Stack>
+            </span>
+          </div>
+        </div>
         
-        <Box sx={{ mt: 2, width: '100%' }}>
-          <MuiLink
-            component={RouterLink}
+        {/* Link to profile */}
+        <div className="mt-4 w-full">
+          <Link
             to={`/user/${profile._id}`}
-            variant="button"
-            color="primary"
-            sx={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}
+            className="block text-center text-blue-500 hover:text-blue-700 hover:underline font-medium"
           >
             View Profile
-          </MuiLink>
-        </Box>
-      </Box>
-    </Card>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 

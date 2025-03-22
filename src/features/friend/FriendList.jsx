@@ -1,85 +1,75 @@
-import React, { useState } from 'react';
-import { Box, Typography, Stack, Pagination, CircularProgress, InputAdornment, TextField } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import { useGetFriends } from './friendHooks';
-import UserCard from './UserCard';
+import React, { useState } from "react";
+import { useGetFriends } from "./friendHooks";
+import UserCard from "./UserCard";
+import SearchInput from "@/components/SearchInput";
+import { Card } from "@/components/ui/card";
 
 function FriendList() {
+  const [filterName, setFilterName] = useState("");
   const [page, setPage] = useState(1);
-  const [searchName, setSearchName] = useState('');
-  const [filterName, setFilterName] = useState('');
-  
+
   const { data, isLoading } = useGetFriends(filterName, page);
   
-  const friends = data?.users || [];
+  // Extract data safely with proper defaults
+  const users = data?.users || [];
+  const totalUsers = data?.totalUsers || 0;
   const totalPages = data?.totalPages || 1;
-  
-  const handleSearchChange = (event) => {
-    setSearchName(event.target.value);
+
+  const handleSubmit = (searchQuery) => {
+    setFilterName(searchQuery);
   };
-  
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setFilterName(searchName);
-  };
-  
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-  
+
   return (
-    <Box>
-      <Box component="form" onSubmit={handleSubmit} sx={{ mb: 2 }}>
-        <TextField
-          fullWidth
-          size="small"
-          value={searchName}
-          onChange={handleSearchChange}
-          placeholder="Search friends..."
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-      
-      {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <>
-          <Stack spacing={2}>
-            {friends.length > 0 ? (
-              friends.map((friend) => (
-                <UserCard key={friend._id} user={friend} />
-              ))
-            ) : (
-              <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                {filterName 
-                  ? `No friends found for "${filterName}"`
-                  : "You don't have any friends yet"
-                }
-              </Typography>
-            )}
-          </Stack>
-          
-          {totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                size="small"
-              />
-            </Box>
+    <div className="container mx-auto">
+      <h4 className="text-2xl font-bold mb-6">Friends</h4>
+      <Card className="p-6">
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <SearchInput handleSubmit={handleSubmit} />
+            
+            <div className="flex-grow" />
+            
+            <p className="text-sm text-muted-foreground ml-1">
+              {totalUsers > 1
+                ? `${totalUsers} friends found`
+                : totalUsers === 1
+                ? `${totalUsers} friend found`
+                : "No friend found"}
+            </p>
+            
+            <div className="flex justify-center">
+              <nav aria-label="Pagination" className="inline-flex -space-x-px text-sm">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`${
+                      pageNum === page
+                        ? "bg-primary text-white"
+                        : "bg-white text-gray-500 hover:bg-gray-100"
+                    } px-3 py-2 border border-gray-300 first:rounded-l-md last:rounded-r-md`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-4">
+          {isLoading ? (
+            <p className="text-center col-span-3">Loading...</p>
+          ) : (
+            users.map((user) => (
+              <div key={user._id}>
+                <UserCard profile={user} />
+              </div>
+            ))
           )}
-        </>
-      )}
-    </Box>
+        </div>
+      </Card>
+    </div>
   );
 }
 

@@ -1,76 +1,80 @@
-import React, { useState } from 'react';
-import { Box, Typography, CircularProgress, Button } from '@mui/material';
-import { useGetPosts, useGetPostsByUser } from './postHooks';
-import PostCard from './PostCard';
+import React, { useState } from "react";
+import PostCard from "./PostCard";
+import { useGetPosts, useGetPostsByUser } from "./postHooks";
+import { Button } from "@/components/ui/button";
 
 function PostList({ userId }) {
   const [page, setPage] = useState(1);
   
-  // Choose the appropriate query based on whether we're viewing a specific user's posts or the feed
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = userId 
-    ? useGetPostsByUser(userId, page) 
+  // Choose the right query based on whether userId is provided
+  const query = userId
+    ? useGetPostsByUser(userId, page)
     : useGetPosts(page);
   
-  const posts = data?.posts || [];
-  const totalPages = data?.totalPages || 0;
+  const { data, isLoading, error } = query;
   
-  const handleLoadMore = () => {
-    if (page < totalPages) {
-      setPage(page + 1);
-    }
-  };
+  // Extract posts and total pages from the data
+  const { posts, totalPages } = data || { posts: [], totalPages: 0 };
   
+  // Loading state
   if (isLoading && page === 1) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      </div>
     );
   }
   
-  if (isError) {
+  // Error state
+  if (error) {
     return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="h6" color="error" textAlign="center">
-          {error?.message || 'Something went wrong'}
-        </Typography>
-      </Box>
+      <p className="text-xl font-semibold text-destructive text-center">
+        {error.message}
+      </p>
     );
   }
   
-  if (posts.length === 0) {
+  // Empty state
+  if (!posts || posts.length === 0) {
     return (
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="body1" textAlign="center">
-          No posts yet
-        </Typography>
-      </Box>
+      <div className="mt-6">
+        <p className="text-xl font-semibold text-center">
+          No Posts Yet
+        </p>
+      </div>
     );
   }
   
   return (
-    <>
+    <div className="space-y-6">
       {posts.map((post) => (
         <PostCard key={post._id} post={post} />
       ))}
       
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 3 }}>
-        {page < totalPages && (
+      <div className="flex justify-center">
+        {page < totalPages ? (
           <Button
-            variant="outlined"
-            onClick={handleLoadMore}
+            variant="outline"
+            size="sm"
             disabled={isLoading}
+            onClick={() => setPage((page) => page + 1)}
+            className="min-w-[100px]"
           >
-            {isLoading ? 'Loading...' : 'Load More'}
+            {isLoading ? (
+              <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto"></span>
+            ) : (
+              "Load more"
+            )}
           </Button>
+        ) : (
+          posts.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              No more posts to load
+            </p>
+          )
         )}
-      </Box>
-    </>
+      </div>
+    </div>
   );
 }
 
