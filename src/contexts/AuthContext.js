@@ -1,7 +1,7 @@
 import { createContext, useReducer, useEffect } from "react";
-import { useSelector } from "react-redux";
 import apiService from "../app/apiService";
 import { isValidToken } from "../utils/jwt";
+import useStore from "../app/store";
 
 const initialState = {
   isInitialized: false,
@@ -99,7 +99,9 @@ const AuthContext = createContext({ ...initialState });
 
 function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const updatedProfile = useSelector((state) => state.user.updatedProfile);
+  // Use Zustand store instead of Redux
+  const updatedProfile = useStore((state) => state.user.currentUser);
+  const setCurrentUser = useStore((state) => state.setCurrentUser);
 
   useEffect(() => {
     const initialize = async () => {
@@ -110,7 +112,10 @@ function AuthProvider({ children }) {
           setSession(accessToken);
 
           const response = await apiService.get("/users/me");
-          const user = response.data;
+          const user = response;
+          
+          // Update Zustand store with user data
+          setCurrentUser(user);
 
           dispatch({
             type: INITIALIZE,
@@ -118,6 +123,7 @@ function AuthProvider({ children }) {
           });
         } else {
           setSession(null);
+          setCurrentUser(null);
 
           dispatch({
             type: INITIALIZE,
@@ -128,6 +134,8 @@ function AuthProvider({ children }) {
         console.error(err);
 
         setSession(null);
+        setCurrentUser(null);
+        
         dispatch({
           type: INITIALIZE,
           payload: {
@@ -139,7 +147,7 @@ function AuthProvider({ children }) {
     };
 
     initialize();
-  }, []);
+  }, [setCurrentUser]);
 
   useEffect(() => {
     if (updatedProfile)
@@ -148,15 +156,17 @@ function AuthProvider({ children }) {
 
   const login = async ({ email, password }, callback) => {
     const response = await apiService.post("/auth/login", { email, password });
-    const { user, accessToken } = response.data;
+    const { user, accessToken } = response;
 
     setSession(accessToken);
+    setCurrentUser(user);
+    
     dispatch({
       type: LOGIN_SUCCESS,
       payload: { user },
     });
 
-    callback();
+    if (callback) callback();
   };
 
   const register = async ({ name, email, password }, callback) => {
@@ -166,20 +176,23 @@ function AuthProvider({ children }) {
       password,
     });
 
-    const { user, accessToken } = response.data;
+    const { user, accessToken } = response;
     setSession(accessToken);
+    setCurrentUser(user);
+    
     dispatch({
       type: REGISTER_SUCCESS,
       payload: { user },
     });
 
-    callback();
+    if (callback) callback();
   };
 
   const logout = async (callback) => {
     setSession(null);
+    setCurrentUser(null);
     dispatch({ type: LOGOUT });
-    callback();
+    if (callback) callback();
   };
 
   return (
