@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_USE_MOCK_API=true vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0"
@@ -22,6 +23,7 @@
     "date-fns": "^3.3.1",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
+    "miragejs": "^0.1.48",
     "numeral": "^2.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

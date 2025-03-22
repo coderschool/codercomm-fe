@@ -7,6 +7,13 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 
 import App from './App';
+import { mockServer } from './mockApi/server';
+
+// Start mock server
+if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+  mockServer({ environment: 'development' });
+  console.log('🔶 Using mock API server');
+}
 
 // Create a client
 const queryClient = new QueryClient({
