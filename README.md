@@ -96,41 +96,32 @@ npm install
 
 3. Set up environment variables:
 - Create a `.env` file based on `.env.example`
-- Set `VITE_USE_MOCK_API=true` to use the mock API (no backend needed)
-- Or set up Cloudinary for image uploads with real backend
+- By default, the mock API will be used (no backend needed)
+- To use a real API, uncomment and set the `VITE_API_URL` in the `.env` file
 
 4. Start the development server:
 ```bash
-# With mock API
-npm run dev:mock
-
-# Or with real API
 npm run dev
 ```
 
 ## Using the Mock API
 
-This project includes a mock API server using MirageJS, which provides in-memory data for development and testing. The mock API:
+This project includes a mock API server using MirageJS, which provides in-memory data for development and testing. The mock API is used automatically when no `VITE_API_URL` is provided, and:
 
 - Works entirely client-side with no external dependencies
 - Includes realistic sample data for users, posts, comments, etc.
 - Implements all the endpoints needed for the application
 - Handles authentication with mock tokens
 
-To use the mock API:
-1. Set `VITE_USE_MOCK_API=true` in your `.env` file
-2. Run `npm run dev:mock`
-3. Login with any of the sample users:
-   - Email: `john@example.com` (or any email from the mock data)
-   - Password: `password` (all mock users use this password)
+You can log in with any of the sample user emails (e.g., `john@example.com`, `jane@example.com`) using the password `password` for all users.
 
 ## Cloudinary Setup (for real API)
 
-If using the real API:
+If using a real API:
 
 1. Sign up for a [Cloudinary](https://cloudinary.com/) account
 2. Create an **unsigned** upload preset in your Cloudinary dashboard
-3. Add your Cloudinary cloud name and upload preset to the `.env` file:
+3. Uncomment and set the Cloudinary environment variables in your `.env` file:
 ```
 VITE_CLOUDINARY_CLOUD_NAME=your-cloud-name
 VITE_CLOUDINARY_UPLOAD_PRESET=your-unsigned-upload-preset

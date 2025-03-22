@@ -9,10 +9,10 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { mockServer } from './mockApi/server';
 
-// Start mock server
-if (import.meta.env.VITE_USE_MOCK_API === 'true') {
+// Start mock server if API URL is not set
+if (!import.meta.env.VITE_API_URL) {
   mockServer({ environment: 'development' });
-  console.log('🔶 Using mock API server');
+  console.log('🔶 Using mock API server (no VITE_API_URL provided)');
 }
 
 // Create a client
