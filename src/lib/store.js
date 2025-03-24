@@ -19,11 +19,6 @@ const useStore = create(
           isInitialized: false,
         },
         
-        // UI state
-        ui: {
-          themeMode: 'light',
-        },
-        
         // Post state
         post: {
           posts: [],
@@ -76,14 +71,6 @@ const useStore = create(
           auth: { ...state.auth, isAuthenticated: false }
         })),
         
-        // Theme actions
-        toggleTheme: () => set((state) => ({
-          ui: { 
-            ...state.ui, 
-            themeMode: state.ui.themeMode === 'light' ? 'dark' : 'light' 
-          }
-        })),
-        
         // Post actions
         setPosts: (posts, totalPages) => set((state) => ({
           post: { ...state.post, posts, totalPages }
@@ -128,7 +115,6 @@ const useStore = create(
       {
         name: 'codercomm-storage',
         partialize: (state) => ({ 
-          ui: state.ui,
           auth: { isAuthenticated: state.auth.isAuthenticated },
           user: { currentUser: state.user.currentUser }
         }),

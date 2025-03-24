@@ -2,27 +2,43 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
 import { POSTS_PER_PAGE } from '../../lib/config';
+import { getPaginationParams } from '../../lib/utils';
 
-// Get posts for feed (home page - posts from current user and friends)
+/**
+ * Get posts for feed (home page - posts from current user and friends)
+ * @param {number} page - Page number
+ * @returns {Object} Query result with posts and pagination
+ */
 export const useGetPosts = (page = 1) => {
   return useQuery({
     queryKey: ['posts', 'feed', page],
     queryFn: async () => {
-      const params = { page, limit: POSTS_PER_PAGE };
+      const params = getPaginationParams({ 
+        page, 
+        limit: POSTS_PER_PAGE 
+      });
       const response = await apiService.get('/posts', { params });
       return response;
     },
   });
 };
 
-// Get posts by specific user
+/**
+ * Get posts by specific user
+ * @param {string} userId - User ID
+ * @param {number} page - Page number
+ * @returns {Object} Query result with posts and pagination
+ */
 export const useGetPostsByUser = (userId, page = 1) => {
   return useQuery({
     queryKey: ['posts', 'user', userId, page],
     queryFn: async () => {
       if (!userId) return { posts: [], totalPages: 0 };
       
-      const params = { page, limit: POSTS_PER_PAGE };
+      const params = getPaginationParams({ 
+        page, 
+        limit: POSTS_PER_PAGE 
+      });
       const response = await apiService.get(`/posts/user/${userId}`, { params });
       return response;
     },
@@ -30,7 +46,10 @@ export const useGetPostsByUser = (userId, page = 1) => {
   });
 };
 
-// Create a new post
+/**
+ * Create a new post
+ * @returns {Object} Mutation result
+ */
 export const useCreatePost = () => {
   const queryClient = useQueryClient();
   
@@ -56,7 +75,10 @@ export const useCreatePost = () => {
   });
 };
 
-// React to a post (like/dislike)
+/**
+ * React to a post (like/dislike)
+ * @returns {Object} Mutation result
+ */
 export const useReactPost = () => {
   const queryClient = useQueryClient();
   
@@ -71,27 +93,8 @@ export const useReactPost = () => {
       return { postId, reactions: response };
     },
     onSuccess: (data) => {
-      // Update post reactions in cache
-      queryClient.setQueriesData(
-        { queryKey: ['posts'] },
-        (oldData) => {
-          if (!oldData) return oldData;
-          
-          // Handle feed posts
-          if (oldData.posts) {
-            return {
-              ...oldData,
-              posts: oldData.posts.map(post => 
-                post._id === data.postId 
-                  ? { ...post, reactions: data.reactions } 
-                  : post
-              ),
-            };
-          }
-          
-          return oldData;
-        }
-      );
+      // Invalidate post data to refresh reactions
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to react to post');
@@ -99,14 +102,21 @@ export const useReactPost = () => {
   });
 };
 
-// Infinite scrolling version for posts
+/**
+ * Get posts with infinite scrolling
+ * @param {string} userId - Optional user ID to filter posts by
+ * @returns {Object} Infinite query result
+ */
 export const useInfinitePosts = (userId = null) => {
   const endpoint = userId ? `/posts/user/${userId}` : '/posts';
   
   return useInfiniteQuery({
     queryKey: ['posts', 'infinite', userId],
     queryFn: async ({ pageParam = 1 }) => {
-      const params = { page: pageParam, limit: POSTS_PER_PAGE };
+      const params = getPaginationParams({ 
+        page: pageParam, 
+        limit: POSTS_PER_PAGE 
+      });
       const response = await apiService.get(endpoint, { params });
       return {
         ...response,

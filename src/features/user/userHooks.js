@@ -3,7 +3,10 @@ import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
 import useStore from '../../lib/store';
 
-// Get current user profile
+/**
+ * Get current user profile
+ * @returns {Object} Query result with current user
+ */
 export const useGetCurrentUserProfile = () => {
   const queryClient = useQueryClient();
   const setCurrentUser = useStore(state => state.setCurrentUser);
@@ -20,7 +23,11 @@ export const useGetCurrentUserProfile = () => {
   });
 };
 
-// Get user by ID
+/**
+ * Get user profile by ID
+ * @param {string} userId - User ID
+ * @returns {Object} Query result with user profile
+ */
 export const useGetUserProfile = (userId) => {
   const setSelectedUser = useStore(state => state.setSelectedUser);
   
@@ -38,7 +45,10 @@ export const useGetUserProfile = (userId) => {
   });
 };
 
-// Update user profile
+/**
+ * Update user profile
+ * @returns {Object} Mutation result
+ */
 export const useUpdateUserProfile = () => {
   const queryClient = useQueryClient();
   
@@ -86,7 +96,7 @@ export const useUpdateUserProfile = () => {
       queryClient.invalidateQueries({ queryKey: ['users', data._id] });
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to update profile');
     },
   });
 };

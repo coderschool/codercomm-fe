@@ -1,9 +1,21 @@
 import React from "react";
 
-function LoadingScreen() {
+/**
+ * Standard loading screen component
+ * @param {Object} props - Component props
+ * @param {string} [props.message="Loading..."] - Loading message to display
+ * @param {boolean} [props.fullScreen=true] - Whether to take up full screen
+ * @returns {JSX.Element} Loading indicator
+ */
+function LoadingScreen({ message = "Loading...", fullScreen = true }) {
+  const containerClass = fullScreen 
+    ? "absolute inset-0 w-full h-full flex justify-center items-center" 
+    : "w-full py-8 flex justify-center items-center";
+
   return (
-    <div className="absolute inset-0 w-full h-full flex justify-center items-center">
-      <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 animate-spin"></div>
+    <div className={containerClass}>
+      <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+      <span className="ml-3 text-lg">{message}</span>
     </div>
   );
 }

@@ -1,11 +1,16 @@
 import { createContext, useState, useEffect } from "react";
-import apiService from "../lib/apiService";
-import { isValidToken } from "../utils/jwt";
+import LoadingScreen from "../components/LoadingScreen";
 import useStore from "../lib/store";
+import { checkAuthToken, setSession, useLogin, useRegister, useLogout } from "../features/user/authHooks";
+import apiService from "../lib/apiService";
 
 // Create context
 const AuthContext = createContext(null);
 
+/**
+ * Authentication provider component
+ * Uses React Query for data fetching and Zustand for state management
+ */
 function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   
@@ -15,40 +20,28 @@ function AuthProvider({ children }) {
     user: { currentUser },
     setCurrentUser,
     setAuth,
-    logout: logoutStore
   } = useStore();
 
-  // Set up auth headers for API calls
-  const setSession = (accessToken) => {
-    if (accessToken) {
-      window.localStorage.setItem("accessToken", accessToken);
-      apiService.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-    } else {
-      window.localStorage.removeItem("accessToken");
-      delete apiService.defaults.headers.common.Authorization;
-    }
-  };
+  // Auth mutation hooks
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+  const logoutMutation = useLogout();
 
   // Initialize auth once on mount
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const accessToken = window.localStorage.getItem("accessToken");
+        // Check if there's a valid token
+        const { isValid, accessToken } = checkAuthToken();
         
-        // No token = not authenticated
-        if (!accessToken || !isValidToken(accessToken)) {
-          // Clear any existing session data
-          setSession(null);
+        // No valid token? Early return
+        if (!isValid) {
           setAuth(false, true);
           setIsLoading(false);
           return;
         }
         
-        // Valid token = authenticated
-        // Set token in headers before making API calls
-        setSession(accessToken);
-        
-        // Always fetch fresh user data with valid token
+        // Valid token - get user data
         try {
           const user = await apiService.get("/users/me");
           setCurrentUser(user);
@@ -75,57 +68,27 @@ function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auth methods
-  const login = async ({ email, password }, callback) => {
-    try {
-      const response = await apiService.post("/auth/login", { email, password });
-      const { user, accessToken } = response;
-
-      setSession(accessToken);
-      setCurrentUser(user);
-
-      if (callback) callback();
-      return user;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
+  // API for auth actions
+  const login = async (credentials, callback) => {
+    const result = await loginMutation.mutateAsync(credentials);
+    if (callback) callback();
+    return result.user;
   };
 
-  const register = async ({ name, email, password }, callback) => {
-    try {
-      const response = await apiService.post("/users", {
-        name,
-        email,
-        password,
-      });
-
-      const { user, accessToken } = response;
-      setSession(accessToken);
-      setCurrentUser(user);
-
-      if (callback) callback();
-      return user;
-    } catch (error) {
-      console.error("Register error:", error);
-      throw error;
-    }
+  const register = async (userData, callback) => {
+    const result = await registerMutation.mutateAsync(userData);
+    if (callback) callback();
+    return result.user;
   };
 
   const logout = async (callback) => {
-    setSession(null);
-    logoutStore();
+    await logoutMutation.mutateAsync();
     if (callback) callback();
   };
 
   // Show loading state
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
-        <span className="ml-3 text-lg">Authenticating...</span>
-      </div>
-    );
+    return <LoadingScreen message="Authenticating..." />;
   }
 
   return (
@@ -137,6 +100,9 @@ function AuthProvider({ children }) {
         login,
         register,
         logout,
+        isLoggingIn: loginMutation.isPending,
+        isRegistering: registerMutation.isPending,
+        isLoggingOut: logoutMutation.isPending,
       }}
     >
       {children}

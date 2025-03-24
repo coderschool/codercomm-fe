@@ -2,15 +2,24 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import { toast } from 'sonner';
 import apiService from '../../lib/apiService';
 import { COMMENTS_PER_POST } from '../../lib/config';
+import { getPaginationParams } from '../../lib/utils';
 
-// Get comments for a post
+/**
+ * Get comments for a post
+ * @param {string} postId - Post ID
+ * @param {number} page - Page number
+ * @returns {Object} Query result with comments and pagination
+ */
 export const useGetComments = (postId, page = 1) => {
   return useQuery({
     queryKey: ['comments', postId, page],
     queryFn: async () => {
       if (!postId) return { comments: [], totalPages: 0 };
       
-      const params = { page, limit: COMMENTS_PER_POST };
+      const params = getPaginationParams({ 
+        page, 
+        limit: COMMENTS_PER_POST 
+      });
       const response = await apiService.get(`/posts/${postId}/comments`, { params });
       return response;
     },
@@ -18,12 +27,19 @@ export const useGetComments = (postId, page = 1) => {
   });
 };
 
-// Infinite query version for comments
+/**
+ * Get comments with infinite scrolling
+ * @param {string} postId - Post ID
+ * @returns {Object} Infinite query result
+ */
 export const useInfiniteComments = (postId) => {
   return useInfiniteQuery({
     queryKey: ['comments', 'infinite', postId],
     queryFn: async ({ pageParam = 1 }) => {
-      const params = { page: pageParam, limit: COMMENTS_PER_POST };
+      const params = getPaginationParams({ 
+        page: pageParam, 
+        limit: COMMENTS_PER_POST 
+      });
       const response = await apiService.get(`/posts/${postId}/comments`, { params });
       return {
         ...response,
@@ -40,7 +56,10 @@ export const useInfiniteComments = (postId) => {
   });
 };
 
-// Create a comment
+/**
+ * Create a comment on a post
+ * @returns {Object} Mutation result
+ */
 export const useCreateComment = () => {
   const queryClient = useQueryClient();
   
@@ -54,6 +73,7 @@ export const useCreateComment = () => {
     },
     onSuccess: (_, variables) => {
       const { postId } = variables;
+      toast.success('Comment added');
       
       // Invalidate comments for the post
       queryClient.invalidateQueries({ queryKey: ['comments', postId] });
@@ -68,7 +88,10 @@ export const useCreateComment = () => {
   });
 };
 
-// React to a comment
+/**
+ * React to a comment (like/dislike)
+ * @returns {Object} Mutation result
+ */
 export const useReactComment = () => {
   const queryClient = useQueryClient();
   
@@ -82,12 +105,9 @@ export const useReactComment = () => {
       
       return { commentId, reactions: response };
     },
-    onSuccess: (data, variables) => {
-      // Update comment reactions in all relevant queries
-      queryClient.invalidateQueries({ 
-        queryKey: ['comments'],
-        refetchType: 'none',
-      });
+    onSuccess: () => {
+      // Invalidate all comment data
+      queryClient.invalidateQueries({ queryKey: ['comments'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to react to comment');
@@ -95,7 +115,10 @@ export const useReactComment = () => {
   });
 };
 
-// Delete a comment
+/**
+ * Delete a comment
+ * @returns {Object} Mutation result
+ */
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
   
