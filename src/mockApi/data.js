@@ -2,14 +2,15 @@
 export const users = [
   {
     _id: "user1",
-    name: "John Doe",
-    email: "john@example.com",
-    avatarUrl: "https://via.placeholder.com/150?text=John",
-    coverUrl: "https://via.placeholder.com/800x200?text=John+Cover",
-    aboutMe: "Software developer passionate about React",
-    city: "San Francisco",
-    country: "USA",
-    company: "Tech Inc",
+    username: "learnreact",
+    name: "Nguyen Van React",
+    email: "reactlover@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
+    coverUrl: "https://picsum.photos/id/1018/800/200",
+    aboutMe: "React developer by day, phở connoisseur by night",
+    city: "Ho Chi Minh City",
+    country: "Vietnam",
+    company: "CoderSchool",
     jobTitle: "Frontend Developer",
     facebookLink: "https://facebook.com",
     instagramLink: "https://instagram.com",
@@ -19,15 +20,16 @@ export const users = [
   },
   {
     _id: "user2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    avatarUrl: "https://via.placeholder.com/150?text=Jane",
-    coverUrl: "https://via.placeholder.com/800x200?text=Jane+Cover",
-    aboutMe: "UX Designer with a love for clean interfaces",
-    city: "Seattle",
-    country: "USA",
-    company: "Design Studio",
-    jobTitle: "Senior UX Designer",
+    username: "cssqueen",
+    name: "Tran Thi CSS",
+    email: "styling@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=tran",
+    coverUrl: "https://picsum.photos/id/1019/800/200",
+    aboutMe: "Making divs pretty since 2015. Can center anything vertically.",
+    city: "Hanoi",
+    country: "Vietnam",
+    company: "Design Divas",
+    jobTitle: "UI/UX Designer",
     facebookLink: "https://facebook.com",
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
@@ -36,15 +38,16 @@ export const users = [
   },
   {
     _id: "user3",
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    avatarUrl: "https://via.placeholder.com/150?text=Bob",
-    coverUrl: "https://via.placeholder.com/800x200?text=Bob+Cover",
-    aboutMe: "Backend developer specializing in Node.js",
-    city: "Austin",
-    country: "USA",
-    company: "Backend Solutions",
-    jobTitle: "Senior Backend Developer",
+    username: "nodemaster",
+    name: "Le Thanh Backend",
+    email: "serverside@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
+    coverUrl: "https://picsum.photos/id/1025/800/200",
+    aboutMe: "I make APIs so fast even my coffee can't keep up",
+    city: "Da Nang",
+    country: "Vietnam",
+    company: "Server Solutions",
+    jobTitle: "Backend Developer",
     facebookLink: "https://facebook.com",
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
@@ -53,14 +56,15 @@ export const users = [
   },
   {
     _id: "user4",
-    name: "Alice Williams",
-    email: "alice@example.com",
-    avatarUrl: "https://via.placeholder.com/150?text=Alice",
-    coverUrl: "https://via.placeholder.com/800x200?text=Alice+Cover",
-    aboutMe: "Full-stack developer and tech enthusiast",
-    city: "New York",
-    country: "USA",
-    company: "Tech Giants",
+    username: "fullstackdev",
+    name: "Pham Minh Code",
+    email: "fullstack@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=phamminh",
+    coverUrl: "https://picsum.photos/id/1031/800/200",
+    aboutMe: "I do frontend, backend, and can fix the office printer",
+    city: "Hue",
+    country: "Vietnam",
+    company: "Viet Tech",
     jobTitle: "Full-stack Developer",
     facebookLink: "https://facebook.com",
     instagramLink: "https://instagram.com",
@@ -70,14 +74,15 @@ export const users = [
   },
   {
     _id: "user5",
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    avatarUrl: "https://via.placeholder.com/150?text=Charlie",
-    coverUrl: "https://via.placeholder.com/800x200?text=Charlie+Cover",
-    aboutMe: "DevOps engineer with a passion for automation",
-    city: "Chicago",
-    country: "USA",
-    company: "Cloud Services",
+    username: "devopswhiz",
+    name: "Hoang The Cloud",
+    email: "cloudguru@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud",
+    coverUrl: "https://picsum.photos/id/1039/800/200",
+    aboutMe: "If it works on your machine, I'll make it work in production",
+    city: "Can Tho",
+    country: "Vietnam",
+    company: "Cloud Crusaders",
     jobTitle: "DevOps Engineer",
     facebookLink: "https://facebook.com",
     instagramLink: "https://instagram.com",
@@ -91,96 +96,96 @@ export const users = [
 export const posts = [
   {
     _id: "post1",
-    content: "Just finished building a new React component library! Check it out!",
-    image: "https://via.placeholder.com/800x400?text=React+Component+Library",
+    content: "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
+    image: "https://picsum.photos/id/237/800/400",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-10T12:00:00.000Z",
     updatedAt: "2023-06-10T12:00:00.000Z"
   },
   {
     _id: "post2",
-    content: "Here's my latest UI design for a mobile app. Would love your feedback!",
-    image: "https://via.placeholder.com/800x400?text=UI+Design",
+    content: "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
+    image: "https://picsum.photos/id/292/800/400",
     author: {
       _id: "user2",
-      name: "Jane Smith",
-      avatarUrl: "https://via.placeholder.com/150?text=Jane"
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
     createdAt: "2023-06-09T15:30:00.000Z",
     updatedAt: "2023-06-09T15:30:00.000Z"
   },
   {
     _id: "post3",
-    content: "Just deployed a new Node.js microservice. Performance is incredible!",
-    image: null,
+    content: "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
+    image: "https://picsum.photos/id/42/800/400",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-08T09:45:00.000Z",
     updatedAt: "2023-06-08T09:45:00.000Z"
   },
   {
     _id: "post4",
-    content: "Completed my first machine learning project. Amazing what we can do with data!",
-    image: "https://via.placeholder.com/800x400?text=Machine+Learning",
+    content: "Made an AI that can predict how spicy you want your bún bò Huế. Technology is amazing! 🌶️",
+    image: "https://picsum.photos/id/91/800/400",
     author: {
       _id: "user4",
-      name: "Alice Williams",
-      avatarUrl: "https://via.placeholder.com/150?text=Alice"
+      name: "Pham Minh Code",
+      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
     },
     createdAt: "2023-06-07T14:20:00.000Z",
     updatedAt: "2023-06-07T14:20:00.000Z"
   },
   {
     _id: "post5",
-    content: "Set up a new CI/CD pipeline for our project. Deployments are now so smooth!",
-    image: null,
+    content: "Set up CI/CD for our project. Now our code deploys faster than a Grab driver during rush hour! 🏍️",
+    image: "https://picsum.photos/id/180/800/400",
     author: {
       _id: "user5",
-      name: "Charlie Brown",
-      avatarUrl: "https://via.placeholder.com/150?text=Charlie"
+      name: "Hoang The Cloud",
+      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
     },
     createdAt: "2023-06-06T10:10:00.000Z",
     updatedAt: "2023-06-06T10:10:00.000Z"
   },
   {
     _id: "post6",
-    content: "Learning Zustand and React Query. Such a great replacement for Redux!",
-    image: "https://via.placeholder.com/800x400?text=Zustand+and+React+Query",
+    content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can't imagine coding without them! 🥢",
+    image: "https://picsum.photos/id/24/800/400",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-05T16:40:00.000Z",
     updatedAt: "2023-06-05T16:40:00.000Z"
   },
   {
     _id: "post7",
-    content: "Just finished a new design system for our company. Consistency at last!",
-    image: "https://via.placeholder.com/800x400?text=Design+System",
+    content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
+    image: "https://picsum.photos/id/28/800/400",
     author: {
       _id: "user2",
-      name: "Jane Smith",
-      avatarUrl: "https://via.placeholder.com/150?text=Jane"
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
     createdAt: "2023-06-04T11:15:00.000Z",
     updatedAt: "2023-06-04T11:15:00.000Z"
   },
   {
     _id: "post8",
-    content: "Optimized our database queries and saw a 40% performance improvement!",
-    image: null,
+    content: "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
+    image: "https://picsum.photos/id/4/800/400",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-03T08:30:00.000Z",
     updatedAt: "2023-06-03T08:30:00.000Z"
@@ -191,96 +196,96 @@ export const posts = [
 export const comments = [
   {
     _id: "comment1",
-    content: "This looks great! Can you share more about the implementation?",
+    content: "Siêu đỉnh! Can you share your code on GitHub?",
     post: "post1",
     author: {
       _id: "user2",
-      name: "Jane Smith",
-      avatarUrl: "https://via.placeholder.com/150?text=Jane"
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
     createdAt: "2023-06-10T12:30:00.000Z",
     updatedAt: "2023-06-10T12:30:00.000Z"
   },
   {
     _id: "comment2",
-    content: "Very impressive work!",
+    content: "Quá đẹp! Did you use Redux for state management?",
     post: "post1",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-10T13:00:00.000Z",
     updatedAt: "2023-06-10T13:00:00.000Z"
   },
   {
     _id: "comment3",
-    content: "I love the color scheme! Very modern.",
+    content: "The UI is cleaner than my browser history after a job interview! 😂",
     post: "post2",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-09T16:00:00.000Z",
     updatedAt: "2023-06-09T16:00:00.000Z"
   },
   {
     _id: "comment4",
-    content: "Maybe consider making the buttons more prominent?",
+    content: "Hay quá! But maybe make the checkout button bigger for hungry users?",
     post: "post2",
     author: {
       _id: "user4",
-      name: "Alice Williams",
-      avatarUrl: "https://via.placeholder.com/150?text=Alice"
+      name: "Pham Minh Code",
+      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
     },
     createdAt: "2023-06-09T16:30:00.000Z",
     updatedAt: "2023-06-09T16:30:00.000Z"
   },
   {
     _id: "comment5",
-    content: "What tech stack are you using for this?",
+    content: "Which hosting service are you using? My API is slower than Saigon traffic! 🛵",
     post: "post3",
     author: {
       _id: "user5",
-      name: "Charlie Brown",
-      avatarUrl: "https://via.placeholder.com/150?text=Charlie"
+      name: "Hoang The Cloud",
+      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
     },
     createdAt: "2023-06-08T10:15:00.000Z",
     updatedAt: "2023-06-08T10:15:00.000Z"
   },
   {
     _id: "comment6",
-    content: "Very cool! Would love to learn more about your ML model.",
+    content: "Can your AI tell if I want fish sauce on the side? That's the real challenge! 🐟",
     post: "post4",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-07T15:00:00.000Z",
     updatedAt: "2023-06-07T15:00:00.000Z"
   },
   {
     _id: "comment7",
-    content: "Which CI/CD tools are you using?",
+    content: "Share your CI/CD pipeline details! My deploys are breaking faster than my diet resolutions 😅",
     post: "post5",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-06T11:00:00.000Z",
     updatedAt: "2023-06-06T11:00:00.000Z"
   },
   {
     _id: "comment8",
-    content: "I switched to these too! The developer experience is so much better.",
+    content: "useEffect(() => { setSoup('delicious') }, [hunger]); Best hook ever!",
     post: "post6",
     author: {
       _id: "user4",
-      name: "Alice Williams",
-      avatarUrl: "https://via.placeholder.com/150?text=Alice"
+      name: "Pham Minh Code",
+      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
     },
     createdAt: "2023-06-05T17:10:00.000Z",
     updatedAt: "2023-06-05T17:10:00.000Z"
@@ -296,8 +301,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user2",
-      name: "Jane Smith",
-      avatarUrl: "https://via.placeholder.com/150?text=Jane"
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
     createdAt: "2023-06-10T12:35:00.000Z"
   },
@@ -308,8 +313,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-10T13:05:00.000Z"
   },
@@ -320,8 +325,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-09T16:05:00.000Z"
   },
@@ -332,8 +337,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user4",
-      name: "Alice Williams",
-      avatarUrl: "https://via.placeholder.com/150?text=Alice"
+      name: "Pham Minh Code",
+      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
     },
     createdAt: "2023-06-09T16:35:00.000Z"
   },
@@ -344,8 +349,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user5",
-      name: "Charlie Brown",
-      avatarUrl: "https://via.placeholder.com/150?text=Charlie"
+      name: "Hoang The Cloud",
+      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
     },
     createdAt: "2023-06-08T10:20:00.000Z"
   },
@@ -356,8 +361,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user1",
-      name: "John Doe",
-      avatarUrl: "https://via.placeholder.com/150?text=John"
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
     createdAt: "2023-06-10T12:40:00.000Z"
   },
@@ -368,8 +373,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user2",
-      name: "Jane Smith",
-      avatarUrl: "https://via.placeholder.com/150?text=Jane"
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
     createdAt: "2023-06-09T16:10:00.000Z"
   },
@@ -380,8 +385,8 @@ export const reactions = [
     emoji: "like",
     author: {
       _id: "user3",
-      name: "Bob Johnson",
-      avatarUrl: "https://via.placeholder.com/150?text=Bob"
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
     createdAt: "2023-06-08T10:25:00.000Z"
   }
@@ -391,64 +396,64 @@ export const reactions = [
 export const friendships = [
   {
     _id: "friendship1",
-    from: "user1", // John
-    to: "user2",   // Jane
+    from: "user1", // Nguyen
+    to: "user2",   // Tran
     status: "accepted",
     createdAt: "2023-05-01T00:00:00.000Z",
     updatedAt: "2023-05-01T01:00:00.000Z"
   },
   {
     _id: "friendship2",
-    from: "user1", // John
-    to: "user3",   // Bob
+    from: "user1", // Nguyen
+    to: "user3",   // Le
     status: "accepted",
     createdAt: "2023-05-02T00:00:00.000Z",
     updatedAt: "2023-05-02T01:00:00.000Z"
   },
   {
     _id: "friendship3",
-    from: "user2", // Jane
-    to: "user4",   // Alice
+    from: "user2", // Tran
+    to: "user4",   // Pham
     status: "accepted",
     createdAt: "2023-05-03T00:00:00.000Z",
     updatedAt: "2023-05-03T01:00:00.000Z"
   },
   {
     _id: "friendship4",
-    from: "user3", // Bob
-    to: "user5",   // Charlie
+    from: "user3", // Le
+    to: "user5",   // Hoang
     status: "accepted",
     createdAt: "2023-05-04T00:00:00.000Z",
     updatedAt: "2023-05-04T01:00:00.000Z"
   },
   {
     _id: "friendship5",
-    from: "user4", // Alice
-    to: "user5",   // Charlie
+    from: "user4", // Pham
+    to: "user5",   // Hoang
     status: "accepted",
     createdAt: "2023-05-05T00:00:00.000Z",
     updatedAt: "2023-05-05T01:00:00.000Z"
   },
   {
     _id: "friendship6",
-    from: "user2", // Jane
-    to: "user3",   // Bob
+    from: "user2", // Tran
+    to: "user3",   // Le
     status: "accepted",
     createdAt: "2023-05-06T00:00:00.000Z",
     updatedAt: "2023-05-06T01:00:00.000Z"
   },
   {
     _id: "friendship7",
-    from: "user1", // John
-    to: "user5",   // Charlie
+    from: "user1", // Nguyen
+    to: "user5",   // Hoang
     status: "pending",
     createdAt: "2023-05-07T00:00:00.000Z",
     updatedAt: "2023-05-07T00:00:00.000Z"
   },
   {
     _id: "friendship8",
-    from: "user4", // Alice
-    to: "user1",   // John
+    from: "user4", // Pham
+    to: "user1",   // Nguyen
     status: "pending",
     createdAt: "2023-05-08T00:00:00.000Z",
     updatedAt: "2023-05-08T00:00:00.000Z"

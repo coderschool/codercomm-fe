@@ -81,7 +81,7 @@ export default useStore;
 // postSlice.js
 import { createSlice } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
-import apiService from "../../app/apiService";
+import apiService from "../../lib/apiService";
 
 const initialState = {
   isLoading: false,
@@ -137,8 +137,8 @@ export default slice.reducer;
 // postHooks.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from "react-toastify";
-import apiService from "../../app/apiService";
-import useStore from "../../app/store";
+import apiService from "../../lib/apiService";
+import useStore from "../../lib/store";
 
 export const useGetPosts = (userId, page = 1, limit = 5) => {
   const setLoading = useStore((state) => state.setLoading);

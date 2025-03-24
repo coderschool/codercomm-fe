@@ -1,204 +1,139 @@
-import { createContext, useReducer, useEffect } from "react";
-import apiService from "../app/apiService";
+import { createContext, useState, useEffect } from "react";
+import apiService from "../lib/apiService";
 import { isValidToken } from "../utils/jwt";
-import useStore from "../app/store";
+import useStore from "../lib/store";
 
-const initialState = {
-  isInitialized: false,
-  isAuthenticated: false,
-  user: null,
-};
-
-const INITIALIZE = "AUTH.INITIALIZE";
-const LOGIN_SUCCESS = "AUTH.LOGIN_SUCCESS";
-const REGISTER_SUCCESS = "AUTH.REGISTER_SUCCESS";
-const LOGOUT = "AUTH.LOGOUT";
-const UPDATE_PROFILE = "AUTH.UPDATE_PROFILE";
-
-const reducer = (state, action) => {
-  switch (action.type) {
-    case INITIALIZE:
-      const { isAuthenticated, user } = action.payload;
-      return {
-        ...state,
-        isInitialized: true,
-        isAuthenticated,
-        user,
-      };
-    case LOGIN_SUCCESS:
-      return {
-        ...state,
-        isAuthenticated: true,
-        user: action.payload.user,
-      };
-    case REGISTER_SUCCESS:
-      return {
-        ...state,
-        isAuthenticated: true,
-        user: action.payload.user,
-      };
-    case LOGOUT:
-      return {
-        ...state,
-        isAuthenticated: false,
-        user: null,
-      };
-    case UPDATE_PROFILE:
-      const {
-        name,
-        avatarUrl,
-        coverUrl,
-        aboutMe,
-        city,
-        country,
-        company,
-        jobTitle,
-        facebookLink,
-        instagramLink,
-        linkedinLink,
-        twitterLink,
-        friendCount,
-        postCount,
-      } = action.payload;
-      return {
-        ...state,
-        user: {
-          ...state.user,
-          name,
-          avatarUrl,
-          coverUrl,
-          aboutMe,
-          city,
-          country,
-          company,
-          jobTitle,
-          facebookLink,
-          instagramLink,
-          linkedinLink,
-          twitterLink,
-          friendCount,
-          postCount,
-        },
-      };
-    default:
-      return state;
-  }
-};
-
-const setSession = (accessToken) => {
-  if (accessToken) {
-    window.localStorage.setItem("accessToken", accessToken);
-    apiService.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-  } else {
-    window.localStorage.removeItem("accessToken");
-    delete apiService.defaults.headers.common.Authorization;
-  }
-};
-
-const AuthContext = createContext({ ...initialState });
+// Create context
+const AuthContext = createContext(null);
 
 function AuthProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  // Use Zustand store instead of Redux
-  const updatedProfile = useStore((state) => state.user.currentUser);
-  const setCurrentUser = useStore((state) => state.setCurrentUser);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Get state and actions from Zustand
+  const { 
+    auth: { isAuthenticated, isInitialized },
+    user: { currentUser },
+    setCurrentUser,
+    setAuth,
+    logout: logoutStore
+  } = useStore();
 
+  // Set up auth headers for API calls
+  const setSession = (accessToken) => {
+    if (accessToken) {
+      window.localStorage.setItem("accessToken", accessToken);
+      apiService.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+    } else {
+      window.localStorage.removeItem("accessToken");
+      delete apiService.defaults.headers.common.Authorization;
+    }
+  };
+
+  // Initialize auth once on mount
   useEffect(() => {
-    const initialize = async () => {
+    const initializeAuth = async () => {
       try {
         const accessToken = window.localStorage.getItem("accessToken");
-
-        if (accessToken && isValidToken(accessToken)) {
-          setSession(accessToken);
-
-          const response = await apiService.get("/users/me");
-          const user = response;
-          
-          // Update Zustand store with user data
+        
+        // No token = not authenticated
+        if (!accessToken || !isValidToken(accessToken)) {
+          // Clear any existing session data
+          setSession(null);
+          setAuth(false, true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Valid token = authenticated
+        // Set token in headers before making API calls
+        setSession(accessToken);
+        
+        // Always fetch fresh user data with valid token
+        try {
+          const user = await apiService.get("/users/me");
           setCurrentUser(user);
-
-          dispatch({
-            type: INITIALIZE,
-            payload: { isAuthenticated: true, user },
-          });
-        } else {
+          setAuth(true, true);
+        } catch (error) {
+          console.error("Failed to fetch user data:", error);
+          // Token might be invalid despite passing our check
           setSession(null);
           setCurrentUser(null);
-
-          dispatch({
-            type: INITIALIZE,
-            payload: { isAuthenticated: false, user: null },
-          });
+          setAuth(false, true);
         }
-      } catch (err) {
-        console.error(err);
-
+      } catch (error) {
+        console.error("Auth initialization error:", error);
         setSession(null);
         setCurrentUser(null);
-        
-        dispatch({
-          type: INITIALIZE,
-          payload: {
-            isAuthenticated: false,
-            user: null,
-          },
-        });
+        setAuth(false, true);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    initialize();
-  }, [setCurrentUser]);
+    initializeAuth();
+    // Only run this effect once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    if (updatedProfile)
-      dispatch({ type: UPDATE_PROFILE, payload: updatedProfile });
-  }, [updatedProfile]);
-
+  // Auth methods
   const login = async ({ email, password }, callback) => {
-    const response = await apiService.post("/auth/login", { email, password });
-    const { user, accessToken } = response;
+    try {
+      const response = await apiService.post("/auth/login", { email, password });
+      const { user, accessToken } = response;
 
-    setSession(accessToken);
-    setCurrentUser(user);
-    
-    dispatch({
-      type: LOGIN_SUCCESS,
-      payload: { user },
-    });
+      setSession(accessToken);
+      setCurrentUser(user);
 
-    if (callback) callback();
+      if (callback) callback();
+      return user;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
   };
 
   const register = async ({ name, email, password }, callback) => {
-    const response = await apiService.post("/users", {
-      name,
-      email,
-      password,
-    });
+    try {
+      const response = await apiService.post("/users", {
+        name,
+        email,
+        password,
+      });
 
-    const { user, accessToken } = response;
-    setSession(accessToken);
-    setCurrentUser(user);
-    
-    dispatch({
-      type: REGISTER_SUCCESS,
-      payload: { user },
-    });
+      const { user, accessToken } = response;
+      setSession(accessToken);
+      setCurrentUser(user);
 
-    if (callback) callback();
+      if (callback) callback();
+      return user;
+    } catch (error) {
+      console.error("Register error:", error);
+      throw error;
+    }
   };
 
   const logout = async (callback) => {
     setSession(null);
-    setCurrentUser(null);
-    dispatch({ type: LOGOUT });
+    logoutStore();
     if (callback) callback();
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full"></div>
+        <span className="ml-3 text-lg">Authenticating...</span>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
       value={{
-        ...state,
+        isAuthenticated,
+        isInitialized,
+        user: currentUser,
         login,
         register,
         logout,

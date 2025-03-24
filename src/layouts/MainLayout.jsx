@@ -1,25 +1,22 @@
 import { Outlet } from "react-router-dom";
-import { Stack } from "../components/ui";
 import MainFooter from "./MainFooter";
 import MainHeader from "./MainHeader";
-import AlertMsg from "../components/AlertMsg";
 
 /**
  * MainLayout - Main layout component for authenticated pages
- * Includes header, alert messages, content area, and footer
+ * Includes header, content area, and footer
  */
 function MainLayout() {
   return (
-    <Stack className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <MainHeader />
-      <AlertMsg />
 
-      <Outlet />
-
-      <div className="flex-grow" />
+      <main className="flex-grow mt-2">
+        <Outlet />
+      </main>
 
       <MainFooter />
-    </Stack>
+    </div>
   );
 }
 

@@ -1,6 +1,5 @@
 import { Outlet } from "react-router-dom";
 import Logo from "../components/Logo";
-import { Stack } from "../components/ui";
 
 /**
  * BlankLayout - A simple layout component that centers its content with a logo
@@ -8,10 +7,10 @@ import { Stack } from "../components/ui";
  */
 function BlankLayout() {
   return (
-    <Stack className="min-h-screen justify-center items-center">
+    <div className="min-h-screen flex flex-col justify-center items-center">
       <Logo className="w-24 h-24 mb-12" />
       <Outlet />
-    </Stack>
+    </div>
   );
 }
 

@@ -24,6 +24,34 @@ const useStore = create(
           themeMode: 'light',
         },
         
+        // Post state
+        post: {
+          posts: [],
+          totalPages: 0,
+          loading: false,
+          error: null,
+        },
+        
+        // Comment state
+        comment: {
+          comments: {},
+          totalCommentsByPost: {},
+          loading: false,
+          error: null,
+        },
+        
+        // Friend state
+        friend: {
+          friends: [],
+          friendRequests: {
+            incoming: [],
+            outgoing: [],
+          },
+          totalPages: 0,
+          loading: false,
+          error: null,
+        },
+        
         // User actions
         setCurrentUser: (user) => set((state) => ({
           user: { ...state.user, currentUser: user },
@@ -56,20 +84,53 @@ const useStore = create(
           }
         })),
         
-        // Loading and error state
-        setLoading: (loading) => set((state) => ({
-          user: { ...state.user, loading }
+        // Post actions
+        setPosts: (posts, totalPages) => set((state) => ({
+          post: { ...state.post, posts, totalPages }
         })),
         
-        setError: (error) => set((state) => ({
-          user: { ...state.user, error }
+        // Comment actions
+        setComments: (postId, comments, totalComments) => set((state) => ({
+          comment: { 
+            ...state.comment, 
+            comments: { 
+              ...state.comment.comments, 
+              [postId]: comments 
+            },
+            totalCommentsByPost: {
+              ...state.comment.totalCommentsByPost,
+              [postId]: totalComments
+            }
+          }
+        })),
+        
+        // Friend actions
+        setFriends: (friends, totalPages) => set((state) => ({
+          friend: { ...state.friend, friends, totalPages }
+        })),
+        
+        setFriendRequests: (incoming, outgoing) => set((state) => ({
+          friend: { 
+            ...state.friend, 
+            friendRequests: { incoming, outgoing } 
+          }
+        })),
+        
+        // Loading and error state
+        setLoading: (feature, loading) => set((state) => ({
+          [feature]: { ...state[feature], loading }
+        })),
+        
+        setError: (feature, error) => set((state) => ({
+          [feature]: { ...state[feature], error }
         })),
       }),
       {
         name: 'codercomm-storage',
         partialize: (state) => ({ 
           ui: state.ui,
-          auth: { isAuthenticated: state.auth.isAuthenticated } 
+          auth: { isAuthenticated: state.auth.isAuthenticated },
+          user: { currentUser: state.user.currentUser }
         }),
       }
     )

@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { fNumber } from "@/utils/numberFormat";
 
 function ProfileScorecard({ profile }) {
-  const { postCount, friendCount } = profile;
+  const { postCount = 0, friendCount = 0 } = profile || {};
 
   return (
     <Card className="py-6">

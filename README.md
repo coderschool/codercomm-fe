@@ -180,6 +180,50 @@ This approach gives students:
 npm run build
 ```
 
+## Deployment
+
+The project includes a deployment script for Firebase Hosting. This information is provided for reference only and is not part of the core curriculum, which focuses on React development.
+
+### Deploying to Firebase Hosting
+
+1. Make the deployment script executable:
+```bash
+chmod +x deploy.sh
+```
+
+2. Run the deployment script to build the project and prepare the configuration:
+```bash
+./deploy.sh
+```
+
+3. If you haven't installed Firebase CLI yet, install it:
+```bash
+npm install -g firebase-tools
+```
+
+4. Log in to Firebase:
+```bash
+firebase login
+```
+
+5. Initialize a Firebase project (first time only):
+```bash
+firebase init
+```
+   - Select "Hosting"
+   - Select an existing project or create a new one
+   - For the public directory, enter: `dist`
+   - Configure as a single-page app: Yes
+   - Set up automatic builds and deploys with GitHub: No
+   - Overwrite `dist/index.html`: No
+
+6. Deploy to Firebase:
+```bash
+firebase deploy
+```
+
+Your app will be accessible at `https://your-project-id.web.app`
+
 ## Learn More
 
 This project demonstrates modern React best practices:

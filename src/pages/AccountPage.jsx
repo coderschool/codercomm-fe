@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import AccountGeneral from "@/features/user/AccountGeneral";
 import AccountSocialLinks from "@/features/user/AccountSocialLinks";
-import { capitalCase } from "change-case";
 
 function AccountPage() {
   const [currentTab, setCurrentTab] = useState("general");
@@ -19,13 +18,15 @@ function AccountPage() {
   const ACCOUNT_TABS = [
     {
       value: "general",
-      icon: <UserCircle className="w-5 h-5 mr-2" />,
+      icon: <UserCircle className="w-5 h-5" />,
       component: <AccountGeneral />,
+      label: "General"
     },
     {
       value: "social_links",
-      icon: <Share className="w-5 h-5 mr-2" />,
-      component: <AccountSocialLinks profile={{}} />,
+      icon: <Share className="w-5 h-5" />,
+      component: <AccountSocialLinks />,
+      label: "Social Links"
     },
   ];
 
@@ -44,7 +45,7 @@ function AccountPage() {
               className="flex items-center"
             >
               {tab.icon}
-              {capitalCase(tab.value)}
+              {tab.label}
             </TabsTrigger>
           ))}
         </TabsList>

@@ -4,26 +4,14 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 
-import { 
-  Card, 
-  CardHeader, 
-  CardContent, 
-  CardFooter,
-  CardTitle,
-  CardDescription,
-  Button,
-  Input,
-  Label,
-  Checkbox,
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage
-} from "@/components/ui";
+import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
-import useAuth from "../hooks/useAuth";
+import useAuth from "@/hooks/useAuth";
 
 /**
  * LoginPage - User login page component

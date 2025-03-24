@@ -1,13 +1,9 @@
 import React from "react";
 import { useState } from "react";
-import { 
-  Card, 
-  CardContent,
-  CardFooter,
-  Button,
-  Textarea
-} from "@/components/ui";
-import { useCreatePost } from "./postHooks";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useCreatePost } from "@/features/post/postHooks";
 
 function PostForm() {
   const [content, setContent] = useState("");

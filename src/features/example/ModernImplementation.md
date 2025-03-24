@@ -7,7 +7,7 @@ This document showcases how to implement common patterns using modern React prac
 ```jsx
 // hooks/useUserProfile.js
 import { useQuery } from '@tanstack/react-query';
-import apiService from '../../app/apiService';
+import apiService from '../../lib/apiService';
 
 export const useUserProfile = (userId) => {
   return useQuery({
@@ -70,7 +70,7 @@ function ThemeToggler() {
 ```jsx
 // hooks/useUpdateProfile.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import apiService from '../../app/apiService';
+import apiService from '../../lib/apiService';
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
@@ -120,8 +120,8 @@ function ProfileEditForm() {
 
 ```jsx
 import { useInfiniteQuery } from '@tanstack/react-query';
-import apiService from '../../app/apiService';
-import { POSTS_PER_PAGE } from '../../app/config';
+import apiService from '../../lib/apiService';
+import { POSTS_PER_PAGE } from '../../lib/config';
 
 export const useInfinitePosts = () => {
   return useInfiniteQuery({
@@ -233,7 +233,7 @@ function PostSection() {
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import useStore from '../../app/store';
+import useStore from '../../lib/store';
 
 // Form schema
 const schema = yup.object({

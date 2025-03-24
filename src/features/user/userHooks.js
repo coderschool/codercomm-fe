@@ -15,6 +15,7 @@ export const useGetCurrentUserProfile = () => {
       setCurrentUser(response);
       return response;
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });
 };
@@ -32,6 +33,8 @@ export const useGetUserProfile = (userId) => {
       return response;
     },
     enabled: Boolean(userId),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
   });
 };
 
