@@ -49,50 +49,6 @@ export const useGetFriends = (filterName = '', page = 1) => {
 };
 
 /**
- * Get incoming friend requests
- * @param {string} filterName - Name to filter requests by
- * @param {number} page - Page number
- * @returns {Object} Query result with incoming requests and pagination
- */
-export const useGetFriendRequests = (filterName = '', page = 1) => {
-  return useQuery({
-    queryKey: ['friends', 'requests', 'incoming', filterName, page],
-    queryFn: async () => {
-      const params = getPaginationParams({ 
-        page, 
-        limit: USERS_PER_PAGE, 
-        filter: filterName 
-      });
-      
-      const response = await apiService.get('/friends/requests/incoming', { params });
-      return response;
-    },
-  });
-};
-
-/**
- * Get outgoing friend requests
- * @param {string} filterName - Name to filter requests by
- * @param {number} page - Page number
- * @returns {Object} Query result with outgoing requests and pagination
- */
-export const useGetOutgoingRequests = (filterName = '', page = 1) => {
-  return useQuery({
-    queryKey: ['friends', 'requests', 'outgoing', filterName, page],
-    queryFn: async () => {
-      const params = getPaginationParams({ 
-        page, 
-        limit: USERS_PER_PAGE, 
-        filter: filterName 
-      });
-      
-      const response = await apiService.get('/friends/requests/outgoing', { params });
-      return response;
-    },
-  });
-};
-
-/**
  * Send a friend request
  * @returns {Object} Mutation result
  */

@@ -27,7 +27,7 @@ Now let's install the core dependencies we'll need:
 npm install react-router-dom
 
 # Install UI libraries and utilities
-npm install class-variance-authority clsx tailwind-merge lucide-react
+npm install clsx lucide-react class-variance-authority tailwind-merge
 
 # Install form handling libraries
 npm install react-hook-form @hookform/resolvers yup

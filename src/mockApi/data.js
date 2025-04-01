@@ -1,4 +1,4 @@
-// Sample users
+// Sample users with relative creation dates
 export const users = [
   {
     _id: "user1",
@@ -16,7 +16,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: "2023-01-01T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year ago
   },
   {
     _id: "user2",
@@ -34,7 +34,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: "2023-01-15T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 340 * 24 * 60 * 60 * 1000).toISOString() // 340 days ago
   },
   {
     _id: "user3",
@@ -52,7 +52,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: "2023-02-01T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString() // 300 days ago
   },
   {
     _id: "user4",
@@ -70,7 +70,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: "2023-02-15T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 270 * 24 * 60 * 60 * 1000).toISOString() // 270 days ago
   },
   {
     _id: "user5",
@@ -88,11 +88,12 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: "2023-03-01T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString() // 240 days ago
   }
 ];
 
-// Sample posts
+// Sample posts with relative creation dates
+// Posts that user1 can see (from user1 or his friends)
 export const posts = [
   {
     _id: "post1",
@@ -103,59 +104,35 @@ export const posts = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-10T12:00:00.000Z",
-    updatedAt: "2023-06-10T12:00:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post2",
     content: "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
     image: "https://picsum.photos/id/292/800/400",
     author: {
-      _id: "user2",
+      _id: "user2", // Friend of user1
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: "2023-06-09T15:30:00.000Z",
-    updatedAt: "2023-06-09T15:30:00.000Z"
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post3",
     content: "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
     image: "https://picsum.photos/id/42/800/400",
     author: {
-      _id: "user3",
+      _id: "user3", // Friend of user1
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: "2023-06-08T09:45:00.000Z",
-    updatedAt: "2023-06-08T09:45:00.000Z"
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post4",
-    content: "Made an AI that can predict how spicy you want your bún bò Huế. Technology is amazing! 🌶️",
-    image: "https://picsum.photos/id/91/800/400",
-    author: {
-      _id: "user4",
-      name: "Pham Minh Code",
-      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
-    },
-    createdAt: "2023-06-07T14:20:00.000Z",
-    updatedAt: "2023-06-07T14:20:00.000Z"
-  },
-  {
-    _id: "post5",
-    content: "Set up CI/CD for our project. Now our code deploys faster than a Grab driver during rush hour! 🏍️",
-    image: "https://picsum.photos/id/180/800/400",
-    author: {
-      _id: "user5",
-      name: "Hoang The Cloud",
-      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
-    },
-    createdAt: "2023-06-06T10:10:00.000Z",
-    updatedAt: "2023-06-06T10:10:00.000Z"
-  },
-  {
-    _id: "post6",
     content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can't imagine coding without them! 🥢",
     image: "https://picsum.photos/id/24/800/400",
     author: {
@@ -163,36 +140,37 @@ export const posts = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-05T16:40:00.000Z",
-    updatedAt: "2023-06-05T16:40:00.000Z"
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
-    _id: "post7",
+    _id: "post5",
     content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
     image: "https://picsum.photos/id/28/800/400",
     author: {
-      _id: "user2",
+      _id: "user2", // Friend of user1
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: "2023-06-04T11:15:00.000Z",
-    updatedAt: "2023-06-04T11:15:00.000Z"
+    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(), // 21 days ago
+    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
-    _id: "post8",
+    _id: "post6",
     content: "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
     image: "https://picsum.photos/id/4/800/400",
     author: {
-      _id: "user3",
+      _id: "user3", // Friend of user1
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: "2023-06-03T08:30:00.000Z",
-    updatedAt: "2023-06-03T08:30:00.000Z"
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];
 
-// Sample comments
+// Sample comments with relative creation dates
+// Only comments on posts that user1 can see
 export const comments = [
   {
     _id: "comment1",
@@ -203,8 +181,8 @@ export const comments = [
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: "2023-06-10T12:30:00.000Z",
-    updatedAt: "2023-06-10T12:30:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // 3 days ago + 2 hours
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment2",
@@ -215,8 +193,8 @@ export const comments = [
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: "2023-06-10T13:00:00.000Z",
-    updatedAt: "2023-06-10T13:00:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 3 days ago + 4 hours
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment3",
@@ -227,72 +205,49 @@ export const comments = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-09T16:00:00.000Z",
-    updatedAt: "2023-06-09T16:00:00.000Z"
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(), // 4 days ago + 3 hours
+    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment4",
-    content: "Hay quá! But maybe make the checkout button bigger for hungry users?",
-    post: "post2",
-    author: {
-      _id: "user4",
-      name: "Pham Minh Code",
-      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
-    },
-    createdAt: "2023-06-09T16:30:00.000Z",
-    updatedAt: "2023-06-09T16:30:00.000Z"
-  },
-  {
-    _id: "comment5",
-    content: "Which hosting service are you using? My API is slower than Saigon traffic! 🛵",
-    post: "post3",
-    author: {
-      _id: "user5",
-      name: "Hoang The Cloud",
-      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
-    },
-    createdAt: "2023-06-08T10:15:00.000Z",
-    updatedAt: "2023-06-08T10:15:00.000Z"
-  },
-  {
-    _id: "comment6",
-    content: "Can your AI tell if I want fish sauce on the side? That's the real challenge! 🐟",
+    content: "useEffect(() => { setSoup('delicious') }, [hunger]); Best hook ever!",
     post: "post4",
-    author: {
-      _id: "user1",
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
-    },
-    createdAt: "2023-06-07T15:00:00.000Z",
-    updatedAt: "2023-06-07T15:00:00.000Z"
-  },
-  {
-    _id: "comment7",
-    content: "Share your CI/CD pipeline details! My deploys are breaking faster than my diet resolutions 😅",
-    post: "post5",
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: "2023-06-06T11:00:00.000Z",
-    updatedAt: "2023-06-06T11:00:00.000Z"
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(), // 14 days ago + 5 hours
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString()
   },
   {
-    _id: "comment8",
-    content: "useEffect(() => { setSoup('delicious') }, [hunger]); Best hook ever!",
+    _id: "comment5",
+    content: "Are you using Tailwind for this? The responsive design is on point! 👌",
+    post: "post5",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(), // 21 days ago + 6 hours
+    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "comment6",
+    content: "Share your database optimization tricks! I need to speed up my queries too.",
     post: "post6",
     author: {
-      _id: "user4",
-      name: "Pham Minh Code",
-      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-05T17:10:00.000Z",
-    updatedAt: "2023-06-05T17:10:00.000Z"
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 30 days ago + 4 hours
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
   }
 ];
 
-// Sample reactions (likes/dislikes)
+// Sample reactions with relative creation dates
+// Only reactions to posts or comments that user1 can see
 export const reactions = [
   {
     _id: "reaction1",
@@ -304,7 +259,7 @@ export const reactions = [
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: "2023-06-10T12:35:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 3 days ago + 1 hour
   },
   {
     _id: "reaction2",
@@ -316,7 +271,7 @@ export const reactions = [
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: "2023-06-10T13:05:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString() // 3 days ago + 3 hours
   },
   {
     _id: "reaction3",
@@ -328,34 +283,10 @@ export const reactions = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-09T16:05:00.000Z"
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString() // 4 days ago + 2 hours
   },
   {
     _id: "reaction4",
-    targetType: "Post",
-    targetId: "post2",
-    emoji: "like",
-    author: {
-      _id: "user4",
-      name: "Pham Minh Code",
-      avatarUrl: "https://i.pravatar.cc/150?u=phamminh"
-    },
-    createdAt: "2023-06-09T16:35:00.000Z"
-  },
-  {
-    _id: "reaction5",
-    targetType: "Post",
-    targetId: "post3",
-    emoji: "like",
-    author: {
-      _id: "user5",
-      name: "Hoang The Cloud",
-      avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud"
-    },
-    createdAt: "2023-06-08T10:20:00.000Z"
-  },
-  {
-    _id: "reaction6",
     targetType: "Comment",
     targetId: "comment1",
     emoji: "like",
@@ -364,10 +295,10 @@ export const reactions = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: "2023-06-10T12:40:00.000Z"
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000).toISOString() // 3 days ago + 2.5 hours
   },
   {
-    _id: "reaction7",
+    _id: "reaction5",
     targetType: "Comment",
     targetId: "comment3",
     emoji: "like",
@@ -376,86 +307,75 @@ export const reactions = [
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: "2023-06-09T16:10:00.000Z"
-  },
-  {
-    _id: "reaction8",
-    targetType: "Comment",
-    targetId: "comment5",
-    emoji: "like",
-    author: {
-      _id: "user3",
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
-    },
-    createdAt: "2023-06-08T10:25:00.000Z"
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3.5 * 60 * 60 * 1000).toISOString() // 4 days ago + 3.5 hours
   }
 ];
 
-// Sample friendships (relationships between users)
+// Sample friendships with relative creation dates
+// Focus on friendships involving user1
 export const friendships = [
   {
     _id: "friendship1",
     from: "user1", // Nguyen
     to: "user2",   // Tran
     status: "accepted",
-    createdAt: "2023-05-01T00:00:00.000Z",
-    updatedAt: "2023-05-01T01:00:00.000Z"
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
+    updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 90 days ago + 1 hour
   },
   {
     _id: "friendship2",
     from: "user1", // Nguyen
     to: "user3",   // Le
     status: "accepted",
-    createdAt: "2023-05-02T00:00:00.000Z",
-    updatedAt: "2023-05-02T01:00:00.000Z"
+    createdAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(), // 85 days ago
+    updatedAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 85 days ago + 1 hour
   },
   {
     _id: "friendship3",
-    from: "user2", // Tran
-    to: "user4",   // Pham
-    status: "accepted",
-    createdAt: "2023-05-03T00:00:00.000Z",
-    updatedAt: "2023-05-03T01:00:00.000Z"
+    from: "user1", // Nguyen 
+    to: "user5",   // Hoang
+    status: "pending",
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "friendship4",
-    from: "user3", // Le
-    to: "user5",   // Hoang
-    status: "accepted",
-    createdAt: "2023-05-04T00:00:00.000Z",
-    updatedAt: "2023-05-04T01:00:00.000Z"
+    from: "user4", // Pham
+    to: "user1",   // Nguyen
+    status: "pending",
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
+    updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "friendship5",
-    from: "user4", // Pham
-    to: "user5",   // Hoang
-    status: "accepted",
-    createdAt: "2023-05-05T00:00:00.000Z",
-    updatedAt: "2023-05-05T01:00:00.000Z"
+    from: "user3", // Le
+    to: "user1",   // Nguyen
+    status: "pending",
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "friendship6",
     from: "user2", // Tran
-    to: "user3",   // Le
-    status: "accepted",
-    createdAt: "2023-05-06T00:00:00.000Z",
-    updatedAt: "2023-05-06T01:00:00.000Z"
+    to: "user1",   // Nguyen 
+    status: "pending",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "friendship7",
     from: "user1", // Nguyen
-    to: "user5",   // Hoang
+    to: "user4",   // Pham
     status: "pending",
-    createdAt: "2023-05-07T00:00:00.000Z",
-    updatedAt: "2023-05-07T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "friendship8",
-    from: "user4", // Pham
+    from: "user5", // Hoang
     to: "user1",   // Nguyen
     status: "pending",
-    createdAt: "2023-05-08T00:00:00.000Z",
-    updatedAt: "2023-05-08T00:00:00.000Z"
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 1 month ago
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   }
 ];

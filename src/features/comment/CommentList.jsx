@@ -8,7 +8,7 @@ function CommentList({ postId }) {
   const { data, isLoading } = useGetComments(postId, page);
   
   const comments = data?.comments || [];
-  const totalComments = data?.totalComments || 0;
+  const totalComments = data?.count || 0;
   const totalPages = Math.ceil(totalComments / COMMENTS_PER_POST);
 
   let renderComments;
@@ -39,7 +39,7 @@ function CommentList({ postId }) {
             ? `${totalComments} comments`
             : totalComments === 1
             ? `${totalComments} comment`
-            : "No comment"}
+            : "No comments yet"}
         </p>
         {totalComments > COMMENTS_PER_POST && (
           <div className="flex gap-1">

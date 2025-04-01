@@ -1,914 +1,677 @@
 # Step 7: Friend System
 
-In this step, we'll implement the friend system for the CoderComm application. This will allow users to send friend requests, accept or decline them, and view their friends list.
+In this step, we'll implement a simplified friend system for the CoderComm application. This will allow users to view their friends, add new friends, and manage friendships directly in the HomePage tabs.
 
 ## 1. Understanding the Mock API Endpoints for Friends
 
 Our mock API already includes all the endpoints we need for the friend system. For this step, we'll be using the following endpoints:
 
-- `GET /api/users/:userId/friends` - Get the friends of a user
-- `GET /api/users/:userId/friend-requests/incoming` - Get incoming friend requests
-- `GET /api/users/:userId/friend-requests/outgoing` - Get outgoing friend requests
-- `POST /api/friend-requests` - Send a friend request
-- `PATCH /api/friend-requests/:id` - Accept or decline a friend request
-- `DELETE /api/friendships/:id` - Delete a friendship (unfriend)
-
-Remember that you don't need to modify the mock API - it's already set up with all the functionality we need. We just need to create the frontend components to interact with these endpoints.
+- `GET /friends` - Get the current user's friends
+- `GET /users` - Get users for finding new friends
+- `POST /friends/requests` - Send a friend request
+- `PUT /friends/requests/:userId` - Accept or decline a friend request
+- `DELETE /friends/requests/:userId` - Cancel a friend request
+- `DELETE /friends/:userId` - Remove a friendship (unfriend)
 
 ## 2. Create Friend Service with React Query Hooks
 
-Create a new file `src/hooks/useFriendQuery.js`:
+Let's create hooks to handle friend-related API calls. Create a new file `src/features/friend/friendHooks.js`:
 
 ```jsx
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import apiService from "@/lib/apiService";
-import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import apiService from '../../lib/apiService';
+import { USERS_PER_PAGE } from '../../lib/config';
+import { getPaginationParams } from '../../lib/utils';
 
 /**
- * Get friends of a user
- * @param {string} userId - ID of the user to get friends for
+ * Get all users for user discovery
+ * @param {string} filterName - Name to filter users by
+ * @param {number} page - Page number
+ * @returns {Object} Query result with users and pagination
  */
-export function useFriendsQuery(userId) {
+export const useGetUsers = (filterName = '', page = 1) => {
   return useQuery({
-    queryKey: ["friends", userId],
+    queryKey: ['users', 'discover', filterName, page],
     queryFn: async () => {
-      const response = await apiService.get(`/users/${userId}/friends`);
+      const params = getPaginationParams({ 
+        page, 
+        limit: USERS_PER_PAGE, 
+        filter: filterName 
+      });
+      
+      const response = await apiService.get('/users', { params });
       return response;
     },
-    enabled: !!userId,
   });
-}
+};
 
 /**
- * Get incoming friend requests for a user
- * @param {string} userId - ID of the user to get friend requests for
+ * Get current user's friends
+ * @param {string} filterName - Name to filter friends by
+ * @param {number} page - Page number
+ * @returns {Object} Query result with friends and pagination
  */
-export function useIncomingFriendRequestsQuery(userId) {
+export const useGetFriends = (filterName = '', page = 1) => {
   return useQuery({
-    queryKey: ["friendRequests", "incoming", userId],
+    queryKey: ['friends', filterName, page],
     queryFn: async () => {
-      const response = await apiService.get(`/users/${userId}/friend-requests/incoming`);
+      const params = getPaginationParams({ 
+        page, 
+        limit: USERS_PER_PAGE, 
+        filter: filterName 
+      });
+      
+      const response = await apiService.get('/friends', { params });
       return response;
     },
-    enabled: !!userId,
   });
-}
-
-/**
- * Get outgoing friend requests for a user
- * @param {string} userId - ID of the user to get outgoing requests for
- */
-export function useOutgoingFriendRequestsQuery(userId) {
-  return useQuery({
-    queryKey: ["friendRequests", "outgoing", userId],
-    queryFn: async () => {
-      const response = await apiService.get(`/users/${userId}/friend-requests/outgoing`);
-      return response;
-    },
-    enabled: !!userId,
-  });
-}
+};
 
 /**
  * Send a friend request
+ * @returns {Object} Mutation result
  */
-export function useSendFriendRequest() {
+export const useSendFriendRequest = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async ({ requesterId, recipientId }) => {
-      const response = await apiService.post("/friend-requests", {
-        requesterId,
-        recipientId,
+    mutationFn: async (targetUserId) => {
+      const response = await apiService.post('/friends/requests', {
+        to: targetUserId,
       });
-      return response;
-    },
-    onSuccess: () => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-      toast.success("Friend request sent");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to send friend request");
-    },
-  });
-}
-
-/**
- * Accept or decline a friend request
- */
-export function useRespondToFriendRequest() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ requestId, status }) => {
-      const response = await apiService.patch(`/friend-requests/${requestId}`, {
-        status,
-      });
-      return { ...response, status };
+      
+      return { ...response, targetUserId };
     },
     onSuccess: (data) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      toast.success('Friend request sent');
       
-      if (data.status === "accepted") {
-        queryClient.invalidateQueries({ queryKey: ["friends"] });
-        toast.success("Friend request accepted");
-      } else {
-        toast.success("Friend request declined");
-      }
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to process friend request");
+      toast.error(error.message || 'Failed to send friend request');
     },
   });
-}
+};
+
+/**
+ * Accept a friend request
+ * @returns {Object} Mutation result
+ */
+export const useAcceptFriendRequest = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (targetUserId) => {
+      const response = await apiService.put(`/friends/requests/${targetUserId}`, {
+        status: 'accepted',
+      });
+      
+      return { ...response, targetUserId };
+    },
+    onSuccess: (data) => {
+      toast.success('Friend request accepted');
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to accept friend request');
+    },
+  });
+};
+
+/**
+ * Decline a friend request
+ * @returns {Object} Mutation result
+ */
+export const useDeclineFriendRequest = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (targetUserId) => {
+      const response = await apiService.put(`/friends/requests/${targetUserId}`, {
+        status: 'declined',
+      });
+      
+      return { ...response, targetUserId };
+    },
+    onSuccess: (data) => {
+      toast.success('Friend request declined');
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to decline friend request');
+    },
+  });
+};
+
+/**
+ * Cancel a friend request
+ * @returns {Object} Mutation result
+ */
+export const useCancelFriendRequest = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (targetUserId) => {
+      const response = await apiService.delete(`/friends/requests/${targetUserId}`);
+      return { ...response, targetUserId };
+    },
+    onSuccess: (data) => {
+      toast.success('Friend request cancelled');
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to cancel friend request');
+    },
+  });
+};
 
 /**
  * Remove a friend
+ * @returns {Object} Mutation result
  */
-export function useRemoveFriend() {
+export const useRemoveFriend = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: async (friendshipId) => {
-      const response = await apiService.delete(`/friendships/${friendshipId}`);
-      return response;
+    mutationFn: async (targetUserId) => {
+      const response = await apiService.delete(`/friends/${targetUserId}`);
+      return { ...response, targetUserId };
     },
-    onSuccess: () => {
-      // Invalidate friends query
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      toast.success("Friend removed");
+    onSuccess: (data) => {
+      toast.success('Friend removed');
+      
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['friends'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to remove friend");
+      toast.error(error.message || 'Failed to remove friend');
     },
   });
-}
+};
 ```
 
-## 3. Add UI Components for Friend System
+## 3. Create the User Card Component
 
-Let's create components for displaying friends and friend requests.
-
-First, create a component for the Friends page in `src/pages/FriendsPage.jsx`:
+Next, let's create a reusable component to display a user card with friend actions. Create a file `src/features/friend/UserCard.jsx`:
 
 ```jsx
 import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import useAuth from "@/hooks/useAuth";
-import FriendsList from "@/features/friend/FriendsList";
-import FriendRequests from "@/features/friend/FriendRequests";
-
-/**
- * Page for displaying and managing friends
- */
-function FriendsPage() {
-  const { user } = useAuth();
-
-  return (
-    <div className="container max-w-4xl py-6">
-      <h1 className="text-2xl font-bold mb-6">Friends</h1>
-      
-      <Tabs defaultValue="friends" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="friends">Friends</TabsTrigger>
-          <TabsTrigger value="requests">Friend Requests</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="friends" className="space-y-4">
-          <FriendsList userId={user?._id} />
-        </TabsContent>
-        
-        <TabsContent value="requests" className="space-y-4">
-          <FriendRequests userId={user?._id} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-export default FriendsPage;
-```
-
-Next, create a component for displaying the friends list in `src/features/friend/FriendsList.jsx`:
-
-```jsx
-import React from "react";
-import { useFriendsQuery, useRemoveFriend } from "@/hooks/useFriendQuery";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Loader2, UserMinus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Mail, Clock } from "lucide-react";
 
-/**
- * Component to display a list of friends
- * @param {Object} props - Component props
- * @param {string} props.userId - ID of the user to display friends for
- */
-function FriendsList({ userId }) {
-  const { 
-    data, 
-    isLoading, 
-    isError, 
-    error 
-  } = useFriendsQuery(userId);
-  
-  const removeFriend = useRemoveFriend();
+import useAuth from "@/hooks/useAuth";
+import ActionButton from "./ActionButton";
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { formatTimeAgo } from "@/utils/formatTime";
 
-  // Get user initials for avatar fallback
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map(part => part[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
+function UserCard({ profile, requestStatus }) {
+  const { user } = useAuth();
+  const currentUserId = user._id;
+  const { _id: targetUserId, name, avatarUrl, email, friendship } = profile;
 
-  const handleRemoveFriend = (friendshipId) => {
-    if (window.confirm("Are you sure you want to remove this friend?")) {
-      removeFriend.mutate(friendshipId);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="bg-destructive/10 text-destructive p-4 rounded">
-        <p>Error loading friends: {error.message || "Something went wrong"}</p>
-      </div>
-    );
-  }
-
-  const friends = data?.friends || [];
-
-  if (friends.length === 0) {
-    return (
-      <div className="bg-card p-8 rounded-lg text-center">
-        <p className="text-muted-foreground mb-4">You don't have any friends yet.</p>
-        <Button asChild>
-          <Link to="/friend-requests">Find Friends</Link>
-        </Button>
-      </div>
-    );
-  }
+  const actionButton = (
+    <ActionButton
+      currentUserId={currentUserId}
+      targetUserId={targetUserId}
+      friendship={friendship}
+    />
+  );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {friends.map((friend) => (
-        <div 
-          key={friend._id}
-          className="flex items-center justify-between bg-card p-4 rounded-lg"
-        >
-          <div className="flex items-center">
-            <Link to={`/user/${friend._id}`}>
-              <Avatar className="h-12 w-12 mr-4">
-                <AvatarImage src={friend.avatarUrl} alt={friend.name} />
-                <AvatarFallback>{getInitials(friend.name)}</AvatarFallback>
-              </Avatar>
-            </Link>
-            
-            <div>
-              <Link
-                to={`/user/${friend._id}`}
-                className="font-medium hover:underline"
-              >
-                {friend.name}
-              </Link>
-              <p className="text-sm text-muted-foreground">{friend.email}</p>
-            </div>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => handleRemoveFriend(friend._id)}
-            title="Remove friend"
+    <Card className="flex flex-col p-3">
+      <div className="flex items-center w-full">
+        <Avatar className="w-12 h-12">
+          <AvatarImage src={avatarUrl} alt={name} />
+          <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="flex-grow min-w-0 pl-2 pr-1">
+          <Link
+            to={`/user/${targetUserId}`}
+            className="font-semibold text-sm hover:underline"
           >
-            <UserMinus className="h-4 w-4" />
-          </Button>
+            {name}
+          </Link>
+          <div className="flex items-center">
+            <Mail className="w-4 h-4 mr-1 flex-shrink-0" />
+            <p className="text-sm text-muted-foreground truncate">
+              {email}
+            </p>
+          </div>
         </div>
-      ))}
-    </div>
+        {actionButton}
+      </div>
+      
+      {friendship && friendship.status === "pending" && friendship.createdAt && (
+        <div className="ml-14 mt-1 flex items-center">
+          <Clock className="w-3 h-3 mr-1 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            Request {friendship.from === currentUserId ? "sent" : "received"} {formatTimeAgo(friendship.createdAt)}
+          </p>
+        </div>
+      )}
+    </Card>
   );
 }
 
-export default FriendsList;
+export default UserCard;
 ```
 
-Now, create a component for displaying friend requests in `src/features/friend/FriendRequests.jsx`:
+## 4. Create the Action Button Component
+
+Now, let's create a component for handling friend actions (send request, accept/decline, unfriend). Create a file `src/features/friend/ActionButton.jsx`:
 
 ```jsx
 import React from "react";
 import { 
-  useIncomingFriendRequestsQuery,
-  useOutgoingFriendRequestsQuery,
-  useRespondToFriendRequest
-} from "@/hooks/useFriendQuery";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  useSendFriendRequest, 
+  useAcceptFriendRequest,
+  useDeclineFriendRequest,
+  useCancelFriendRequest,
+  useRemoveFriend
+} from "./friendHooks";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
 
-/**
- * Component to display incoming and outgoing friend requests
- * @param {Object} props - Component props
- * @param {string} props.userId - ID of the user to display requests for
- */
-function FriendRequests({ userId }) {
-  const incoming = useIncomingFriendRequestsQuery(userId);
-  const outgoing = useOutgoingFriendRequestsQuery(userId);
-  const respondToRequest = useRespondToFriendRequest();
+function ActionButton({ currentUserId, targetUserId, friendship, className }) {
+  const sendRequestMutation = useSendFriendRequest();
+  const acceptRequestMutation = useAcceptFriendRequest();
+  const declineRequestMutation = useDeclineFriendRequest();
+  const cancelRequestMutation = useCancelFriendRequest();
+  const removeFriendMutation = useRemoveFriend();
 
-  // Get user initials for avatar fallback
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map(part => part[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  if (currentUserId === targetUserId) return null;
 
-  const handleAccept = (requestId) => {
-    respondToRequest.mutate({
-      requestId,
-      status: "accepted",
-    });
-  };
+  const btnSendRequest = (
+    <Button
+      className={`text-xs ${className}`}
+      size="sm"
+      onClick={() => sendRequestMutation.mutate(targetUserId)}
+      disabled={sendRequestMutation.isPending}
+    >
+      {sendRequestMutation.isPending ? "Sending..." : "Send Request"}
+    </Button>
+  );
 
-  const handleDecline = (requestId) => {
-    respondToRequest.mutate({
-      requestId,
-      status: "declined",
-    });
-  };
+  if (!friendship) return btnSendRequest;
 
-  if (incoming.isLoading || outgoing.isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (incoming.isError || outgoing.isError) {
-    return (
-      <div className="bg-destructive/10 text-destructive p-4 rounded">
-        <p>
-          Error loading friend requests: 
-          {(incoming.error || outgoing.error)?.message || "Something went wrong"}
-        </p>
-      </div>
-    );
-  }
-
-  const incomingRequests = incoming.data?.requests || [];
-  const outgoingRequests = outgoing.data?.requests || [];
-
-  if (incomingRequests.length === 0 && outgoingRequests.length === 0) {
-    return (
-      <div className="bg-card p-8 rounded-lg text-center">
-        <p className="text-muted-foreground">You don't have any friend requests.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {incomingRequests.length > 0 && (
-        <div>
-          <div className="flex items-center mb-4">
-            <h2 className="text-lg font-medium">Incoming Requests</h2>
-            <Badge variant="secondary" className="ml-2">
-              {incomingRequests.length}
-            </Badge>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2">
-            {incomingRequests.map((request) => (
-              <div 
-                key={request._id}
-                className="flex items-center justify-between bg-card p-4 rounded-lg"
-              >
-                <div className="flex items-center">
-                  <Link to={`/user/${request.requester._id}`}>
-                    <Avatar className="h-12 w-12 mr-4">
-                      <AvatarImage src={request.requester.avatarUrl} alt={request.requester.name} />
-                      <AvatarFallback>{getInitials(request.requester.name)}</AvatarFallback>
-                    </Avatar>
-                  </Link>
-                  
-                  <div>
-                    <Link
-                      to={`/user/${request.requester._id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {request.requester.name}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    size="icon"
-                    className="text-green-500"
-                    onClick={() => handleAccept(request._id)}
-                    disabled={respondToRequest.isPending}
-                    title="Accept"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    size="icon"
-                    className="text-destructive"
-                    onClick={() => handleDecline(request._id)}
-                    disabled={respondToRequest.isPending}
-                    title="Decline"
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {outgoingRequests.length > 0 && (
-        <div>
-          <div className="flex items-center mb-4">
-            <h2 className="text-lg font-medium">Outgoing Requests</h2>
-            <Badge variant="secondary" className="ml-2">
-              {outgoingRequests.length}
-            </Badge>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-2">
-            {outgoingRequests.map((request) => (
-              <div 
-                key={request._id}
-                className="flex items-center justify-between bg-card p-4 rounded-lg"
-              >
-                <div className="flex items-center">
-                  <Link to={`/user/${request.recipient._id}`}>
-                    <Avatar className="h-12 w-12 mr-4">
-                      <AvatarImage src={request.recipient.avatarUrl} alt={request.recipient.name} />
-                      <AvatarFallback>{getInitials(request.recipient.name)}</AvatarFallback>
-                    </Avatar>
-                  </Link>
-                  
-                  <div>
-                    <Link
-                      to={`/user/${request.recipient._id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {request.recipient.name}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">
-                      Sent {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-                
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Pending</span>
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  const btnUnfriend = (
+    <Button
+      className={`text-xs ${className}`}
+      size="sm"
+      variant="destructive"
+      onClick={() => removeFriendMutation.mutate(targetUserId)}
+      disabled={removeFriendMutation.isPending}
+    >
+      {removeFriendMutation.isPending ? "Removing..." : "Unfriend"}
+    </Button>
+  );
+  
+  const btnResend = (
+    <Button
+      className={`text-xs ${className}`}
+      size="sm"
+      onClick={() => sendRequestMutation.mutate(targetUserId)}
+      disabled={sendRequestMutation.isPending}
+    >
+      {sendRequestMutation.isPending 
+        ? "Sending..." 
+        : `${friendship.from === currentUserId ? "Resend" : "Send"} Request`}
+    </Button>
+  );
+  
+  const btnCancelRequest = (
+    <Button
+      className={`text-xs ${className}`}
+      size="sm"
+      variant="destructive"
+      onClick={() => cancelRequestMutation.mutate(targetUserId)}
+      disabled={cancelRequestMutation.isPending}
+    >
+      {cancelRequestMutation.isPending ? "Canceling..." : "Cancel Request"}
+    </Button>
+  );
+  
+  const btnGroupReact = (
+    <div className="flex flex-row gap-1">
+      <Button
+        className={`text-xs ${className}`}
+        size="sm"
+        variant="default"
+        onClick={() => acceptRequestMutation.mutate(targetUserId)}
+        disabled={acceptRequestMutation.isPending || declineRequestMutation.isPending}
+      >
+        {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="text-xs text-destructive border-destructive hover:bg-destructive/10"
+        onClick={() => declineRequestMutation.mutate(targetUserId)}
+        disabled={acceptRequestMutation.isPending || declineRequestMutation.isPending}
+      >
+        {declineRequestMutation.isPending ? "Declining..." : "Decline"}
+      </Button>
     </div>
   );
+
+  if (friendship.status === "accepted") {
+    return btnUnfriend;
+  }
+
+  if (friendship.status === "declined") {
+    return btnResend;
+  }
+
+  if (friendship.status === "pending") {
+    const { from, to } = friendship;
+    if (from === currentUserId && to === targetUserId) {
+      return btnCancelRequest;
+    } else if (from === targetUserId && to === currentUserId) {
+      return btnGroupReact;
+    }
+  }
+
+  return btnSendRequest;
 }
 
-export default FriendRequests;
+export default ActionButton;
 ```
 
-## 4. Update the User Profile to Add Friend Functionality
+## 5. Create the FriendList Component
 
-Now, let's update the user profile to add the ability to send friend requests. Modify `src/pages/ProfilePage.jsx`:
+Create a component to display the current user's friends list in `src/features/friend/FriendList.jsx`:
 
 ```jsx
-import React from "react";
-import { useParams } from "react-router-dom";
-import useAuth from "@/hooks/useAuth";
-import { useUserByIdQuery, useUserPostsQuery } from "@/hooks/useUserQuery";
-import { useFriendsQuery, useSendFriendRequest } from "@/hooks/useFriendQuery";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import LoadingScreen from "@/components/LoadingScreen";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { UserPlus } from "lucide-react";
-import ProfileAbout from "@/features/user/ProfileAbout";
-import ProfileEditForm from "@/features/user/ProfileEditForm";
-import PostList from "@/features/post/PostList";
+import React, { useState } from "react";
+import { useGetFriends } from "./friendHooks";
+import UserCard from "./UserCard";
+import SearchInput from "@/components/SearchInput";
+import { Card } from "@/components/ui/card";
 
-/**
- * User profile page component
- */
-function ProfilePage() {
-  const { id } = useParams();
-  const { user: currentUser } = useAuth();
-  const isCurrentUser = id === currentUser?._id;
-  const [isEditing, setIsEditing] = React.useState(false);
-  
-  const {
-    data: userData,
-    isLoading: isLoadingUser,
-    isError: isUserError,
-    error: userError,
-  } = useUserByIdQuery(id);
-  
-  const {
-    data: postsData,
-    isLoading: isLoadingPosts,
-    isError: isPostsError,
-    error: postsError,
-  } = useUserPostsQuery(id);
-  
-  const { data: friendsData } = useFriendsQuery(currentUser?._id);
-  const sendFriendRequest = useSendFriendRequest();
-  
-  // Check if this user is already a friend of the current user
-  const isFriend = React.useMemo(() => {
-    if (!friendsData?.friends || !id) return false;
-    return friendsData.friends.some(friend => friend._id === id);
-  }, [friendsData, id]);
+function FriendList() {
+  const [filterName, setFilterName] = useState("");
+  const [page, setPage] = useState(1);
 
-  const handleSendFriendRequest = () => {
-    sendFriendRequest.mutate({
-      requesterId: currentUser?._id,
-      recipientId: id,
-    });
+  const { data, isLoading } = useGetFriends(filterName, page);
+  
+  // Extract data safely with proper defaults
+  const users = data?.users || [];
+  const totalUsers = data?.totalUsers || 0;
+  const totalPages = data?.totalPages || 1;
+
+  const handleSubmit = (searchQuery) => {
+    setFilterName(searchQuery);
   };
 
-  if (isLoadingUser) {
-    return <LoadingScreen message="Loading profile..." />;
-  }
-
-  if (isUserError) {
-    return (
-      <div className="bg-destructive/10 text-destructive p-4 rounded mb-4">
-        <h3 className="font-bold text-lg">Error loading profile</h3>
-        <p>{userError.message || "Failed to load user profile"}</p>
-      </div>
-    );
-  }
-
-  const user = userData;
-
   return (
-    <div className="container max-w-4xl py-6">
-      <div className="bg-card p-6 rounded-lg shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={user.avatarUrl} alt={user.name} />
-            <AvatarFallback>
-              {user.name.split(" ").map(part => part[0]).join("").toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+    <Card className="p-6">
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <SearchInput handleSubmit={handleSubmit} />
           
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-2xl font-bold">{user.name}</h1>
-            <p className="text-muted-foreground">{user.email}</p>
-            
-            <div className="mt-4 flex justify-center md:justify-start gap-2">
-              {isCurrentUser ? (
-                <Button
-                  variant={isEditing ? "default" : "outline"}
-                  onClick={() => setIsEditing(!isEditing)}
+          <div className="flex-grow" />
+          
+          <p className="text-sm text-muted-foreground ml-1">
+            {totalUsers > 1
+              ? `${totalUsers} friends found`
+              : totalUsers === 1
+              ? `${totalUsers} friend found`
+              : "No friend found"}
+          </p>
+          
+          <div className="flex justify-center">
+            <nav aria-label="Pagination" className="inline-flex -space-x-px text-sm">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`${
+                    pageNum === page
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-500 hover:bg-gray-100"
+                  } px-3 py-2 border border-gray-300 first:rounded-l-md last:rounded-r-md`}
                 >
-                  {isEditing ? "Cancel Editing" : "Edit Profile"}
-                </Button>
-              ) : (
-                !isFriend && (
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    onClick={handleSendFriendRequest}
-                    disabled={sendFriendRequest.isPending}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    Add Friend
-                  </Button>
-                )
-              )}
-            </div>
+                  {pageNum}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       </div>
-      
-      {isEditing ? (
-        <div className="bg-card p-6 rounded-lg shadow-sm mb-6">
-          <h2 className="font-semibold text-xl mb-4">Edit Profile</h2>
-          <ProfileEditForm 
-            user={user} 
-            onSuccess={() => setIsEditing(false)} 
-          />
-        </div>
-      ) : (
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="posts">Posts</TabsTrigger>
-            <TabsTrigger value="about">About</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="posts">
-            {isLoadingPosts ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            ) : isPostsError ? (
-              <div className="bg-destructive/10 text-destructive p-4 rounded">
-                <p>{postsError.message || "Failed to load posts"}</p>
-              </div>
-            ) : (
-              <PostList posts={postsData?.posts || []} />
-            )}
-          </TabsContent>
-          
-          <TabsContent value="about">
-            <ProfileAbout user={user} />
-          </TabsContent>
-        </Tabs>
-      )}
-    </div>
-  );
-}
 
-export default ProfilePage;
-```
-
-## 5. Update the Friend Requests Page
-
-Update the friend requests page to match the components we've created in `src/pages/FriendRequestsPage.jsx`:
-
-```jsx
-import React from "react";
-import useAuth from "@/hooks/useAuth";
-import FriendRequests from "@/features/friend/FriendRequests";
-
-/**
- * Page for displaying friend requests
- */
-function FriendRequestsPage() {
-  const { user } = useAuth();
-
-  return (
-    <div className="container max-w-4xl py-6">
-      <h1 className="text-2xl font-bold mb-6">Friend Requests</h1>
-      <FriendRequests userId={user?._id} />
-    </div>
-  );
-}
-
-export default FriendRequestsPage;
-```
-
-## 6. Update the Sidebar to Show the Friend Request Count
-
-Let's update the sidebar to show the number of incoming friend requests. Modify `src/layouts/Sidebar.jsx`:
-
-```jsx
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Home, Users, Bell, Image, UserRound, SunMoon } from "lucide-react";
-import useAuth from "@/hooks/useAuth";
-import { useIncomingFriendRequestsQuery } from "@/hooks/useFriendQuery";
-
-/**
- * Sidebar navigation component
- * @param {Object} props - Component props
- * @param {boolean} props.isSidebarOpen - Whether the sidebar is open
- * @param {function} props.onCloseSidebar - Function to close the sidebar (mobile only)
- */
-function Sidebar({ isSidebarOpen, onCloseSidebar }) {
-  const location = useLocation();
-  const { user } = useAuth();
-  const { data: friendRequests } = useIncomingFriendRequestsQuery(user?._id);
-  
-  const requestCount = friendRequests?.count || 0;
-
-  // Main navigation items
-  const mainNavItems = [
-    {
-      label: "Home",
-      icon: <Home className="h-5 w-5" />,
-      href: "/",
-    },
-    {
-      label: "Friends",
-      icon: <Users className="h-5 w-5" />,
-      href: "/friends",
-    },
-    {
-      label: "Friend Requests",
-      icon: <Users className="h-5 w-5" />,
-      href: "/friend-requests",
-      badge: requestCount > 0 ? requestCount : null,
-    },
-    {
-      label: "Notifications",
-      icon: <Bell className="h-5 w-5" />,
-      href: "/notifications",
-    },
-    {
-      label: "Photos",
-      icon: <Image className="h-5 w-5" />,
-      href: "/photos",
-    },
-  ];
-
-  // Secondary navigation items
-  const secondaryNavItems = [
-    {
-      label: "Account Settings",
-      icon: <UserRound className="h-5 w-5" />,
-      href: "/account",
-    },
-  ];
-
-  // Navigation item component
-  const NavItem = ({ item, closeSidebar }) => (
-    <Link
-      to={item.href}
-      onClick={closeSidebar}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
-        location.pathname === item.href
-          ? "bg-primary text-primary-foreground"
-          : "hover:bg-secondary"
-      )}
-    >
-      {item.icon}
-      <span>{item.label}</span>
-      {item.badge && (
-        <Badge className="ml-auto" variant="destructive">
-          {item.badge}
-        </Badge>
-      )}
-    </Link>
-  );
-
-  return (
-    <div
-      className={cn(
-        "h-full border-r flex flex-col bg-background transition-all duration-300",
-        isSidebarOpen ? "w-64" : "w-0 md:w-16 overflow-hidden"
-      )}
-    >
-      <div className="p-3">
-        <div
-          className={cn(
-            "flex items-center h-10",
-            !isSidebarOpen && "md:justify-center"
-          )}
-        >
-          <Link to="/" className="font-bold text-xl leading-none">
-            {isSidebarOpen ? (
-              "CoderComm"
-            ) : (
-              <span className="hidden md:inline">CC</span>
-            )}
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex-1 px-3 py-2">
-        <nav className="space-y-1">
-          {mainNavItems.map((item) => (
-            <NavItem
-              key={item.href}
-              item={item}
-              closeSidebar={onCloseSidebar}
-            />
-          ))}
-        </nav>
-
-        <Separator className="my-4" />
-
-        <nav className="space-y-1">
-          {secondaryNavItems.map((item) => (
-            <NavItem
-              key={item.href}
-              item={item}
-              closeSidebar={onCloseSidebar}
-            />
-          ))}
-        </nav>
-      </div>
-
-      <div className="p-3 border-t flex justify-between items-center">
-        <Link
-          to={`/user/${user?._id}`}
-          onClick={onCloseSidebar}
-          className={cn(
-            "flex items-center gap-3 p-2 rounded-md hover:bg-secondary",
-            !isSidebarOpen && "md:justify-center"
-          )}
-        >
-          <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-            {user?.name?.charAt(0) || "U"}
-          </div>
-          {isSidebarOpen && (
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{user?.name}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-4">
+        {isLoading ? (
+          <p className="text-center col-span-3">Loading...</p>
+        ) : (
+          users.map((user) => (
+            <div key={user._id}>
+              <UserCard profile={user} />
             </div>
-          )}
-        </Link>
-
-        {isSidebarOpen && (
-          <Button variant="ghost" size="icon" title="Theme">
-            <SunMoon className="h-5 w-5" />
-          </Button>
+          ))
         )}
       </div>
+    </Card>
+  );
+}
+
+export default FriendList;
+```
+
+## 6. Create the AddFriend Component
+
+Create a component to find and add new friends in `src/features/friend/AddFriend.jsx`:
+
+```jsx
+import React, { useState } from "react";
+import { useGetUsers } from "./friendHooks";
+import UserCard from "./UserCard";
+import SearchInput from "@/components/SearchInput";
+import { Card } from "@/components/ui/card";
+
+function AddFriend() {
+  const [filterName, setFilterName] = useState("");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useGetUsers(filterName, page);
+  
+  // Extract data safely with proper defaults
+  const users = data?.users || [];
+  const totalUsers = data?.totalUsers || 0;
+  const totalPages = data?.totalPages || 1;
+
+  const handleSubmit = (searchQuery) => {
+    setFilterName(searchQuery);
+  };
+
+  return (
+    <Card className="p-6">
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <SearchInput handleSubmit={handleSubmit} placeholder="Search for users..." />
+          
+          <div className="flex-grow" />
+          
+          <p className="text-sm text-muted-foreground ml-1">
+            {totalUsers > 1
+              ? `${totalUsers} users found`
+              : totalUsers === 1
+              ? `${totalUsers} user found`
+              : "No users found"}
+          </p>
+          
+          <div className="flex justify-center">
+            <nav aria-label="Pagination" className="inline-flex -space-x-px text-sm">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`${
+                    pageNum === page
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-500 hover:bg-gray-100"
+                  } px-3 py-2 border border-gray-300 first:rounded-l-md last:rounded-r-md`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-4">
+        {isLoading ? (
+          <p className="text-center col-span-3">Loading...</p>
+        ) : users.length > 0 ? (
+          users.map((user) => (
+            <div key={user._id}>
+              <UserCard profile={user} />
+            </div>
+          ))
+        ) : (
+          <p className="text-center col-span-3">No users found matching your search.</p>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+export default AddFriend;
+```
+
+## 7. Update HomePage to Include Friend System Tabs
+
+Update the HomePage component to include tabs for the friend system:
+
+```jsx
+import React, { useState } from "react";
+import useAuth from "@/hooks/useAuth";
+
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { User, UserPlus, Users } from "lucide-react";
+
+import Profile from "@/features/user/Profile";
+import ProfileCover from "@/features/user/ProfileCover";
+import AddFriend from "@/features/friend/AddFriend";
+import FriendList from "@/features/friend/FriendList";
+
+/**
+ * HomePage - The main authenticated user home page
+ * Displays the user profile and tabs for friends management
+ */
+function HomePage() {
+  const { user, isLoading } = useAuth();
+  const [currentTab, setCurrentTab] = useState("profile");
+
+  // Show loading state if user data is not yet available
+  if (isLoading || !user) {
+    return (
+      <div className="container mx-auto px-4 pt-4">
+        <Card className="mb-6 h-60 md:h-80 relative overflow-hidden animate-pulse">
+          <div className="absolute inset-0 bg-muted"></div>
+          <div className="absolute bottom-0 left-0 right-0 w-full bg-white z-10 py-4">
+            <div className="flex justify-center">
+              <div className="h-8 w-32 bg-muted rounded"></div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-6">
+          <div className="animate-pulse flex flex-col space-y-4">
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="h-4 bg-muted rounded w-5/6"></div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const PROFILE_TABS = [
+    {
+      value: "profile",
+      icon: <User className="w-5 h-5" />,
+      component: <Profile profile={user} />,
+      label: "Profile"
+    },
+    {
+      value: "friends",
+      icon: <Users className="w-5 h-5" />,
+      component: <FriendList />,
+      label: "Friends"
+    },
+    {
+      value: "add_friend",
+      icon: <UserPlus className="w-5 h-5" />,
+      component: <AddFriend />,
+      label: "Add Friend"
+    },
+  ];
+
+  return (
+    <div className="container mx-auto px-4 pt-4">
+      {/* Cover and tabs card */}
+      <Card className="mb-6 h-60 md:h-80 relative overflow-hidden">
+        <ProfileCover profile={user} />
+
+        <div className="absolute bottom-0 left-0 right-0 w-full flex justify-center md:justify-end md:pr-6 bg-white/90 backdrop-blur-sm shadow-sm z-10 py-1">
+          <Tabs
+            value={currentTab}
+            onValueChange={setCurrentTab}
+            className="w-full"
+          >
+            <TabsList className="w-full md:w-auto bg-transparent">
+              {PROFILE_TABS.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+                >
+                  {tab.icon}
+                  <span className="hidden md:inline">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      </Card>
+
+      {/* Tab content in a separate card */}
+      <Card className="p-6">
+        <Tabs value={currentTab} className="w-full">
+          {PROFILE_TABS.map((tab) => (
+            <TabsContent key={tab.value} value={tab.value}>
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </Card>
     </div>
   );
 }
 
-export default Sidebar;
+export default HomePage;
 ```
 
-## 7. Running the Application
+## 8. Testing the Friend System
 
-With the friend system implemented, start the development server:
+You can now test your friend system by navigating to the Home page and using the tabs:
 
-```bash
-npm run dev
-```
+1. View your profile in the "Profile" tab
+2. See your existing friends in the "Friends" tab
+3. Find and add new friends in the "Add Friend" tab
+4. Test various friend actions like sending requests, accepting/declining, and unfriending
 
-Visit `http://localhost:5173`, log in, and try these features:
-
-1. View your friends list on the Friends page
-2. Send friend requests by visiting other user profiles
-3. View and manage incoming friend requests
-4. Accept or decline friend requests
-5. Remove friends from your friends list
-
-## 8. What You've Built
-
-Congratulations! You've now completed the core features of the CoderComm social media application:
-
-1. User authentication and authorization
-2. User profiles with editing capabilities
-3. Post creation and feed display
-4. Comments on posts
-5. Friend system with requests and management
-
-These features form the foundation of a complete social networking application. You've learned how to structure a React application, manage state with Zustand, fetch data with React Query, and create a responsive UI with ShadCN UI and Tailwind CSS.
-
-## 9. Next Steps and Enhancements
-
-Here are some ideas for enhancing your CoderComm application:
-
-1. **Notifications System**:
-   - Create real-time notifications for friend requests, likes, and comments
-   - Add a notification bell with a dropdown menu
-
-2. **User Search**:
-   - Implement a search feature to find users
-   - Add filters and sorting options
-
-3. **Messaging System**:
-   - Build a private messaging feature between friends
-   - Add read receipts and online status indicators
-
-4. **Media Sharing**:
-   - Allow users to upload and share images and videos
-   - Create a gallery view for media
-
-5. **Real-time Updates**:
-   - Implement WebSockets for live updates
-   - Add typing indicators for comments
-
-6. **Advanced Authentication**:
-   - Add social login options
-   - Implement two-factor authentication
-
-As you continue to develop your skills, you can return to this project and implement these additional features to create an even more robust social media application. 
+The system will handle all these actions smoothly with appropriate feedback via toast messages. 

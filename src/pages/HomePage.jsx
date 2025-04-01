@@ -3,12 +3,11 @@ import useAuth from "@/hooks/useAuth";
 
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { User, UserPlus, Mail, Users } from "lucide-react";
+import { User, UserPlus, Users } from "lucide-react";
 
 import Profile from "@/features/user/Profile";
 import ProfileCover from "@/features/user/ProfileCover";
 import AddFriend from "@/features/friend/AddFriend";
-import FriendRequests from "@/features/friend/FriendRequests";
 import FriendList from "@/features/friend/FriendList";
 
 /**
@@ -54,12 +53,6 @@ function HomePage() {
       icon: <Users className="w-5 h-5" />,
       component: <FriendList />,
       label: "Friends"
-    },
-    {
-      value: "requests",
-      icon: <Mail className="w-5 h-5" />,
-      component: <FriendRequests />,
-      label: "Requests"
     },
     {
       value: "add_friend",

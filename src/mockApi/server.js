@@ -336,8 +336,80 @@ export function mockServer({ environment = 'development' } = {}) {
       });
       
       // All other routes - at minimum to support the app
-      this.get('/friends/requests/incoming', () => ({ users: [], count: 0, totalPages: 0 }));
-      this.get('/friends/requests/outgoing', () => ({ users: [], count: 0, totalPages: 0 }));
+      this.get('/friends/requests/incoming', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
+        
+        // Get pending friend requests where user1 is the recipient
+        let incomingRequests = friendships.filter(
+          friendship => friendship.to === "user1" && friendship.status === "pending"
+        );
+        
+        // Filter by name if provided
+        if (name) {
+          incomingRequests = incomingRequests.filter(friendship => {
+            const requester = users.find(user => user._id === friendship.from);
+            return requester.name.toLowerCase().includes(name.toLowerCase());
+          });
+        }
+        
+        // Map to required format with requester user info
+        const formattedRequests = incomingRequests.map(friendship => {
+          const requester = users.find(user => user._id === friendship.from);
+          return {
+            _id: friendship._id,
+            from: friendship.from,
+            to: friendship.to,
+            status: friendship.status,
+            createdAt: friendship.createdAt,
+            updatedAt: friendship.updatedAt,
+            requester: requester
+          };
+        });
+        
+        return { 
+          requests: formattedRequests, 
+          count: formattedRequests.length, 
+          totalPages: formattedRequests.length > 0 ? 1 : 0 
+        };
+      });
+
+      this.get('/friends/requests/outgoing', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
+        
+        // Get pending friend requests where user1 is the sender
+        let outgoingRequests = friendships.filter(
+          friendship => friendship.from === "user1" && friendship.status === "pending"
+        );
+        
+        // Filter by name if provided
+        if (name) {
+          outgoingRequests = outgoingRequests.filter(friendship => {
+            const recipient = users.find(user => user._id === friendship.to);
+            return recipient.name.toLowerCase().includes(name.toLowerCase());
+          });
+        }
+        
+        // Map to required format with recipient user info
+        const formattedRequests = outgoingRequests.map(friendship => {
+          const recipient = users.find(user => user._id === friendship.to);
+          return {
+            _id: friendship._id,
+            from: friendship.from,
+            to: friendship.to,
+            status: friendship.status,
+            createdAt: friendship.createdAt,
+            updatedAt: friendship.updatedAt,
+            recipient: recipient
+          };
+        });
+        
+        return { 
+          requests: formattedRequests, 
+          count: formattedRequests.length, 
+          totalPages: formattedRequests.length > 0 ? 1 : 0 
+        };
+      });
+
       this.post('/friends/requests', () => ({ success: true }));
       this.put('/friends/requests/:userId', () => ({ success: true }));
       this.delete('/friends/requests/:userId', () => ({ success: true }));

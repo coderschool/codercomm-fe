@@ -115,7 +115,40 @@ import ProfileAbout from "@/features/user/ProfileAbout";
 import ProfileEditForm from "@/features/user/ProfileEditForm";
 import PostList from "@/features/post/PostList";
 import LoadingScreen from "@/components/LoadingScreen";
-import { formatDistanceToNow } from "date-fns";
+
+// Helper function to format relative time
+const formatTimeAgo = (dateString) => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = Math.floor(seconds / 31536000);
+  if (interval >= 1) {
+    return interval === 1 ? '1 year ago' : `${interval} years ago`;
+  }
+  
+  interval = Math.floor(seconds / 2592000);
+  if (interval >= 1) {
+    return interval === 1 ? '1 month ago' : `${interval} months ago`;
+  }
+  
+  interval = Math.floor(seconds / 86400);
+  if (interval >= 1) {
+    return interval === 1 ? '1 day ago' : `${interval} days ago`;
+  }
+  
+  interval = Math.floor(seconds / 3600);
+  if (interval >= 1) {
+    return interval === 1 ? '1 hour ago' : `${interval} hours ago`;
+  }
+  
+  interval = Math.floor(seconds / 60);
+  if (interval >= 1) {
+    return interval === 1 ? '1 minute ago' : `${interval} minutes ago`;
+  }
+  
+  return 'just now';
+};
 
 /**
  * User profile page
@@ -191,7 +224,7 @@ function ProfilePage() {
             <h1 className="text-2xl font-bold">{user.name}</h1>
             <div className="flex items-center text-sm text-muted-foreground">
               <Calendar className="h-4 w-4 mr-1" />
-              <span>Joined {formatDistanceToNow(new Date("2023-01-01"), { addSuffix: true })}</span>
+              <span>Joined {formatTimeAgo("2023-01-01")}</span>
             </div>
           </div>
         </div>
@@ -612,11 +645,7 @@ import NotFoundPage from "../pages/NotFoundPage";
 import AuthRequire from "./AuthRequire";
 import GuestRoute from "./GuestRoute";
 import AccountPage from "../pages/AccountPage";
-import FriendsPage from "../pages/FriendsPage";
-import FriendRequestsPage from "../pages/FriendRequestsPage";
-import PhotosPage from "../pages/PhotosPage";
-import NotificationsPage from "../pages/NotificationsPage";
-import ProfilePage from "../pages/ProfilePage";
+import UserProfilePage from "../pages/UserProfilePage";
 
 /**
  * Main Router configuration
@@ -633,12 +662,8 @@ function Router() {
         }
       >
         <Route index element={<HomePage />} />
-        <Route path="friends" element={<FriendsPage />} />
-        <Route path="requests" element={<FriendRequestsPage />} />
-        <Route path="photos" element={<PhotosPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="account" element={<AccountPage />} />
-        <Route path="user/:id" element={<ProfilePage />} />
+        <Route path="user/:userId" element={<UserProfilePage />} />
       </Route>
 
       <Route element={<BlankLayout />}>
@@ -764,23 +789,4 @@ export default AccountPage;
 
 With the user profile system implemented, start the development server:
 
-```bash
-npm run dev
 ```
-
-Visit `http://localhost:5173`, log in, and try these features:
-
-1. View your own profile by clicking on your avatar in the sidebar or from the dropdown menu
-2. Edit your profile information by clicking "Edit Profile" on your profile page
-3. Update your name, about me section, and profile/cover image URLs
-
-## What's Next?
-
-In the next step, we'll implement the post creation and feed system, including:
-
-1. Creating a form for users to compose and submit posts
-2. Displaying posts in the home feed
-3. Adding like and comment functionality
-4. Implementing pagination for the feed
-
-This will allow users to share their thoughts and interact with content from others on the platform. 

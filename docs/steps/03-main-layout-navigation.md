@@ -545,121 +545,57 @@ function AccountPage() {
 export default AccountPage;
 ```
 
-Create a friends page at `src/pages/FriendsPage.jsx`:
+Now, create a placeholder home page for authenticated users in `src/pages/HomePage.jsx`:
 
 ```jsx
 import React from "react";
+import useAuth from "@/hooks/useAuth";
 
 /**
- * Friends list page
+ * Home page for authenticated users
  */
-function FriendsPage() {
+function HomePage() {
+  const { user } = useAuth();
+  
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Friends</h1>
+    <div className="container mx-auto px-4">
+      <h1 className="text-2xl font-bold mb-6">Welcome, {user?.name}!</h1>
       
       <div className="bg-card rounded-lg p-6 shadow-sm">
         <p className="bg-blue-50 text-blue-700 p-4 rounded mb-4">
-          In the full implementation, this page would display a list of your friends with options to view their profiles, send messages, or remove them from your friends list.
+          The home page will be expanded in future steps to include a user profile, posts feed, and friend management.
         </p>
         
-        <div className="text-center p-8 text-muted-foreground">
-          <p>Friends list will be implemented in a future step.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Your Profile</h3>
+            <p className="text-muted-foreground">View and edit your profile information</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Friends</h3>
+            <p className="text-muted-foreground">Connect with other users</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Posts</h3>
+            <p className="text-muted-foreground">Share updates and see what others are posting</p>
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Comments</h3>
+            <p className="text-muted-foreground">Engage with content from other users</p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default FriendsPage;
+export default HomePage;
 ```
 
-Create a friend requests page at `src/pages/FriendRequestsPage.jsx`:
-
-```jsx
-import React from "react";
-
-/**
- * Friend requests page
- */
-function FriendRequestsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Friend Requests</h1>
-      
-      <div className="bg-card rounded-lg p-6 shadow-sm">
-        <p className="bg-blue-50 text-blue-700 p-4 rounded mb-4">
-          In the full implementation, this page would display incoming friend requests that you can accept or decline, as well as a section for your outgoing requests.
-        </p>
-        
-        <div className="text-center p-8 text-muted-foreground">
-          <p>Friend requests will be implemented in a future step.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default FriendRequestsPage;
-```
-
-Create a photos page at `src/pages/PhotosPage.jsx`:
-
-```jsx
-import React from "react";
-
-/**
- * Photos gallery page
- */
-function PhotosPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Photos</h1>
-      
-      <div className="bg-card rounded-lg p-6 shadow-sm">
-        <p className="bg-blue-50 text-blue-700 p-4 rounded mb-4">
-          In the full implementation, this page would display a gallery of photos you've uploaded or been tagged in, with options to view, download, or delete them.
-        </p>
-        
-        <div className="text-center p-8 text-muted-foreground">
-          <p>Photos gallery will be implemented in a future step.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default PhotosPage;
-```
-
-Create a notifications page at `src/pages/NotificationsPage.jsx`:
-
-```jsx
-import React from "react";
-
-/**
- * Notifications page
- */
-function NotificationsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Notifications</h1>
-      
-      <div className="bg-card rounded-lg p-6 shadow-sm">
-        <p className="bg-blue-50 text-blue-700 p-4 rounded mb-4">
-          In the full implementation, this page would display a list of notifications about friend requests, comments, likes, and other activity on your profile or posts.
-        </p>
-        
-        <div className="text-center p-8 text-muted-foreground">
-          <p>Notifications will be implemented in a future step.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default NotificationsPage;
-```
+Note that in later steps, we'll enhance the HomePage to include tabs for the user's profile, friends management, and more. This current version is just a placeholder to demonstrate the authenticated routing.
 
 ## 8. Update Routes
 

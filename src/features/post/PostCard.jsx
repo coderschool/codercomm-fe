@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Link as RouterLink } from "react-router-dom";
-import { fDate } from "@/utils/formatTime";
+import { formatTimeAgo } from "@/utils/formatTime";
 import { MoreVertical } from "lucide-react";
 
 import { 
@@ -47,7 +47,7 @@ function PostCard({ post }) {
             {post?.author?.name}
           </RouterLink>
           <p className="text-xs text-muted-foreground">
-            {fDate(post.createdAt)}
+            {formatTimeAgo(post.createdAt)}
           </p>
         </div>
         <Button variant="ghost" size="icon" className="rounded-full">

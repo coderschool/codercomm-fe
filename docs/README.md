@@ -32,7 +32,7 @@ Follow these steps in order to build the complete CoderComm application:
    Add comment creation and display, implement comment interactions, and create expandable comment sections.
 
 7. [**Friend System**](./steps/07-friend-system.md)  
-   Implement friend requests, create a friends list view, and add friend management features.
+   Implement friend management tabs in the homepage for viewing, finding, and managing friends.
 
 8. [**Summary and Next Steps**](./steps/08-summary-and-next-steps.md)  
    Review what you've built and explore ideas for enhancing the application.
@@ -45,7 +45,7 @@ By the end of this tutorial, your application will have:
 - **User Profiles**: View and edit profiles
 - **Posts and Feed**: Create posts and view a feed of posts from yourself and others
 - **Comments**: Add comments to posts and reply to other users
-- **Friend System**: Send, accept, and decline friend requests
+- **Friend System**: Send, accept, and decline friend requests directly from your homepage
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Technologies Used

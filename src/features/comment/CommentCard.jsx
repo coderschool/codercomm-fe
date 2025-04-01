@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { fDate } from "@/utils/formatTime";
+import { formatTimeAgo } from "@/utils/formatTime";
 import CommentReaction from "./CommentReaction";
 
 import { 
@@ -26,7 +26,7 @@ function CommentCard({ comment }) {
       <Card className="flex-1 p-3 bg-muted/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1">
           <p className="font-semibold text-sm">{comment.author?.name}</p>
-          <p className="text-xs text-muted-foreground">{fDate(comment.createdAt)}</p>
+          <p className="text-xs text-muted-foreground">{formatTimeAgo(comment.createdAt)}</p>
         </div>
         
         <p className="text-sm text-foreground/80">{comment.content}</p>

@@ -283,7 +283,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Heart, MoreVertical, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -293,6 +292,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import useAuth from "@/hooks/useAuth";
 import { useLikePost, useUnlikePost, useDeletePost } from "@/hooks/usePostQuery";
+
+// Helper function to format relative time
+const formatTimeAgo = (dateString) => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = Math.floor(seconds / 31536000);
+  if (interval >= 1) {
+    return interval === 1 ? '1 year ago' : `${interval} years ago`;
+  }
+  
+  interval = Math.floor(seconds / 2592000);
+  if (interval >= 1) {
+    return interval === 1 ? '1 month ago' : `${interval} months ago`;
+  }
+  
+  interval = Math.floor(seconds / 86400);
+  if (interval >= 1) {
+    return interval === 1 ? '1 day ago' : `${interval} days ago`;
+  }
+  
+  interval = Math.floor(seconds / 3600);
+  if (interval >= 1) {
+    return interval === 1 ? '1 hour ago' : `${interval} hours ago`;
+  }
+  
+  interval = Math.floor(seconds / 60);
+  if (interval >= 1) {
+    return interval === 1 ? '1 minute ago' : `${interval} minutes ago`;
+  }
+  
+  return 'just now';
+};
 
 /**
  * Component to display a list of posts
@@ -361,7 +394,7 @@ function PostList({ posts = [] }) {
                   {post.author.name}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                  {formatTimeAgo(post.createdAt)}
                 </p>
               </div>
             </div>
