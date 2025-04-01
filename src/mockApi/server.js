@@ -335,7 +335,7 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
       
-      // All other routes - at minimum to support the app
+      // Incoming friend requests
       this.get('/friends/requests/incoming', (schema, request) => {
         const { name, page = 1, limit = 10 } = request.queryParams;
         
@@ -373,6 +373,7 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
 
+      // Outgoing friend requests
       this.get('/friends/requests/outgoing', (schema, request) => {
         const { name, page = 1, limit = 10 } = request.queryParams;
         
@@ -410,6 +411,7 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
 
+      // Friend request actions
       this.post('/friends/requests', () => ({ success: true }));
       this.put('/friends/requests/:userId', () => ({ success: true }));
       this.delete('/friends/requests/:userId', () => ({ success: true }));

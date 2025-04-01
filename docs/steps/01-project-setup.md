@@ -177,37 +177,6 @@ Create or update your `src/index.css` file:
     --radius: 0.5rem;
   }
  
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
- 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
- 
-    --ring: 217.2 32.6% 17.5%;
-  }
-}
  
 @layer base {
   * {
@@ -282,132 +251,393 @@ Let's set up a complete MirageJS configuration that will support all the feature
 First, create a file for our mock data in `src/mockApi/data.js`:
 
 ```js
-// Mock users data
+// Sample users with relative creation dates
 export const users = [
   {
     _id: "user1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    password: "password123", // In a real app, passwords would be hashed
-    avatarUrl: "https://i.pravatar.cc/150?img=1",
-    coverUrl: "https://images.unsplash.com/photo-1547082299-de196ea013d6",
-    aboutMe: "Full-stack developer with a passion for creating beautiful, responsive web applications.",
-    postCount: 5,
-    friendCount: 8,
+    username: "learnreact",
+    name: "Nguyen Van React",
+    email: "reactlover@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
+    coverUrl: "https://picsum.photos/id/1018/800/200",
+    aboutMe: "React developer by day, phở connoisseur by night",
+    city: "Ho Chi Minh City",
+    country: "Vietnam",
+    company: "CoderSchool",
+    jobTitle: "Frontend Developer",
+    facebookLink: "https://facebook.com",
+    instagramLink: "https://instagram.com",
+    linkedinLink: "https://linkedin.com",
+    twitterLink: "https://twitter.com",
+    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year ago
   },
   {
     _id: "user2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    password: "password123",
-    avatarUrl: "https://i.pravatar.cc/150?img=5",
-    coverUrl: "https://images.unsplash.com/photo-1516041541431-dd07cb8e2d5d",
-    aboutMe: "Frontend developer specializing in React and modern JavaScript.",
-    postCount: 3,
-    friendCount: 6,
+    username: "cssqueen",
+    name: "Tran Thi CSS",
+    email: "styling@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=tran",
+    coverUrl: "https://picsum.photos/id/1019/800/200",
+    aboutMe: "Making divs pretty since 2015. Can center anything vertically.",
+    city: "Hanoi",
+    country: "Vietnam",
+    company: "Design Divas",
+    jobTitle: "UI/UX Designer",
+    facebookLink: "https://facebook.com",
+    instagramLink: "https://instagram.com",
+    linkedinLink: "https://linkedin.com",
+    twitterLink: "https://twitter.com",
+    createdAt: new Date(Date.now() - 340 * 24 * 60 * 60 * 1000).toISOString() // 340 days ago
   },
+  {
+    _id: "user3",
+    username: "nodemaster",
+    name: "Le Thanh Backend",
+    email: "serverside@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
+    coverUrl: "https://picsum.photos/id/1025/800/200",
+    aboutMe: "I make APIs so fast even my coffee can't keep up",
+    city: "Da Nang",
+    country: "Vietnam",
+    company: "Server Solutions",
+    jobTitle: "Backend Developer",
+    facebookLink: "https://facebook.com",
+    instagramLink: "https://instagram.com",
+    linkedinLink: "https://linkedin.com",
+    twitterLink: "https://twitter.com",
+    createdAt: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString() // 300 days ago
+  },
+  {
+    _id: "user4",
+    username: "fullstackdev",
+    name: "Pham Minh Code",
+    email: "fullstack@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=phamminh",
+    coverUrl: "https://picsum.photos/id/1031/800/200",
+    aboutMe: "I do frontend, backend, and can fix the office printer",
+    city: "Hue",
+    country: "Vietnam",
+    company: "Viet Tech",
+    jobTitle: "Full-stack Developer",
+    facebookLink: "https://facebook.com",
+    instagramLink: "https://instagram.com",
+    linkedinLink: "https://linkedin.com",
+    twitterLink: "https://twitter.com",
+    createdAt: new Date(Date.now() - 270 * 24 * 60 * 60 * 1000).toISOString() // 270 days ago
+  },
+  {
+    _id: "user5",
+    username: "devopswhiz",
+    name: "Hoang The Cloud",
+    email: "cloudguru@coderschool.vn",
+    avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud",
+    coverUrl: "https://picsum.photos/id/1039/800/200",
+    aboutMe: "If it works on your machine, I'll make it work in production",
+    city: "Can Tho",
+    country: "Vietnam",
+    company: "Cloud Crusaders",
+    jobTitle: "DevOps Engineer",
+    facebookLink: "https://facebook.com",
+    instagramLink: "https://instagram.com",
+    linkedinLink: "https://linkedin.com",
+    twitterLink: "https://twitter.com",
+    createdAt: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString() // 240 days ago
+  }
 ];
 
-// Mock posts data
+// Sample posts with relative creation dates
+// Posts that user1 can see (from user1 or his friends)
 export const posts = [
   {
     _id: "post1",
-    content: "Just deployed a new React app with Tailwind CSS. Loving the developer experience!",
-    createdAt: "2023-09-15T10:30:00Z",
-    updatedAt: "2023-09-15T10:30:00Z",
-    author: users[0],
-    likes: 12,
-    comments: 5,
+    content: "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
+    image: "https://picsum.photos/id/237/800/400",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post2",
-    content: "Working on a new feature for CoderComm. Can't wait to share it with everyone!",
-    createdAt: "2023-09-12T14:20:00Z",
-    updatedAt: "2023-09-12T14:20:00Z",
-    author: users[0],
-    likes: 8,
-    comments: 2,
+    content: "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
+    image: "https://picsum.photos/id/292/800/400",
+    author: {
+      _id: "user2", // Friend of user1
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+    },
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post3",
-    content: "Just finished reading 'Clean Code' by Robert C. Martin. Highly recommend it to all developers!",
-    createdAt: "2023-09-10T09:15:00Z",
-    updatedAt: "2023-09-10T09:15:00Z", 
-    author: users[0],
-    likes: 15,
-    comments: 3,
+    content: "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
+    image: "https://picsum.photos/id/42/800/400",
+    author: {
+      _id: "user3", // Friend of user1
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+    },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "post4",
-    content: "Attended a great webinar on modern JavaScript practices today. Learned so much!",
-    createdAt: "2023-09-05T16:45:00Z",
-    updatedAt: "2023-09-05T16:45:00Z",
-    author: users[1],
-    likes: 10,
-    comments: 1,
+    content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can't imagine coding without them! 🥢",
+    image: "https://picsum.photos/id/24/800/400",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
   },
+  {
+    _id: "post5",
+    content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
+    image: "https://picsum.photos/id/28/800/400",
+    author: {
+      _id: "user2", // Friend of user1
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+    },
+    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(), // 21 days ago
+    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "post6",
+    content: "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
+    image: "https://picsum.photos/id/4/800/400",
+    author: {
+      _id: "user3", // Friend of user1
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+    },
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  }
 ];
 
-// Mock comments data
+// Sample comments with relative creation dates
+// Only comments on posts that user1 can see
 export const comments = [
   {
     _id: "comment1",
-    content: "Great work! I love the design.",
-    createdAt: "2023-09-15T11:30:00Z",
-    updatedAt: "2023-09-15T11:30:00Z",
-    author: users[1],
-    postId: "post1",
-    likes: 3,
+    content: "Siêu đỉnh! Can you share your code on GitHub?",
+    post: "post1",
+    author: {
+      _id: "user2",
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // 3 days ago + 2 hours
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment2",
-    content: "Thanks for sharing this!",
-    createdAt: "2023-09-15T12:45:00Z",
-    updatedAt: "2023-09-15T12:45:00Z",
-    author: users[1],
-    postId: "post1",
-    likes: 1,
+    content: "Quá đẹp! Did you use Redux for state management?",
+    post: "post1",
+    author: {
+      _id: "user3",
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 3 days ago + 4 hours
+    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment3",
-    content: "I totally agree with your points.",
-    createdAt: "2023-09-12T15:20:00Z",
-    updatedAt: "2023-09-12T15:20:00Z",
-    author: users[0],
-    postId: "post4",
-    likes: 2,
+    content: "The UI is cleaner than my browser history after a job interview! 😂",
+    post: "post2",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(), // 4 days ago + 3 hours
+    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString()
   },
   {
     _id: "comment4",
-    content: "Looking forward to more content like this!",
-    createdAt: "2023-09-10T10:15:00Z",
-    updatedAt: "2023-09-10T10:15:00Z",
-    author: users[1],
-    postId: "post3",
-    likes: 4,
+    content: "useEffect(() => { setSoup('delicious') }, [hunger]); Best hook ever!",
+    post: "post4",
+    author: {
+      _id: "user3",
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+    },
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(), // 14 days ago + 5 hours
+    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString()
   },
+  {
+    _id: "comment5",
+    content: "Are you using Tailwind for this? The responsive design is on point! 👌",
+    post: "post5",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(), // 21 days ago + 6 hours
+    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "comment6",
+    content: "Share your database optimization tricks! I need to speed up my queries too.",
+    post: "post6",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 30 days ago + 4 hours
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
+  }
 ];
 
-// Mock friendship data
+// Sample reactions with relative creation dates
+// Only reactions to posts or comments that user1 can see
+export const reactions = [
+  {
+    _id: "reaction1",
+    targetType: "Post",
+    targetId: "post1",
+    emoji: "like",
+    author: {
+      _id: "user2",
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 3 days ago + 1 hour
+  },
+  {
+    _id: "reaction2",
+    targetType: "Post",
+    targetId: "post1",
+    emoji: "like",
+    author: {
+      _id: "user3",
+      name: "Le Thanh Backend",
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString() // 3 days ago + 3 hours
+  },
+  {
+    _id: "reaction3",
+    targetType: "Post",
+    targetId: "post2",
+    emoji: "like",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString() // 4 days ago + 2 hours
+  },
+  {
+    _id: "reaction4",
+    targetType: "Comment",
+    targetId: "comment1",
+    emoji: "like",
+    author: {
+      _id: "user1",
+      name: "Nguyen Van React",
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+    },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000).toISOString() // 3 days ago + 2.5 hours
+  },
+  {
+    _id: "reaction5",
+    targetType: "Comment",
+    targetId: "comment3",
+    emoji: "like",
+    author: {
+      _id: "user2",
+      name: "Tran Thi CSS",
+      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+    },
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3.5 * 60 * 60 * 1000).toISOString() // 4 days ago + 3.5 hours
+  }
+];
+
+// Sample friendships with relative creation dates
+// Focus on friendships involving user1
 export const friendships = [
   {
     _id: "friendship1",
-    requesterId: users[0]._id,
-    recipientId: users[1]._id,
-    status: "accepted", // "pending", "accepted", "declined"
-    createdAt: "2023-09-01T10:00:00Z",
-    updatedAt: "2023-09-01T11:00:00Z",
+    from: "user1", // Nguyen
+    to: "user2",   // Tran
+    status: "accepted",
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
+    updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 90 days ago + 1 hour
   },
+  {
+    _id: "friendship2",
+    from: "user1", // Nguyen
+    to: "user3",   // Le
+    status: "accepted",
+    createdAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(), // 85 days ago
+    updatedAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 85 days ago + 1 hour
+  },
+  {
+    _id: "friendship3",
+    from: "user1", // Nguyen 
+    to: "user5",   // Hoang
+    status: "pending",
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "friendship4",
+    from: "user4", // Pham
+    to: "user1",   // Nguyen
+    status: "pending",
+    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
+    updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "friendship5",
+    from: "user3", // Le
+    to: "user1",   // Nguyen
+    status: "pending",
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "friendship6",
+    from: "user2", // Tran
+    to: "user1",   // Nguyen 
+    status: "pending",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "friendship7",
+    from: "user1", // Nguyen
+    to: "user4",   // Pham
+    status: "pending",
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    _id: "friendship8",
+    from: "user5", // Hoang
+    to: "user1",   // Nguyen
+    status: "pending",
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 1 month ago
+    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  }
 ];
-
-// Mock reactions data
-export const reactions = [];
 ```
 
 Next, create the main server file `src/mockApi/server.js`:
 
 ```js
-import { createServer, Response } from 'miragejs';
+import { createServer } from 'miragejs';
 import { users, posts, comments, friendships, reactions } from './data';
 
 export function mockServer({ environment = 'development' } = {}) {
@@ -417,18 +647,9 @@ export function mockServer({ environment = 'development' } = {}) {
     routes() {
       this.namespace = 'api';
       
-      // Authentication - always return user1 for simplicity in development
-      this.post('/auth/login', (schema, request) => {
-        const { email, password } = JSON.parse(request.requestBody);
-        
-        // Find user by email
-        const user = users.find(user => user.email === email);
-        
-        if (!user || password !== 'password123') {
-          return new Response(401, {}, { 
-            message: 'Invalid email or password'
-          });
-        }
+      // Authentication - always return user1 for simplicity
+      this.post('/auth/login', () => {
+        const user = users.find(user => user._id === "user1");
         
         return {
           user,
@@ -436,48 +657,14 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
       
-      // User registration
-      this.post('/users', (schema, request) => {
-        const data = JSON.parse(request.requestBody);
-        
-        // Check if email already exists
-        const existingUser = users.find(user => user.email === data.email);
-        if (existingUser) {
-          return new Response(400, {}, { 
-            message: 'Email already in use'
-          });
-        }
-        
-        // Create new user
-        const newUser = {
-          _id: `user-${Date.now()}`,
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          avatarUrl: null,
-          coverUrl: null,
-          aboutMe: '',
-          postCount: 0,
-          friendCount: 0,
-        };
-        
-        // Add to "database"
-        users.push(newUser);
-        
-        return {
-          user: newUser,
-          accessToken: 'mock-token'
-        };
-      });
-      
-      // Get current user (We use user1 for simplicity)
+      // Users - always return user1 as current user
       this.get('/users/me', () => {
         const user = users.find(user => user._id === "user1");
         
         // Add counts for posts and friends
         const userPosts = posts.filter(post => post.author._id === "user1");
         const userFriends = friendships.filter(
-          fs => (fs.requesterId === "user1" || fs.recipientId === "user1") && fs.status === 'accepted'
+          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
         );
         
         return {
@@ -499,7 +686,7 @@ export function mockServer({ environment = 'development' } = {}) {
         // Add counts for posts and friends
         const userPosts = posts.filter(post => post.author._id === id);
         const userFriends = friendships.filter(
-          fs => (fs.requesterId === id || fs.recipientId === id) && fs.status === 'accepted'
+          fs => (fs.from === id || fs.to === id) && fs.status === 'accepted'
         );
         
         return {
@@ -509,43 +696,51 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
       
-      // Update user profile
-      this.put('/users/:id', (schema, request) => {
-        const { id } = request.params;
-        const data = JSON.parse(request.requestBody);
-        let user = users.find(user => user._id === id);
+      // Get users with pagination
+      this.get('/users', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
+        let filteredUsers = [...users];
         
-        if (!user) {
-          return new Response(404, {}, { message: 'User not found' });
+        if (name) {
+          filteredUsers = filteredUsers.filter(
+            user => user.name.toLowerCase().includes(name.toLowerCase())
+          );
         }
         
-        // Update user data
-        user = { 
-          ...user, 
-          name: data.name || user.name,
-          aboutMe: data.aboutMe || user.aboutMe,
-          avatarUrl: data.avatarUrl || user.avatarUrl,
-          coverUrl: data.coverUrl || user.coverUrl
+        const start = (page - 1) * limit;
+        const end = start + parseInt(limit);
+        const paginatedUsers = filteredUsers.slice(start, end);
+        
+        // Add friendship status
+        paginatedUsers.forEach(user => {
+          const friendship = friendships.find(
+            fs => (fs.from === "user1" && fs.to === user._id) || 
+                 (fs.to === "user1" && fs.from === user._id)
+          );
+          
+          if (friendship) {
+            user.friendship = friendship;
+          }
+        });
+        
+        return {
+          users: paginatedUsers,
+          count: filteredUsers.length,
+          totalPages: Math.ceil(filteredUsers.length / limit)
         };
-        
-        // Update the user in our "database"
-        const index = users.findIndex(u => u._id === id);
-        users[index] = user;
-        
-        return user;
       });
       
-      // Posts - get feed
+      // Posts - get feed posts
       this.get('/posts', (schema, request) => {
         const { page = 1, limit = 5 } = request.queryParams;
         
         // Get user's friends
         const userFriendships = friendships.filter(
-          fs => (fs.requesterId === "user1" || fs.recipientId === "user1") && fs.status === 'accepted'
+          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
         );
         
         const friendIds = userFriendships.map(fs => 
-          fs.requesterId === "user1" ? fs.recipientId : fs.requesterId
+          fs.from === "user1" ? fs.to : fs.from
         );
         
         // Get posts from user and friends
@@ -560,6 +755,14 @@ export function mockServer({ environment = 'development' } = {}) {
         const start = (page - 1) * limit;
         const end = start + parseInt(limit);
         const paginatedPosts = relevantPosts.slice(start, end);
+        
+        // Add comment counts and reactions
+        paginatedPosts.forEach(post => {
+          post.commentCount = comments.filter(comment => comment.post === post._id).length;
+          post.reactions = reactions.filter(reaction => 
+            reaction.targetType === 'Post' && reaction.targetId === post._id
+          );
+        });
         
         return {
           posts: paginatedPosts,
@@ -583,6 +786,14 @@ export function mockServer({ environment = 'development' } = {}) {
         const end = start + parseInt(limit);
         const paginatedPosts = userPosts.slice(start, end);
         
+        // Add comment counts and reactions
+        paginatedPosts.forEach(post => {
+          post.commentCount = comments.filter(comment => comment.post === post._id).length;
+          post.reactions = reactions.filter(reaction => 
+            reaction.targetType === 'Post' && reaction.targetId === post._id
+          );
+        });
+        
         return {
           posts: paginatedPosts,
           count: userPosts.length,
@@ -590,367 +801,261 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
       
-      // Create a new post
+      // Create a post
       this.post('/posts', (schema, request) => {
-        const data = JSON.parse(request.requestBody);
-        const userId = data.userId;
-        
-        // Find the author
-        const author = users.find(user => user._id === userId);
-        
-        if (!author) {
-          return new Response(404, {}, { message: 'User not found' });
-        }
+        const { content, image } = JSON.parse(request.requestBody);
+        const currentUser = users.find(user => user._id === "user1");
         
         // Create new post
         const newPost = {
           _id: `post-${Date.now()}`,
-          content: data.content,
+          content,
+          image: image || null,
+          author: {
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatarUrl: currentUser.avatarUrl
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          author: author,
-          likes: 0,
-          comments: 0,
+          reactions: [],
+          commentCount: 0
         };
         
-        // Add to "database"
+        // Add to posts collection
         posts.unshift(newPost);
         
-        // Update post count for the user
-        author.postCount += 1;
-        
         return newPost;
-      });
-      
-      // Get a specific post
-      this.get('/posts/:id', (schema, request) => {
-        const { id } = request.params;
-        const post = posts.find(post => post._id === id);
-        
-        if (!post) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        
-        return post;
-      });
-      
-      // Like a post
-      this.post('/posts/:id/like', (schema, request) => {
-        const { id } = request.params;
-        const post = posts.find(post => post._id === id);
-        
-        if (!post) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        
-        // Increment likes
-        post.likes += 1;
-        
-        return post;
-      });
-      
-      // Unlike a post
-      this.delete('/posts/:id/like', (schema, request) => {
-        const { id } = request.params;
-        const post = posts.find(post => post._id === id);
-        
-        if (!post) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        
-        // Decrement likes (ensure it doesn't go below 0)
-        post.likes = Math.max(0, post.likes - 1);
-        
-        return post;
-      });
-      
-      // Delete a post
-      this.delete('/posts/:id', (schema, request) => {
-        const { id } = request.params;
-        const postIndex = posts.findIndex(post => post._id === id);
-        
-        if (postIndex === -1) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        
-        // Get the post to return after deletion
-        const post = posts[postIndex];
-        
-        // Remove from "database"
-        posts.splice(postIndex, 1);
-        
-        // Update post count for the user
-        const author = users.find(user => user._id === post.author._id);
-        if (author) {
-          author.postCount = Math.max(0, author.postCount - 1);
-        }
-        
-        return post;
       });
       
       // Get comments for a post
       this.get('/posts/:postId/comments', (schema, request) => {
         const { postId } = request.params;
-        const postComments = comments.filter(comment => comment.postId === postId);
+        const { page = 1, limit = 3 } = request.queryParams;
         
-        // Sort comments by creation date (newest first)
-        const sortedComments = [...postComments].sort((a, b) => 
-          new Date(b.createdAt) - new Date(a.createdAt)
-        );
+        let postComments = comments.filter(comment => comment.post === postId);
+        
+        // Sort by creation date, newest first
+        postComments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Paginate
+        const start = (page - 1) * limit;
+        const end = start + parseInt(limit);
+        const paginatedComments = postComments.slice(start, end);
+        
+        // Add reactions
+        paginatedComments.forEach(comment => {
+          comment.reactions = reactions.filter(reaction => 
+            reaction.targetType === 'Comment' && reaction.targetId === comment._id
+          );
+        });
         
         return {
-          comments: sortedComments,
-          count: sortedComments.length,
+          comments: paginatedComments,
+          count: postComments.length,
+          totalPages: Math.ceil(postComments.length / limit)
         };
       });
       
-      // Create a comment
+      // Add a comment
       this.post('/comments', (schema, request) => {
-        const data = JSON.parse(request.requestBody);
-        const { content, postId, userId } = data;
-        
-        // Find the author and post
-        const author = users.find(user => user._id === userId);
-        const post = posts.find(post => post._id === postId);
-        
-        if (!author) {
-          return new Response(404, {}, { message: 'User not found' });
-        }
-        
-        if (!post) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
+        const { content, postId } = JSON.parse(request.requestBody);
+        const currentUser = users.find(user => user._id === "user1");
         
         // Create new comment
         const newComment = {
           _id: `comment-${Date.now()}`,
           content,
+          post: postId,
+          author: {
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatarUrl: currentUser.avatarUrl
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          author,
-          postId,
-          likes: 0,
+          reactions: []
         };
         
-        // Add to "database"
-        comments.push(newComment);
-        
-        // Update comment count on the post
-        post.comments += 1;
+        // Add to comments collection
+        comments.unshift(newComment);
         
         return newComment;
       });
       
-      // Delete a comment
-      this.delete('/comments/:id', (schema, request) => {
-        const { id } = request.params;
-        const commentIndex = comments.findIndex(comment => comment._id === id);
+      // React to a post or comment
+      this.post('/reactions', (schema, request) => {
+        const { targetType, targetId, emoji } = JSON.parse(request.requestBody);
+        const currentUser = users.find(user => user._id === "user1");
         
-        if (commentIndex === -1) {
-          return new Response(404, {}, { message: 'Comment not found' });
-        }
-        
-        // Get the comment to return after deletion
-        const comment = comments[commentIndex];
-        
-        // Find associated post and decrement its comment count
-        const post = posts.find(post => post._id === comment.postId);
-        if (post) {
-          post.comments = Math.max(0, post.comments - 1);
-        }
-        
-        // Remove from "database"
-        comments.splice(commentIndex, 1);
-        
-        return comment;
-      });
-      
-      // Like a comment
-      this.post('/comments/:id/like', (schema, request) => {
-        const { id } = request.params;
-        const comment = comments.find(comment => comment._id === id);
-        
-        if (!comment) {
-          return new Response(404, {}, { message: 'Comment not found' });
-        }
-        
-        // Increment likes
-        comment.likes += 1;
-        
-        return comment;
-      });
-      
-      // Unlike a comment
-      this.delete('/comments/:id/like', (schema, request) => {
-        const { id } = request.params;
-        const comment = comments.find(comment => comment._id === id);
-        
-        if (!comment) {
-          return new Response(404, {}, { message: 'Comment not found' });
-        }
-        
-        // Decrement likes (ensure it doesn't go below 0)
-        comment.likes = Math.max(0, comment.likes - 1);
-        
-        return comment;
-      });
-      
-      // Get friends of a user
-      this.get('/users/:userId/friends', (schema, request) => {
-        const { userId } = request.params;
-        
-        // Find accepted friendships where the user is either the requester or recipient
-        const userFriendships = friendships.filter(friendship => 
-          friendship.status === "accepted" && 
-          (friendship.requesterId === userId || friendship.recipientId === userId)
+        // Check if user already reacted
+        const existingReactionIndex = reactions.findIndex(reaction => 
+          reaction.targetType === targetType && 
+          reaction.targetId === targetId && 
+          reaction.author._id === currentUser._id
         );
         
-        // Get the friend IDs (the other party in each friendship)
-        const friendIds = userFriendships.map(friendship => 
-          friendship.requesterId === userId ? friendship.recipientId : friendship.requesterId
+        // If already reacted, update the reaction
+        if (existingReactionIndex !== -1) {
+          if (reactions[existingReactionIndex].emoji === emoji) {
+            // If same emoji, remove the reaction (toggle off)
+            reactions.splice(existingReactionIndex, 1);
+          } else {
+            // If different emoji, update it
+            reactions[existingReactionIndex].emoji = emoji;
+          }
+        } else {
+          // Add new reaction
+          reactions.push({
+            _id: `reaction-${Date.now()}`,
+            targetType,
+            targetId,
+            emoji,
+            author: {
+              _id: currentUser._id,
+              name: currentUser.name,
+              avatarUrl: currentUser.avatarUrl
+            },
+            createdAt: new Date().toISOString()
+          });
+        }
+        
+        // Return all reactions for the target
+        return reactions.filter(reaction => 
+          reaction.targetType === targetType && reaction.targetId === targetId
         );
-        
-        // Get the user objects for each friend
-        const friends = users.filter(user => friendIds.includes(user._id));
-        
-        return {
-          friends,
-          count: friends.length,
-        };
       });
       
-      // Get incoming friend requests for a user
-      this.get('/users/:userId/friend-requests/incoming', (schema, request) => {
-        const { userId } = request.params;
+      // Friends
+      this.get('/friends', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
         
-        // Find pending friendships where the user is the recipient
-        const pendingFriendships = friendships.filter(friendship => 
-          friendship.status === "pending" && friendship.recipientId === userId
+        // Get accepted friendships
+        const userFriendships = friendships.filter(
+          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
         );
         
-        // Get the requester user objects
-        const requests = pendingFriendships.map(friendship => {
-          const requester = users.find(user => user._id === friendship.requesterId);
-          return {
-            _id: friendship._id,
-            requester,
-            createdAt: friendship.createdAt,
-          };
+        // Get friend IDs
+        const friendIds = userFriendships.map(fs => 
+          fs.from === "user1" ? fs.to : fs.from
+        );
+        
+        // Get friend users
+        let friendUsers = users.filter(user => friendIds.includes(user._id));
+        
+        // Filter by name if provided
+        if (name) {
+          friendUsers = friendUsers.filter(
+            user => user.name.toLowerCase().includes(name.toLowerCase())
+          );
+        }
+        
+        // Paginate
+        const start = (page - 1) * limit;
+        const end = start + parseInt(limit);
+        const paginatedFriends = friendUsers.slice(start, end);
+        
+        // Add friendship status
+        paginatedFriends.forEach(user => {
+          const friendship = friendships.find(
+            fs => (fs.from === "user1" && fs.to === user._id) || 
+                  (fs.to === "user1" && fs.from === user._id)
+          );
+          
+          if (friendship) {
+            user.friendship = friendship;
+          }
         });
         
         return {
-          requests,
-          count: requests.length,
+          users: paginatedFriends,
+          count: friendUsers.length,
+          totalPages: Math.ceil(friendUsers.length / limit)
         };
       });
       
-      // Get outgoing friend requests for a user
-      this.get('/users/:userId/friend-requests/outgoing', (schema, request) => {
-        const { userId } = request.params;
+      // Incoming friend requests
+      this.get('/friends/requests/incoming', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
         
-        // Find pending friendships where the user is the requester
-        const pendingFriendships = friendships.filter(friendship => 
-          friendship.status === "pending" && friendship.requesterId === userId
+        // Get pending friend requests where user1 is the recipient
+        let incomingRequests = friendships.filter(
+          friendship => friendship.to === "user1" && friendship.status === "pending"
         );
         
-        // Get the recipient user objects
-        const requests = pendingFriendships.map(friendship => {
-          const recipient = users.find(user => user._id === friendship.recipientId);
+        // Filter by name if provided
+        if (name) {
+          incomingRequests = incomingRequests.filter(friendship => {
+            const requester = users.find(user => user._id === friendship.from);
+            return requester.name.toLowerCase().includes(name.toLowerCase());
+          });
+        }
+        
+        // Map to required format with requester user info
+        const formattedRequests = incomingRequests.map(friendship => {
+          const requester = users.find(user => user._id === friendship.from);
           return {
             _id: friendship._id,
-            recipient,
+            from: friendship.from,
+            to: friendship.to,
+            status: friendship.status,
             createdAt: friendship.createdAt,
+            updatedAt: friendship.updatedAt,
+            requester: requester
           };
         });
         
-        return {
-          requests,
-          count: requests.length,
+        return { 
+          requests: formattedRequests, 
+          count: formattedRequests.length, 
+          totalPages: formattedRequests.length > 0 ? 1 : 0 
         };
       });
-      
-      // Send a friend request
-      this.post('/friend-requests', (schema, request) => {
-        const data = JSON.parse(request.requestBody);
-        const { requesterId, recipientId } = data;
+
+      // Outgoing friend requests
+      this.get('/friends/requests/outgoing', (schema, request) => {
+        const { name, page = 1, limit = 10 } = request.queryParams;
         
-        // Validate users exist
-        const requester = users.find(user => user._id === requesterId);
-        const recipient = users.find(user => user._id === recipientId);
-        
-        if (!requester || !recipient) {
-          return new Response(404, {}, { message: 'User not found' });
-        }
-        
-        // Check if a friendship already exists
-        const existingFriendship = friendships.find(friendship => 
-          (friendship.requesterId === requesterId && friendship.recipientId === recipientId) ||
-          (friendship.requesterId === recipientId && friendship.recipientId === requesterId)
+        // Get pending friend requests where user1 is the sender
+        let outgoingRequests = friendships.filter(
+          friendship => friendship.from === "user1" && friendship.status === "pending"
         );
         
-        if (existingFriendship) {
-          return new Response(400, {}, { message: 'Friendship already exists' });
+        // Filter by name if provided
+        if (name) {
+          outgoingRequests = outgoingRequests.filter(friendship => {
+            const recipient = users.find(user => user._id === friendship.to);
+            return recipient.name.toLowerCase().includes(name.toLowerCase());
+          });
         }
         
-        // Create new friendship
-        const newFriendship = {
-          _id: `friendship-${Date.now()}`,
-          requesterId,
-          recipientId,
-          status: "pending",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+        // Map to required format with recipient user info
+        const formattedRequests = outgoingRequests.map(friendship => {
+          const recipient = users.find(user => user._id === friendship.to);
+          return {
+            _id: friendship._id,
+            from: friendship.from,
+            to: friendship.to,
+            status: friendship.status,
+            createdAt: friendship.createdAt,
+            updatedAt: friendship.updatedAt,
+            recipient: recipient
+          };
+        });
+        
+        return { 
+          requests: formattedRequests, 
+          count: formattedRequests.length, 
+          totalPages: formattedRequests.length > 0 ? 1 : 0 
         };
-        
-        // Add to "database"
-        friendships.push(newFriendship);
-        
-        return newFriendship;
       });
-      
-      // Accept or decline a friend request
-      this.patch('/friend-requests/:id', (schema, request) => {
-        const { id } = request.params;
-        const data = JSON.parse(request.requestBody);
-        const { status } = data;
-        
-        // Find the friendship
-        const friendship = friendships.find(f => f._id === id);
-        
-        if (!friendship) {
-          return new Response(404, {}, { message: 'Friend request not found' });
-        }
-        
-        if (friendship.status !== "pending") {
-          return new Response(400, {}, { message: 'Friend request already processed' });
-        }
-        
-        // Update status
-        friendship.status = status;
-        friendship.updatedAt = new Date().toISOString();
-        
-        return friendship;
-      });
-      
-      // Delete a friendship
-      this.delete('/friendships/:id', (schema, request) => {
-        const { id } = request.params;
-        
-        const friendshipIndex = friendships.findIndex(f => f._id === id);
-        
-        if (friendshipIndex === -1) {
-          return new Response(404, {}, { message: 'Friendship not found' });
-        }
-        
-        // Get the friendship to return after deletion
-        const friendship = friendships[friendshipIndex];
-        
-        // Remove from "database"
-        friendships.splice(friendshipIndex, 1);
-        
-        return friendship;
-      });
-    },
+
+      // Friend request actions
+      this.post('/friends/requests', () => ({ success: true }));
+      this.put('/friends/requests/:userId', () => ({ success: true }));
+      this.delete('/friends/requests/:userId', () => ({ success: true }));
+      this.delete('/friends/:userId', () => ({ success: true }));
+    }
   });
 }
 ```
