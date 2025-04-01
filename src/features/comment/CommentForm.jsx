@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { Send } from "lucide-react";
 
 import { 
@@ -12,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import useAuth from "@/hooks/useAuth";
 import { useCreateComment } from "./commentHooks";
 
+/**
+ * Comment form for creating a new comment on a post
+ * @param {Object} props - Component props
+ * @param {string} props.postId - ID of the post to comment on
+ */
 function CommentForm({ postId }) {
   const { user } = useAuth();
   const [content, setContent] = useState("");
@@ -55,5 +61,9 @@ function CommentForm({ postId }) {
     </form>
   );
 }
+
+CommentForm.propTypes = {
+  postId: PropTypes.string.isRequired
+};
 
 export default CommentForm;

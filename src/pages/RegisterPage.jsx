@@ -45,13 +45,14 @@ function RegisterPage() {
   const [error, setErrorMsg] = useState("");
   
   const onSubmit = async (data) => {
+    const from = location.state?.from?.pathname || "/";
     const { name, email, password } = data;
+
     try {
-      await auth.register({ name, email, password }, () => {
-        navigate("/", { replace: true });
-      });
+      await auth.register({ name, email, password });
+      navigate(from, { replace: true });
     } catch (error) {
-      form.reset();
+      form.reset({ ...data, password: "", passwordConfirmation: "" });
       setErrorMsg(error.message);
     }
   };

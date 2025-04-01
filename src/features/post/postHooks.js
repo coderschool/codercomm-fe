@@ -1,8 +1,7 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import apiService from '../../lib/apiService';
-import { POSTS_PER_PAGE } from '../../lib/config';
-import { getPaginationParams } from '../../lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { POSTS_PER_PAGE } from '@/lib/config';
+import { getPaginationParams } from '@/lib/utils';
+import { useAPIQuery, useAPIMutation, useAPIInfiniteQuery } from '@/hooks/useAPIQuery';
 
 /**
  * Get posts for feed (home page - posts from current user and friends)
@@ -10,17 +9,13 @@ import { getPaginationParams } from '../../lib/utils';
  * @returns {Object} Query result with posts and pagination
  */
 export const useGetPosts = (page = 1) => {
-  return useQuery({
-    queryKey: ['posts', 'feed', page],
-    queryFn: async () => {
-      const params = getPaginationParams({ 
-        page, 
-        limit: POSTS_PER_PAGE 
-      });
-      const response = await apiService.get('/posts', { params });
-      return response;
-    },
-  });
+  const params = getPaginationParams({ page, limit: POSTS_PER_PAGE });
+  
+  return useAPIQuery(
+    ['posts', 'feed', page],
+    '/posts',
+    { params }
+  );
 };
 
 /**
@@ -30,20 +25,17 @@ export const useGetPosts = (page = 1) => {
  * @returns {Object} Query result with posts and pagination
  */
 export const useGetPostsByUser = (userId, page = 1) => {
-  return useQuery({
-    queryKey: ['posts', 'user', userId, page],
-    queryFn: async () => {
-      if (!userId) return { posts: [], totalPages: 0 };
-      
-      const params = getPaginationParams({ 
-        page, 
-        limit: POSTS_PER_PAGE 
-      });
-      const response = await apiService.get(`/posts/user/${userId}`, { params });
-      return response;
-    },
-    enabled: Boolean(userId),
-  });
+  const params = getPaginationParams({ page, limit: POSTS_PER_PAGE });
+  
+  return useAPIQuery(
+    ['posts', 'user', userId, page],
+    `/posts/user/${userId}`,
+    {
+      params,
+      enabled: Boolean(userId),
+      select: (data) => data || { posts: [], totalPages: 0 }
+    }
+  );
 };
 
 /**
@@ -51,27 +43,13 @@ export const useGetPostsByUser = (userId, page = 1) => {
  * @returns {Object} Mutation result
  */
 export const useCreatePost = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ content }) => {
-      // Create post without image
-      const response = await apiService.post('/posts', {
-        content,
-      });
-      
-      return response;
-    },
-    onSuccess: () => {
-      toast.success('Post created successfully');
-      
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-      queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to create post');
-    },
+  return useAPIMutation({
+    feature: 'posts',
+    endpoint: '/posts',
+    method: 'post',
+    invalidateQueries: [['posts']],
+    successMessage: 'Post created successfully',
+    errorMessage: 'Failed to create post'
   });
 };
 
@@ -80,25 +58,15 @@ export const useCreatePost = () => {
  * @returns {Object} Mutation result
  */
 export const useReactPost = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ postId, emoji }) => {
-      const response = await apiService.post('/reactions', {
-        targetType: 'Post',
-        targetId: postId,
-        emoji,
-      });
-      
-      return { postId, reactions: response };
-    },
-    onSuccess: (data) => {
-      // Invalidate post data to refresh reactions
-      queryClient.invalidateQueries({ queryKey: ['posts'] });
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to react to post');
-    },
+  return useAPIMutation({
+    feature: 'posts',
+    endpoint: '/reactions',
+    method: 'post',
+    invalidateQueries: [['posts']],
+    errorMessage: 'Failed to react to post',
+    onSuccess: (data, variables) => {
+      // We don't need a success toast for reactions
+    }
   });
 };
 
@@ -110,24 +78,9 @@ export const useReactPost = () => {
 export const useInfinitePosts = (userId = null) => {
   const endpoint = userId ? `/posts/user/${userId}` : '/posts';
   
-  return useInfiniteQuery({
-    queryKey: ['posts', 'infinite', userId],
-    queryFn: async ({ pageParam = 1 }) => {
-      const params = getPaginationParams({ 
-        page: pageParam, 
-        limit: POSTS_PER_PAGE 
-      });
-      const response = await apiService.get(endpoint, { params });
-      return {
-        ...response,
-        currentPage: pageParam,
-      };
-    },
-    getNextPageParam: (lastPage) => {
-      if (lastPage.posts.length < POSTS_PER_PAGE) {
-        return undefined; // No more pages
-      }
-      return lastPage.currentPage + 1;
-    },
-  });
+  return useAPIInfiniteQuery(
+    ['posts', 'infinite', userId],
+    endpoint,
+    { limit: POSTS_PER_PAGE }
+  );
 };

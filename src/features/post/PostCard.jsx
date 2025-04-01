@@ -1,6 +1,7 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Link as RouterLink } from "react-router-dom";
-import { fDate } from "../../utils/formatTime";
+import { fDate } from "@/utils/formatTime";
 import { MoreVertical } from "lucide-react";
 
 import { 
@@ -22,9 +23,14 @@ import {
 } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
-import CommentForm from "../comment/CommentForm";
-import CommentList from "../comment/CommentList";
+import CommentForm from "@/features/comment/CommentForm";
+import CommentList from "@/features/comment/CommentList";
 
+/**
+ * Post card component that displays a single post with author info, content, and comments
+ * @param {Object} props - Component props
+ * @param {Object} props.post - Post data
+ */
 function PostCard({ post }) {
   return (
     <Card>
@@ -73,5 +79,19 @@ function PostCard({ post }) {
     </Card>
   );
 }
+
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    createdAt: PropTypes.string.isRequired,
+    author: PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      avatarUrl: PropTypes.string,
+    }).isRequired,
+  }).isRequired,
+};
 
 export default PostCard;

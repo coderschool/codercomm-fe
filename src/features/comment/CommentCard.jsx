@@ -1,5 +1,6 @@
 import React from "react";
-import { fDate } from "../../utils/formatTime";
+import PropTypes from "prop-types";
+import { fDate } from "@/utils/formatTime";
 import CommentReaction from "./CommentReaction";
 
 import { 
@@ -9,6 +10,11 @@ import {
 } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 
+/**
+ * Comment card component that displays a single comment with author info
+ * @param {Object} props - Component props
+ * @param {Object} props.comment - Comment data
+ */
 function CommentCard({ comment }) {
   return (
     <div className="flex gap-2">
@@ -32,5 +38,18 @@ function CommentCard({ comment }) {
     </div>
   );
 }
+
+CommentCard.propTypes = {
+  comment: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    createdAt: PropTypes.string.isRequired,
+    author: PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      avatarUrl: PropTypes.string,
+    }).isRequired,
+  }).isRequired,
+};
 
 export default CommentCard;

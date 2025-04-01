@@ -1,12 +1,16 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-import LoadingScreen from '../components/LoadingScreen';
+import useAuth from '@/hooks/useAuth';
+import LoadingScreen from '@/components/LoadingScreen';
 
+/**
+ * Route wrapper for guest-only pages (login/register)
+ * Redirects to home if user is already authenticated
+ */
 function GuestRoute({ children }) {
   const { isAuthenticated, isInitialized } = useAuth();
   
   if (!isInitialized) {
-    return <LoadingScreen />;
+    return <LoadingScreen message="Checking authentication..." />;
   }
   
   if (isAuthenticated) {

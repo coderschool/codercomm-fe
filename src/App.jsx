@@ -1,12 +1,30 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { Toaster } from "sonner";
 import Router from "./routes";
-import { AuthProvider } from "./contexts/AuthContext";
+import useStore from "@/lib/store";
+import LoadingScreen from "@/components/LoadingScreen";
 
 function App() {
+  const { initializeAuth, isInitialized } = useStore(state => ({
+    initializeAuth: state.initializeAuth,
+    isInitialized: state.isInitialized
+  }));
+
+  useEffect(() => {
+    // Initialize authentication on app mount
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Show loading screen while auth is initializing
+  if (!isInitialized) {
+    return <LoadingScreen message="Initializing application..." />;
+  }
+
   return (
-    <AuthProvider>
+    <>
       <Router />
-    </AuthProvider>
+      <Toaster position="top-right" richColors />
+    </>
   );
 }
 

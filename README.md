@@ -1,239 +1,131 @@
-# CoderComm - Modern React Social Network
+# CoderComm - Social Media for Developers
 
-CoderComm is a social media web application with core features inspired by Facebook. This project is built using modern React best practices for teaching the FTW (Frontend Web Development) course at CoderSchool.
+CoderComm is a social media platform designed for developers to connect, share ideas, and build a professional network. This project serves as both a functional social platform and an educational resource for learning modern React development practices.
 
-## Key Features
+![CoderComm Screenshot](./screenshots/homepage.png)
 
-### Authentication
-- Register with name, email, password
-- Login with email and password
+## Features
 
-### User Profiles
-- View and edit personal profile
-- Update avatar and cover photo via URLs
-- View other users' profiles
+- 👤 **User Authentication**: Secure signup, login, and protected routes
+- 👥 **User Profiles**: Customizable profiles with personal information
+- 📝 **Posts**: Create, view, like, and delete posts
+- 💬 **Comments**: Engage in discussions through comments on posts
+- 🤝 **Friend System**: Send, accept, and manage friend requests
+- 📱 **Responsive Design**: Optimized for both desktop and mobile devices
 
-### Posts
-- Create, and view posts
-- Like and dislike posts
-- View posts from friends
+## Tech Stack
 
-### Comments
-- Create comments on posts
-- Like and dislike comments
+### Frontend
+- **React** with **Vite** for an optimized development experience
+- **React Router** for client-side routing
+- **Zustand** for lightweight state management
+- **React Query** for data fetching and caching
+- **React Hook Form** with **Yup** for form validation
+- **TailwindCSS** for utility-first styling
+- **ShadCN UI** for accessible and customizable components
+- **Axios** for HTTP requests
 
-### Friends
-- Send, accept, or decline friend requests
-- View friend list
-- Unfriend users
+### Mock Backend
+- **MirageJS** for simulating a REST API without requiring a real backend
 
-## Modern Tech Stack (2025)
-
-### Core Technologies
-- **React 18** - Modern React with hooks and concurrent features
-- **Vite** - Next-generation build tool for faster development
-- **React Router 6** - Declarative routing for React
-- **Tailwind CSS** - Utility-first CSS framework for rapid UI development
-- **shadcn/ui** - Component collection built with Radix UI and Tailwind CSS
-
-### State Management & Data Fetching
-- **React Query** - Data fetching, caching, and state management for server state
-- **Zustand** - Lightweight state management for UI state
-- **React Hook Form** - Form handling with validation
-
-### Other Technologies
-- **Axios** - HTTP client for API requests
-- **date-fns** - Date utilities
-- **yup** - Schema validation
-- **Lucide React** - Modern icon library
-- **react-helmet-async** - Document head manager
-- **MirageJS** - Mock API server for development and testing
-
-## Project Structure
-
-```
-src/
-├── components/         # Reusable components
-│   └── ui/             # UI components from shadcn/ui
-├── features/           # Feature-based modules
-│   ├── comment/        # Comment-related components and hooks
-│   ├── friend/         # Friend-related components and hooks
-│   ├── post/           # Post-related components and hooks
-│   └── user/           # User-related components and hooks
-├── hooks/              # Custom React hooks
-├── layouts/            # Layout components
-├── lib/                # Core utilities and configurations
-│   ├── apiService.js   # Axios instance and interceptors
-│   ├── auth.js         # Authentication utilities
-│   ├── config.js       # Application configuration
-│   ├── formatters.js   # Formatting utilities
-│   ├── utils.js        # Utility functions for Tailwind
-│   └── store.js        # Zustand store
-├── mockApi/            # Mock API server and data
-│   ├── data.js         # Mock data for development
-│   └── server.js       # MirageJS server configuration
-├── pages/              # Application pages
-└── routes/             # Route configurations
-```
+> **Note about the Mock API**: CoderComm uses MirageJS as a "black box" backend. All API endpoints are pre-configured and ready to use, allowing you to focus exclusively on frontend development. This approach mirrors real-world scenarios where frontend developers work with a pre-defined API.
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
+
+- Node.js (v16 or higher)
+- npm (v7 or higher)
 
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd codercomm-fe
-```
+   ```bash
+   git clone https://github.com/yourusername/codercomm-fe.git
+   cd codercomm-fe
+   ```
 
 2. Install dependencies:
-```bash
-npm install
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and visit:
+   ```
+   http://localhost:5173
+   ```
+
+## Tutorial
+
+This project includes a comprehensive tutorial that walks through building the application step by step. Find the tutorial in the `docs` directory:
+
+[View Tutorial](./docs/README.md)
+
+## Project Structure
+
+```
+codercomm-fe/
+├── docs/                 # Tutorial documentation
+├── public/               # Public assets
+├── src/
+│   ├── components/       # Reusable UI components
+│   ├── features/         # Feature-specific components
+│   │   ├── comment/      # Comment-related components
+│   │   ├── friend/       # Friend system components
+│   │   ├── post/         # Post-related components
+│   │   └── user/         # User profile components
+│   ├── hooks/            # Custom React hooks
+│   ├── layouts/          # Layout components
+│   ├── lib/              # Utility libraries
+│   ├── mockApi/          # MirageJS configuration
+│   ├── pages/            # Page components
+│   ├── routes/           # Routing configuration
+│   ├── utils/            # Utility functions
+│   ├── App.jsx           # Root component
+│   └── main.jsx          # Entry point
+└── README.md             # Project documentation
 ```
 
-3. Set up environment variables:
-- Create a `.env` file based on `.env.example`
-- By default, the mock API will be used (no backend needed)
-- To use a real API, uncomment and set the `VITE_API_URL` in the `.env` file
+## Development
 
-4. Start the development server:
-```bash
-npm run dev
-```
+### Available Scripts
 
-## Using the Mock API
+- `npm run dev` - Start the development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview the production build locally
+- `npm run lint` - Run ESLint to check for code issues
 
-This project includes a mock API server using MirageJS, which provides in-memory data for development and testing. The mock API is used automatically when no `VITE_API_URL` is provided, and:
+### Default User Accounts
 
-- Works entirely client-side with no external dependencies
-- Includes realistic sample data for users, posts, comments, etc.
-- Implements all the endpoints needed for the application
-- Handles authentication with mock tokens
+For testing, you can use these pre-configured accounts:
 
-You can log in with any of the sample user emails (e.g., `john@example.com`, `jane@example.com`) using the password `password` for all users.
+- **Email**: john.doe@example.com
+  **Password**: password123
 
-## Simplified Architecture
+- **Email**: jane.smith@example.com
+  **Password**: password123
 
-This project has been intentionally simplified to focus on modern React patterns:
+## Contributing
 
-- No image upload functionality (uses URLs for profile images)
-- Clean component architecture with shadcn/ui
-- Direct use of React Hook Form with shadcn/ui form components
-- Zustand for global state management
-- React Query for server state and data fetching
+We welcome contributions to CoderComm! Please feel free to submit issues or pull requests.
 
-## UI Component System
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This project uses the [shadcn/ui](https://ui.shadcn.com/) component system, which provides:
+## License
 
-- Accessible, customizable components based on Radix UI primitives
-- Fully styled with Tailwind CSS
-- No external runtime dependencies, everything is part of your project
-- Components are copied and pasted directly into your project, not installed as a dependency
-- Components are maintained within the codebase, allowing full customization
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### shadcn/ui Components Included
+## Acknowledgments
 
-- Avatar - User avatars with image and fallback
-- Button - Versatile buttons with variants
-- Card - Card containers with header, content, footer
-- Checkbox - Form checkbox inputs
-- Dialog - Modal dialog boxes
-- Dropdown Menu - Contextual dropdown menus
-- Form - Complete form validation system
-- Input - Text input fields
-- Label - Accessible form labels
-- Select - Dropdown select components
-- Sheet - Slide-out panels
-- Tabs - Tabbed interface components
-
-### Adding shadcn/ui Components
-
-If needed, more components can be added using the shadcn CLI:
-
-```bash
-npx shadcn@latest add [component-name]
-```
-
-## Component Architecture
-
-This project follows a component-first approach. Instead of importing components from a library:
-
-1. Components are added directly to the project using the shadcn/ui CLI
-2. Components are fully editable and customizable
-3. The structure encourages learning how components work
-4. Components are built using Radix UI for accessibility and Tailwind CSS for styling
-
-This approach gives students:
-- Full control over the components
-- Better understanding of how components work
-- Ability to customize without fighting against a library
-- Experience with modern Tailwind CSS-based workflows
-
-## Build for Production
-
-```bash
-npm run build
-```
-
-## Deployment
-
-The project includes a deployment script for Firebase Hosting. This information is provided for reference only and is not part of the core curriculum, which focuses on React development.
-
-### Deploying to Firebase Hosting
-
-1. Make the deployment script executable:
-```bash
-chmod +x deploy.sh
-```
-
-2. Run the deployment script to build the project and prepare the configuration:
-```bash
-./deploy.sh
-```
-
-3. If you haven't installed Firebase CLI yet, install it:
-```bash
-npm install -g firebase-tools
-```
-
-4. Log in to Firebase:
-```bash
-firebase login
-```
-
-5. Initialize a Firebase project (first time only):
-```bash
-firebase init
-```
-   - Select "Hosting"
-   - Select an existing project or create a new one
-   - For the public directory, enter: `dist`
-   - Configure as a single-page app: Yes
-   - Set up automatic builds and deploys with GitHub: No
-   - Overwrite `dist/index.html`: No
-
-6. Deploy to Firebase:
-```bash
-firebase deploy
-```
-
-Your app will be accessible at `https://your-project-id.web.app`
-
-## Learn More
-
-This project demonstrates modern React best practices:
-
-- **React Query** for data fetching and caching
-- **Zustand** for simple state management
-- **Tailwind CSS** for utility-first styling
-- **shadcn/ui pattern** for component architecture
-- **React Hook Form** for efficient form handling
-- **Radix UI** for accessible UI components
-- **Component composition** for reusable UI
-- **Custom hooks** for shared logic
-- **MirageJS** for API mocking
+- This project was created as part of the React learning curriculum at [CoderSchool](https://www.coderschool.vn)
+- UI design inspired by modern social media platforms
+- ShadCN UI for providing high-quality accessible components

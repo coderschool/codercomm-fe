@@ -47,11 +47,10 @@ function LoginPage() {
     let { email, password } = data;
 
     try {
-      await auth.login({ email, password }, () => {
-        navigate(from, { replace: true });
-      });
+      await auth.login({ email, password });
+      navigate(from, { replace: true });
     } catch (error) {
-      form.reset();
+      form.reset({ ...data, password: "" });
       setErrorMsg(error.message);
     }
   };

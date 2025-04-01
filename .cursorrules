@@ -1,0 +1,145 @@
+# CoderComm Frontend Refactor and Tutorial Plan
+
+## Phase 1: Code Review and Consistency (Target: `master` branch)
+
+*   [x] **Review:** Go through the existing codebase (`src` directory primarily).
+*   [x] **Identify Inconsistencies:** Look for deviations in:
+    *   Component structure and patterns
+    *   State management (Zustand usage)
+    *   Styling (ShadCN usage, CSS conventions)
+    *   Naming conventions
+    *   Error handling
+    *   API interaction patterns (even with MirageJS)
+    *   Code simplicity and readability
+*   [x] **Document Inconsistencies:** Note findings below this section.
+*   [x] **Fix Inconsistencies:** Apply necessary code changes to enforce consistency and best practices.
+*   [x] **Verify Fixes:** Ensure the application still works as expected after fixes.
+*   [x] **Update Documentation:** Mark fixed items and summarize changes made.
+
+### Identified Inconsistencies & Fixes:
+
+#### State Management
+* **Mixed State Management:** The app uses both Zustand (src/lib/store.js) and React Context (src/contexts/AuthContext.jsx). This creates inconsistency and potential confusion. ✅ FIXED 
+* **Inconsistent Zustand Usage:** The Zustand store is set up but some components might not be using it consistently, relying on props or Context instead. ✅ FIXED
+* **Complex Store Structure:** The Zustand store has nested objects (user, auth, post, etc.) which makes selector usage more verbose than necessary. ✅ FIXED
+
+#### API and Data Fetching
+* **Mixed Data Fetching Methods:** Using React Query for data fetching but also directly updating Zustand state in some cases. ✅ FIXED
+* **Error Handling:** Inconsistent error handling patterns across different features. ✅ FIXED
+* **Response Handling:** Potentially inconsistent handling of API responses. ✅ FIXED
+
+#### Component Structure
+* **Feature Organization:** While there's a clear features directory with domain-specific components, there might be inconsistent patterns within each feature. ✅ FIXED
+* **UI Components:** Mixing ShadCN UI components with custom styling. ✅ FIXED
+* **Component Props & Interface:** Lack of consistent prop validation or TypeScript interfaces. ✅ FIXED
+
+#### File Structure and Naming
+* **File Extensions:** Some files might be using `.jsx` while others use `.js` for React components. ✅ FIXED
+* **Import Paths:** Inconsistent use of absolute vs. relative imports. ✅ FIXED
+* **Export Patterns:** Inconsistency in default vs. named exports. ✅ FIXED
+
+#### Code Quality Issues
+* **Comments & Documentation:** Inconsistent documentation styles and coverage. ✅ FIXED
+* **Code Duplication:** Potential code duplication across similar components. ✅ FIXED
+* **Performance Optimizations:** Inconsistent use of memoization and React optimization patterns. ✅ FIXED
+
+### Completed Fixes:
+1. **Consolidated State Management**: ✅
+   - Refactored to use Zustand consistently for all state management
+   - Removed AuthContext and integrated all functionality into Zustand store
+   - Simplified store structure for better ergonomics by flattening the state
+   - Updated all components to use the new store structure
+   - Removed unnecessary files (contexts/AuthContext.jsx, lib/auth.js)
+
+2. **Standardized API Interactions**: ✅
+   - Created unified API hook patterns in useAPIQuery.js
+   - Standardized error handling across all API calls
+   - Implemented consistent loading state management
+   - Refactored feature-specific hooks to use the standardized patterns
+   - Added proper documentation to API hooks
+
+3. **Normalized Component Structure**: ✅
+   - Added consistent prop validation using PropTypes across components
+   - Standardized import paths to use absolute imports where appropriate
+   - Ensured consistent JSDoc documentation for all components
+   - Improved component organization and file structure
+
+4. **Improved Code Quality**: ✅
+   - Added comprehensive JSDoc comments across components and hooks
+   - Applied consistent code formatting and organization
+   - Standardized patterns for form handling and state management
+   - Ensured code simplicity for beginner comprehension
+
+## Phase 2: Tutorial Creation
+
+*   [ ] **Create Directory:** Set up `docs/steps` (or similar).
+*   [ ] **Define Steps:** Outline a logical progression for building the app.
+*   [ ] **Write Step 1 `.md`:** Detail the initial setup and first functional piece. Include MirageJS explanation here or in an intro.
+*   [ ] **Write Subsequent `.md` Files:** Create guides for each subsequent step. Ensure clarity for learners (1-2 months React experience).
+
+### Tutorial Structure (Planned Steps):
+
+1. **Project Setup and Configuration**
+   - Initialize project with Vite
+   - Set up TailwindCSS and ShadCN UI
+   - Configure React Router
+   - Brief introduction to MirageJS for API mocking
+
+2. **Authentication System**
+   - Create the login page
+   - Set up the registration page
+   - Implement auth state management with Zustand
+   - Add protected routes
+
+3. **Main Layout and Navigation**
+   - Create main layout structure
+   - Implement navigation menu
+   - Add responsive design elements
+
+4. **User Profile System**
+   - Display user profile information
+   - Create profile components
+   - Implement profile editing
+
+5. **Post Creation and Feed**
+   - Create post form component
+   - Implement post list and feed
+   - Add pagination
+
+6. **Comments System**
+   - Implement comment creation
+   - Display comments with pagination
+   - Add reactions to comments
+
+7. **Friend System**
+   - Implement friend requests
+   - Show friend list
+   - Create friend management interface
+
+8. **Final Touches**
+   - Error handling improvements
+   - UI/UX refinements
+   - Code organization review
+
+## Phase 3: Tutorial Implementation and Verification (Target: `tutorial-steps` branch)
+
+*   [ ] **Create Branch:** `git checkout -b tutorial-steps`
+*   [ ] **Implement Step 1:** Follow the `step-1.md` instructions.
+*   [ ] **Verify Step 1:** Run the app, check functionality, review code.
+*   [ ] **Refine Step 1 `.md`:** Update instructions if needed based on implementation experience.
+*   [ ] **Commit & Tag Step 1:** `git add .`, `git commit -m "feat: Complete step 1 - [Brief Description]"`, `git tag step-1`
+*   [ ] **Repeat for all steps:** Implement, verify, refine, commit, tag for each step.
+
+## Phase 4: Final Verification
+
+*   [ ] **Compare Branches:** Check `tutorial-steps` against the cleaned `master` branch.
+*   [ ] **Fix Discrepancies:** Align `tutorial-steps` if necessary.
+
+## Phase 5: Next Steps Documentation
+
+*   [ ] **Create Final `.md`:** Add a concluding step (`step-final.md`?).
+*   [ ] **Add Suggestions:** Include ideas for further features and exploration topics without detailed instructions.
+
+## Notes:
+
+*   **MirageJS:** Explain its role as a mock server for frontend development, simulating a backend API for testing purposes. Mention the real backend will be covered later. Target audience understands basic API concepts but not necessarily backend implementation details.
