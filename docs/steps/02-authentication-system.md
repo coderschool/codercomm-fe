@@ -1151,6 +1151,36 @@ Try these things:
 3. Register a new account
 4. Verify that protected routes work correctly
 
+## FAQ: Understanding Authentication State
+
+### Why do we need `isInitialized` and `isAuthenticated` separately?
+
+**`isInitialized`** and **`isAuthenticated`** serve different purposes:
+
+- **`isInitialized`** tracks whether the authentication system has completed its initial check (loading token from storage, validating it). Without this flag, your app wouldn't know if authentication is still being checked or if it's complete and the user isn't authenticated.
+
+- **`isAuthenticated`** simply indicates if a user is currently logged in.
+
+This separation prevents premature redirects or UI flashing during app startup.
+
+### Could we combine `currentUser` and `isAuthenticated`?
+
+While you could technically derive `isAuthenticated` from `!!currentUser`, keeping them separate is better practice because:
+
+1. It makes the authentication state explicit rather than implicit
+2. It prevents bugs if `currentUser` is null for reasons other than authentication
+3. It improves code readability - other developers can immediately understand the authentication state
+
+### What's a good pattern for auth state management?
+
+A good auth state management pattern includes:
+- Clear separation between initialization state and authentication state
+- Explicit loading states for different auth operations
+- Centralized error handling for auth-related errors
+- Persistence for necessary auth data (like tokens)
+
+Our implementation with Zustand follows these patterns to create a robust authentication system.
+
 ## What's Next?
 
 In the next step, we'll implement the main layout and navigation components, enhancing the user interface to provide a better user experience. 
