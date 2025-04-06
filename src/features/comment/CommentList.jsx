@@ -1,67 +1,69 @@
-import React, { useState } from "react";
-import { useGetComments } from "./commentHooks";
-import CommentCard from "./CommentCard";
-import { COMMENTS_PER_POST } from "@/lib/config";
+import React from "react";
+import PropTypes from 'prop-types';
+import { useCommentsQuery } from "@/hooks/useCommentQuery";
+import { Loader2 } from "lucide-react";
+import CommentItem from "./CommentItem";
+import CommentForm from "./CommentForm";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
+/**
+ * Displays a list of comments for a post and includes the comment input form.
+ */
 function CommentList({ postId }) {
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useGetComments(postId, page);
-  
-  const comments = data?.comments || [];
-  const totalComments = data?.count || 0;
-  const totalPages = Math.ceil(totalComments / COMMENTS_PER_POST);
-
-  let renderComments;
-
-  if (isLoading) {
-    renderComments = (
-      <div className="flex justify-center py-4">
-        <div className="animate-pulse h-6 w-6 rounded-full bg-muted"></div>
-      </div>
-    );
-  } else if (comments.length > 0) {
-    renderComments = (
-      <div className="space-y-3">
-        {comments.map((comment) => (
-          <CommentCard key={comment._id} comment={comment} />
-        ))}
-      </div>
-    );
-  } else {
-    renderComments = null;
-  }
+  const { 
+    data: comments, // Renamed data to comments
+    isLoading,
+    isError,
+    error 
+  } = useCommentsQuery(postId); // Fetch comments for this post
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {totalComments > 1
-            ? `${totalComments} comments`
-            : totalComments === 1
-            ? `${totalComments} comment`
-            : "No comments yet"}
-        </p>
-        {totalComments > COMMENTS_PER_POST && (
-          <div className="flex gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => setPage(pageNum)}
-                className={`h-7 w-7 rounded-md text-xs ${
-                  page === pageNum 
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                {pageNum}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {renderComments}
+    <div className="mt-4 pt-4 border-t border-border/50">
+      {/* Form to add a new comment */}
+      <CommentForm postId={postId} />
+      
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* Error State */}
+      {isError && (
+        <Alert variant="destructive" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription className="text-xs">
+                {error?.message || "Could not load comments."}
+            </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Comments List */}
+      {!isLoading && !isError && (
+        <> 
+          {comments?.length === 0 ? (
+            <div className="text-center text-muted-foreground text-xs py-4">
+              No comments yet. Be the first!
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {comments?.map(comment => (
+                <CommentItem key={comment._id} comment={comment} postId={postId} />
+              ))}
+              {/* Add pagination / "Load More" button here later if needed */}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
+
+CommentList.propTypes = {
+  postId: PropTypes.string.isRequired,
+};
 
 export default CommentList;

@@ -1,96 +1,164 @@
-import * as React from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
-import Logo from "@/components/Logo";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import useAuth from "@/hooks/useAuth";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { getInitials } from "@/utils/formatters";
+import { 
+  LogOut, 
+  Settings, 
+  UserCircle, 
+  Menu,
+  X,
+  Bell,
+  MessagesSquare
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuItem,
-  DropdownMenuSeparator
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import PropTypes from 'prop-types';
 
 /**
- * MainHeader - Main navigation header for the application
- * Displays logo, app name, and user profile menu
+ * Main application header.
+ * Includes logo, mobile menu toggle, notification/message icons, and user dropdown menu.
+ * @param {object} props - Component props.
+ * @param {() => void} props.onMenuToggle - Function to toggle the mobile sidebar.
  */
-function MainHeader() {
-  const { user, logout } = useAuth();
+function MainHeader({ onMenuToggle }) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logout(() => {
-        navigate("/login");
-      });
+      await logout();
+      navigate("/login", { replace: true });
     } catch (error) {
-      console.error(error);
+      console.error("Logout failed:", error);
     }
   };
 
   return (
-    <div className="mb-8">
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center">
-            <button 
-              className="mr-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-              aria-label="app logo"
-              onClick={() => navigate('/')}
-            >
-              <Logo />
-            </button>
-            <h1 className="hidden sm:block text-xl font-bold">
-              CoderComm
-            </h1>
-          </div>
+    <header className="sticky top-0 z-40 h-16 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto h-full px-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="lg:hidden"
+            onClick={onMenuToggle}
+            aria-label="Toggle menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          <Link to="/" className="text-xl font-bold text-primary hover:opacity-80 transition-opacity">
+            CoderComm
+          </Link>
+        </div>
 
-          <div className="flex items-center">
+        <div className="flex items-center gap-2 md:gap-3">
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative rounded-full">
+                  <MessagesSquare className="h-5 w-5" />
+                  <Badge 
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                  >
+                    2
+                  </Badge>
+                  <span className="sr-only">Messages</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Messages</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative rounded-full">
+                  <Bell className="h-5 w-5" />
+                  <Badge 
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                  >
+                    3
+                  </Badge>
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Notifications</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-                    <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Avatar className="h-9 w-9 border">
+                    <AvatarImage src={user.avatarUrl || ''} alt={user.name || 'User'} />
+                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
+                  <span className="sr-only">User menu</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
+                      {user.email || 'No email'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/user/${user?._id}`)}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>My Profile</span>
+                <DropdownMenuItem asChild>
+                  <Link to={`/user/${user?._id}`} className="cursor-pointer">
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    <span>Your Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/account")}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Account Settings</span>
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Account Settings</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          )}
         </div>
-      </header>
-      {/* Add a spacer div to account for the fixed header */}
-      <div className="h-16"></div>
-    </div>
+      </div>
+    </header>
   );
 }
+
+MainHeader.propTypes = {
+  onMenuToggle: PropTypes.func.isRequired,
+};
 
 export default MainHeader;

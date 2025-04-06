@@ -1,5 +1,5 @@
+import React from 'react';
 import { Outlet } from "react-router-dom";
-import MainFooter from "./MainFooter";
 import MainHeader from "./MainHeader";
 
 /**
@@ -8,14 +8,14 @@ import MainHeader from "./MainHeader";
  */
 function MainLayout() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <MainHeader />
 
-      <main className="flex-grow mt-2">
+      <main className="flex-grow container mx-auto px-4 py-6">
         <Outlet />
       </main>
 
-      <MainFooter />
+      {/* Add a Footer component here later if needed */}
     </div>
   );
 }

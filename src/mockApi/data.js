@@ -1,10 +1,20 @@
-// Sample users with relative creation dates
+// src/mockApi/data.js
+
+// --- Helper to generate dates relative to now ---
+const daysAgo = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+const hoursAgo = (hours) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60 * 1000).toISOString();
+
+
+// --- Sample Users ---
 export const users = [
   {
     _id: "user1",
     username: "learnreact",
     name: "Nguyen Van React",
-    email: "reactlover@coderschool.vn",
+    email: "reactlover@coderschool.vn", // Use this for login
+    // Note: Mirage doesn't handle actual password hashing/checking here.
+    // The login route in server.js simply checks the email.
     avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     coverUrl: "https://picsum.photos/id/1018/800/200",
     aboutMe: "React developer by day, phở connoisseur by night",
@@ -16,7 +26,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year ago
+    createdAt: daysAgo(365) // 1 year ago
   },
   {
     _id: "user2",
@@ -34,7 +44,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: new Date(Date.now() - 340 * 24 * 60 * 60 * 1000).toISOString() // 340 days ago
+    createdAt: daysAgo(340)
   },
   {
     _id: "user3",
@@ -52,7 +62,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: new Date(Date.now() - 300 * 24 * 60 * 60 * 1000).toISOString() // 300 days ago
+    createdAt: daysAgo(300)
   },
   {
     _id: "user4",
@@ -70,7 +80,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: new Date(Date.now() - 270 * 24 * 60 * 60 * 1000).toISOString() // 270 days ago
+    createdAt: daysAgo(270)
   },
   {
     _id: "user5",
@@ -79,7 +89,7 @@ export const users = [
     email: "cloudguru@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud",
     coverUrl: "https://picsum.photos/id/1039/800/200",
-    aboutMe: "If it works on your machine, I'll make it work in production",
+    aboutMe: "If it works on your machine, I\'ll make it work in production",
     city: "Can Tho",
     country: "Vietnam",
     company: "Cloud Crusaders",
@@ -88,24 +98,24 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString() // 240 days ago
+    createdAt: daysAgo(240)
   }
 ];
 
-// Sample posts with relative creation dates
-// Posts that user1 can see (from user1 or his friends)
+// --- Sample Posts ---
+// Posts visible to user1 (authored by user1 or friends user2, user3)
 export const posts = [
   {
     _id: "post1",
     content: "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
     image: "https://picsum.photos/id/237/800/400",
-    author: {
+    author: { // Embedded author info for convenience
       _id: "user1",
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(3),
+    updatedAt: daysAgo(3)
   },
   {
     _id: "post2",
@@ -116,8 +126,8 @@ export const posts = [
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
-    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(4),
+    updatedAt: daysAgo(4)
   },
   {
     _id: "post3",
@@ -128,73 +138,73 @@ export const posts = [
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
-    updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(7),
+    updatedAt: daysAgo(7)
   },
   {
     _id: "post4",
-    content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can't imagine coding without them! 🥢",
+    content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can\'t imagine coding without them! 🥢",
     image: "https://picsum.photos/id/24/800/400",
     author: {
       _id: "user1",
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
-    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(14),
+    updatedAt: daysAgo(14)
   },
   {
     _id: "post5",
-    content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
+    content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother\'s Nokia! 📱",
     image: "https://picsum.photos/id/28/800/400",
     author: {
       _id: "user2", // Friend of user1
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(), // 21 days ago
-    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(21),
+    updatedAt: daysAgo(21)
   },
   {
     _id: "post6",
-    content: "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
+    content: "Optimized our database queries and now the app loads faster than you can say \'một, hai, ba, yo!\' ⚡",
     image: "https://picsum.photos/id/4/800/400",
     author: {
       _id: "user3", // Friend of user1
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(30),
+    updatedAt: daysAgo(30)
   }
 ];
 
-// Sample comments with relative creation dates
-// Only comments on posts that user1 can see
+// --- Sample Comments ---
+// Comments on posts visible to user1
 export const comments = [
   {
     _id: "comment1",
     content: "Siêu đỉnh! Can you share your code on GitHub?",
-    post: "post1",
-    author: {
+    post: "post1", // Reference to post ID
+    author: { // Embedded author info
       _id: "user2",
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // 3 days ago + 2 hours
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(70), // Approx 3 days ago + 2 hours
+    updatedAt: hoursAgo(70)
   },
   {
     _id: "comment2",
-    content: "Quá đẹp! Did you use Redux for state management?",
+    content: "Quá đẹp! Did you use Zustand for state management?", // Updated comment
     post: "post1",
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 3 days ago + 4 hours
-    updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(68), // Approx 3 days ago + 4 hours
+    updatedAt: hoursAgo(68)
   },
   {
     _id: "comment3",
@@ -205,20 +215,20 @@ export const comments = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(), // 4 days ago + 3 hours
-    updatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(93), // Approx 4 days ago + 3 hours
+    updatedAt: hoursAgo(93)
   },
   {
     _id: "comment4",
-    content: "useEffect(() => { setSoup('delicious') }, [hunger]); Best hook ever!",
+    content: "useEffect(() => { setPho(\'delicious\') }, [hunger]); Best hook ever!", // Updated comment
     post: "post4",
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString(), // 14 days ago + 5 hours
-    updatedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 + 5 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(331), // Approx 14 days ago + 5 hours
+    updatedAt: hoursAgo(331)
   },
   {
     _id: "comment5",
@@ -229,8 +239,8 @@ export const comments = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString(), // 21 days ago + 6 hours
-    updatedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(500), // Approx 21 days ago + 4 hours
+    updatedAt: hoursAgo(500)
   },
   {
     _id: "comment6",
@@ -241,25 +251,24 @@ export const comments = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString(), // 30 days ago + 4 hours
-    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(716), // Approx 30 days ago + 4 hours
+    updatedAt: hoursAgo(716)
   }
 ];
 
-// Sample reactions with relative creation dates
-// Only reactions to posts or comments that user1 can see
+// --- Sample Reactions ---
 export const reactions = [
   {
     _id: "reaction1",
-    targetType: "Post",
-    targetId: "post1",
-    emoji: "like",
-    author: {
+    targetType: "Post", // Can be "Post" or "Comment"
+    targetId: "post1",  // ID of the post or comment
+    emoji: "like",      // Type of reaction (like, love, etc.)
+    author: { // Embedded author info
       _id: "user2",
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 3 days ago + 1 hour
+    createdAt: hoursAgo(71) // Approx 3 days ago + 1 hour
   },
   {
     _id: "reaction2",
@@ -271,7 +280,7 @@ export const reactions = [
       name: "Le Thanh Backend",
       avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString() // 3 days ago + 3 hours
+    createdAt: hoursAgo(69) // Approx 3 days ago + 3 hours
   },
   {
     _id: "reaction3",
@@ -283,7 +292,7 @@ export const reactions = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString() // 4 days ago + 2 hours
+    createdAt: hoursAgo(94) // Approx 4 days ago + 2 hours
   },
   {
     _id: "reaction4",
@@ -295,7 +304,7 @@ export const reactions = [
       name: "Nguyen Van React",
       avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
     },
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000).toISOString() // 3 days ago + 2.5 hours
+    createdAt: hoursAgo(69.5) // Approx 3 days ago + 2.5 hours
   },
   {
     _id: "reaction5",
@@ -307,75 +316,76 @@ export const reactions = [
       name: "Tran Thi CSS",
       avatarUrl: "https://i.pravatar.cc/150?u=tran"
     },
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 3.5 * 60 * 60 * 1000).toISOString() // 4 days ago + 3.5 hours
+    createdAt: hoursAgo(92.5) // Approx 4 days ago + 3.5 hours
   }
 ];
 
-// Sample friendships with relative creation dates
-// Focus on friendships involving user1
+// --- Sample Friendships ---
+// Focus on user1's perspective
 export const friendships = [
-  {
+  { // User1 and User2 are friends
     _id: "friendship1",
-    from: "user1", // Nguyen
-    to: "user2",   // Tran
-    status: "accepted",
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
-    updatedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 90 days ago + 1 hour
+    from: "user1", // User who initiated (or could be the other way)
+    to: "user2",
+    status: "accepted", // 'pending', 'accepted', 'declined', 'blocked'
+    createdAt: daysAgo(90),
+    updatedAt: daysAgo(89) // Accepted 1 day later
   },
-  {
+  { // User1 and User3 are friends
     _id: "friendship2",
-    from: "user1", // Nguyen
-    to: "user3",   // Le
+    from: "user3", // User3 sent request to User1
+    to: "user1",
     status: "accepted",
-    createdAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(), // 85 days ago
-    updatedAt: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString() // 85 days ago + 1 hour
+    createdAt: daysAgo(85),
+    updatedAt: daysAgo(84) // Accepted 1 day later
   },
-  {
+  { // User1 sent a request to User5 (pending)
     _id: "friendship3",
-    from: "user1", // Nguyen 
-    to: "user5",   // Hoang
+    from: "user1",
+    to: "user5",
     status: "pending",
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
-    updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(10),
+    updatedAt: daysAgo(10)
   },
-  {
+  { // User4 sent a request to User1 (pending)
     _id: "friendship4",
-    from: "user4", // Pham
-    to: "user1",   // Nguyen
+    from: "user4",
+    to: "user1",
     status: "pending",
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
-    updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(15),
+    updatedAt: daysAgo(15)
   },
+  // --- Adding more pending requests for testing various scenarios ---
   {
     _id: "friendship5",
-    from: "user3", // Le
-    to: "user1",   // Nguyen
+    from: "user3", // User3 sent another (redundant?) request recently - mock data quirk
+    to: "user1",
     status: "pending",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    createdAt: hoursAgo(2),
+    updatedAt: hoursAgo(2)
   },
   {
     _id: "friendship6",
-    from: "user2", // Tran
-    to: "user1",   // Nguyen 
+    from: "user2", // User2 sent a request to User1 recently (even though they are friends) - mock data quirk
+    to: "user1",
     status: "pending",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(2),
+    updatedAt: daysAgo(2)
   },
   {
     _id: "friendship7",
-    from: "user1", // Nguyen
-    to: "user4",   // Pham
+    from: "user1", // User1 sent request to User4
+    to: "user4",
     status: "pending",
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-    updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(5)
   },
   {
     _id: "friendship8",
-    from: "user5", // Hoang
-    to: "user1",   // Nguyen
+    from: "user5", // User5 sent request to User1
+    to: "user1",
     status: "pending",
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 1 month ago
-    updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    createdAt: daysAgo(30), // 1 month ago
+    updatedAt: daysAgo(30)
   }
 ];

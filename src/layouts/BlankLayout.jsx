@@ -1,3 +1,4 @@
+import React from 'react';
 import { Outlet } from "react-router-dom";
 import Logo from "../components/Logo";
 
@@ -7,10 +8,10 @@ import Logo from "../components/Logo";
  */
 function BlankLayout() {
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center">
+    <main className="min-h-screen flex flex-col">
       <Logo className="w-24 h-24 mb-12" />
       <Outlet />
-    </div>
+    </main>
   );
 }
 

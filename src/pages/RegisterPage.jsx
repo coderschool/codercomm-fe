@@ -8,7 +8,8 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Eye, EyeOff } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 
 /**
@@ -16,9 +17,11 @@ import useAuth from "../hooks/useAuth";
  * Handles creation of new user accounts
  */
 const RegisterSchema = Yup.object().shape({
-  name: Yup.string().required("Name is required"),
-  email: Yup.string().email("Invalid email").required("Email is required"),
-  password: Yup.string().required("Password is required"),
+  name: Yup.string().required("Full Name is required"),
+  email: Yup.string().email("Invalid email format").required("Email is required"),
+  password: Yup.string()
+    .required("Password is required")
+    .min(6, "Password must be at least 6 characters"),
   passwordConfirmation: Yup.string()
     .required("Please confirm your password")
     .oneOf([Yup.ref("password")], "Passwords must match"),
@@ -42,41 +45,51 @@ function RegisterPage() {
     defaultValues,
   });
 
-  const [error, setErrorMsg] = useState("");
+  const { setError, formState: { errors: formErrors, isSubmitting } } = form;
   
   const onSubmit = async (data) => {
-    const from = location.state?.from?.pathname || "/";
+    const from = "/";
     const { name, email, password } = data;
 
     try {
       await auth.register({ name, email, password });
       navigate(from, { replace: true });
     } catch (error) {
+      console.error("Registration Page Error:", error);
       form.reset({ ...data, password: "", passwordConfirmation: "" });
-      setErrorMsg(error.message);
+      setError("root", { 
+        type: "manual", 
+        message: error.message || "An unexpected error occurred during registration."
+      });
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 flex justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
+    <div className="container mx-auto px-4 py-10 flex justify-center items-center min-h-screen">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create Account</CardTitle>
           <CardDescription>
-            Register to start using CoderComm
+            Join CoderComm today!
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
-            <div className="bg-destructive/10 border border-destructive text-destructive p-3 rounded-md mb-4">
-              {error}
-            </div>
+          {formErrors.root && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Registration Failed</AlertTitle>
+              <AlertDescription>
+                {formErrors.root.message}
+                {formErrors.root.message.includes("Mock registration is disabled") && 
+                 " Please use the Login page instead for this demo."}
+              </AlertDescription>
+            </Alert>
           )}
           
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6">
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6 text-sm">
             Already have an account?{" "}
-            <RouterLink to="/login" className="font-medium underline">
-              Sign in
+            <RouterLink to="/login" className="font-medium underline hover:text-blue-800">
+              Sign in here
             </RouterLink>
           </div>
 
@@ -101,9 +114,9 @@ function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input placeholder="your.email@example.com" {...field} />
+                      <Input type="email" placeholder="your.email@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,20 +133,20 @@ function RegisterPage() {
                       <div className="relative">
                         <Input 
                           type={showPassword ? "text" : "password"}
-                          placeholder="Create a password" 
+                          placeholder="Create a password (min. 6 characters)" 
                           {...field} 
                         />
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           tabIndex={-1}
                         >
-                          {showPassword ? 
-                            <EyeOff className="h-4 w-4" /> : 
-                            <Eye className="h-4 w-4" />
-                          }
-                        </button>
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -151,20 +164,20 @@ function RegisterPage() {
                       <div className="relative">
                         <Input 
                           type={showPasswordConfirmation ? "text" : "password"}
-                          placeholder="Confirm your password" 
+                          placeholder="Enter your password again" 
                           {...field} 
                         />
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           tabIndex={-1}
                         >
-                          {showPasswordConfirmation ? 
-                            <EyeOff className="h-4 w-4" /> : 
-                            <Eye className="h-4 w-4" />
-                          }
-                        </button>
+                          {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          <span className="sr-only">{showPasswordConfirmation ? "Hide confirmation password" : "Show confirmation password"}</span>
+                        </Button>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -172,8 +185,8 @@ function RegisterPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full mt-6" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating account..." : "Register"}
+              <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
+                {isSubmitting ? "Creating account..." : "Register"}
               </Button>
             </form>
           </Form>

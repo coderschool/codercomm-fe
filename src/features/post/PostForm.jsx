@@ -1,71 +1,138 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+
+// Hooks & Components
+import useAuth from "@/hooks/useAuth";
+import { useCreatePost } from "@/hooks/usePostQuery"; // Import the mutation hook
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreatePost } from "@/features/post/postHooks";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Image, Send, Loader2 } from "lucide-react"; // Added Loader2
+import { Link } from 'react-router-dom';
+import { toast } from "sonner"; // Import toast
+
+// Utilities
+import { getInitials } from "@/utils/formatters"; // Import utility
 
 /**
- * Form for creating a new post
- * Displays a textarea for post content and submit button
+ * Yup validation schema for the new post form.
+ */
+const postSchema = yup.object({
+  // Require content, allow optional image later
+  content: yup.string().required("Post content cannot be empty.").trim(),
+  // image: yup.string().url("Invalid image URL"), // Add later if implementing image uploads
+}).required();
+
+/**
+ * Form component for creating a new post.
+ * Uses React Hook Form, Yup for validation, and useCreatePost mutation.
  */
 function PostForm() {
-  const [content, setContent] = useState("");
-  const [error, setError] = useState("");
-  const createPostMutation = useCreatePost();
+  const { user } = useAuth(); // Get current user for avatar and name
+  // Get the mutation function and its status from the hook
+  const { mutate: createPostMutate, isPending: isCreatingPost } = useCreatePost();
   
-  const handleContentChange = (e) => {
-    setContent(e.target.value);
-    if (!e.target.value.trim()) {
-      setError("Content is required");
-    } else {
-      setError("");
+  // Initialize React Hook Form
+  const form = useForm({
+    resolver: yupResolver(postSchema),
+    defaultValues: {
+      content: "",
+      // image: "",
+    },
+  });
+
+  // Form submission handler
+  const onSubmit = async (data) => {
+    console.log("Submitting post:", data);
+    try {
+      // Call the mutation function with the form data
+      createPostMutate(data, {
+        onSuccess: () => {
+          // Reset the form only after successful submission
+          form.reset(); 
+        }
+        // onError is handled globally by the hook
+      });
+    } catch (error) {
+      // Should not happen if the mutation hook handles errors, but good practice
+      console.error("Error submitting post form directly:", error);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!content.trim()) {
-      setError("Content is required");
-      return;
-    }
-    
-    createPostMutation.mutate({ content }, {
-      onSuccess: () => setContent("")
-    });
-  };
-
-  const isLoading = createPostMutation.isPending;
+  // Get user's first name for placeholder
+  const firstName = user?.name?.split(' ')[0] || 'User';
 
   return (
-    <Card>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="pt-6 space-y-4">
-          <div>
-            <Textarea
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Share what you are thinking here..."
-              className="resize-none min-h-[120px]"
-              disabled={isLoading}
-            />
-            {error && (
-              <p className="text-sm font-medium text-destructive mt-1">
-                {error}
-              </p>
-            )}
-          </div>
-        </CardContent>
-
-        <CardFooter className="justify-end">
-          <Button
-            type="submit"
-            disabled={isLoading}
-          >
-            {isLoading ? "Posting..." : "Post"}
-          </Button>
-        </CardFooter>
-      </form>
+    <Card className="mb-6 shadow-sm">
+      <Form {...form}> {/* Pass form context */}
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              {user && (
+                <Link to={`/user/${user._id}`} className="flex-shrink-0 mt-1">
+                  <Avatar className="h-10 w-10 border">
+                    <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
+                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  </Avatar>
+                </Link>
+              )}
+              
+              <div className="flex-1">
+                {/* Content Textarea Field */}
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      {/* <FormLabel className="sr-only">Post Content</FormLabel> */}
+                      <FormControl>
+                        <Textarea
+                          placeholder={`What's on your mind, ${firstName}?`}
+                          className="resize-none min-h-[80px] border-none focus-visible:ring-0 shadow-none p-2"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage className="px-2 text-xs" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </CardContent>
+          
+          <CardFooter className="flex justify-between border-t px-4 py-3">
+            {/* Add Image Button (Placeholder) */}
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-primary p-2"
+              onClick={() => toast.info("Image upload coming soon!")}
+            >
+              <Image className="h-5 w-5 mr-2" />
+              <span className="text-xs">Add Image</span>
+            </Button>
+            
+            {/* Submit Button */}
+            <Button 
+              type="submit" 
+              disabled={isCreatingPost} // Disable while submitting
+              size="sm"
+              className="px-4"
+            >
+              {isCreatingPost ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
+              ) : (
+                  <><Send className="h-4 w-4 mr-2" /> Post</>
+              )}
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
     </Card>
   );
 }

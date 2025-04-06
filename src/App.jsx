@@ -1,30 +1,16 @@
-import React, { useEffect } from "react";
-import { Toaster } from "sonner";
-import Router from "./routes";
-import useStore from "@/lib/store";
-import LoadingScreen from "@/components/LoadingScreen";
+import React from "react";
 
 function App() {
-  const { initializeAuth, isInitialized } = useStore(state => ({
-    initializeAuth: state.initializeAuth,
-    isInitialized: state.isInitialized
-  }));
-
-  useEffect(() => {
-    // Initialize authentication on app mount
-    initializeAuth();
-  }, [initializeAuth]);
-
-  // Show loading screen while auth is initializing
-  if (!isInitialized) {
-    return <LoadingScreen message="Initializing application..." />;
-  }
-
   return (
-    <>
-      <Router />
-      <Toaster position="top-right" richColors />
-    </>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold text-primary text-center my-8">
+        Welcome to CoderComm
+      </h1>
+      <p className="text-center text-muted-foreground"> 
+        A social media application for developers, built step-by-step!
+      </p>
+      {/* We'll replace this content with our Router in the next step */}
+    </div>
   );
 }
 
