@@ -1,188 +1,143 @@
-# Step 5: Post Creation and Display
+# Step 5: Post Creation & Feed Display
 
-In this step, we'll implement the core functionality for users to create and interact with posts. This involves:
+In this step, we'll implement the core functionality for users to create posts and view a simple feed. This involves:
 
-1.  **Creating Post Mutation Hooks:** Setting up React Query mutations for creating, liking/unliking, and deleting posts.
-2.  **Building the Post Form:** Creating the `PostForm` component.
-3.  **Building the Post List:** Creating/refining the `PostList` component to display posts and handle interactions.
+1.  **Building the Post Form:** Creating the `PostForm` component to submit new posts via `apiService`.
+2.  **Building Post Display Components:** Creating `PostCard` to display a single post and `PostList` to render a list of posts.
+3.  **Fetching Feed Data:** Fetching the main post feed (`/api/posts`) in `HomePage` using `useEffect` and `apiService`.
+4.  **Integrating Components:** Placing `PostForm` and `PostList` into `HomePage` and handling data flow and updates.
 
-These components and hooks will primarily be used within the `Profile` tab on `HomePage` (created in Step 4) and the `ProfilePage`.
+## 1. Add Required UI Components
 
-## 1. Understanding the Mock API Endpoints for Posts
+Ensure you have the necessary ShadCN components. Add `dialog` for the delete confirmation.
 
-*   `GET /api/posts`: Fetches *all* posts. (Note: We are primarily using `GET /api/posts/user/:userId` via `useUserPosts` from Step 4 for current views).
-*   `POST /api/posts`: Creates a new post.
-*   `POST /api/reactions`: Creates or updates a reaction (like).
-*   `DELETE /api/posts/:postId`: Deletes a post owned by the current user.
-
-## 2. Create Post Hooks with React Query
-
-Create or update `src/hooks/usePostQuery.js` to include the mutation hooks for creating, reacting to, and deleting posts. We will comment out the general `usePostsQuery` for now, as our current views rely on `useUserPosts` from the previous step.
-
-```jsx
-// src/hooks/usePostQuery.js
-import {
-  useMutation,
-  useQueryClient,
-  // useQuery, // Keep useQuery import if needed elsewhere
-} from "@tanstack/react-query";
-import apiService from "@/lib/apiService";
-import { toast } from "sonner";
-import useAuth from "@/hooks/useAuth"; // Import useAuth
-
-/* 
-// --- Hook: usePostsQuery (Commented Out - Not currently used by HomePage/ProfilePage) ---
-// Fetches all posts for a potential global feed page.
-// Our current Profile/ProfilePage views use useUserPosts (from useUserQuery.js).
-export function usePostsQuery() {
-  const { isAuthenticated, isInitialized } = useAuth();
-  return useQuery({
-    queryKey: ["posts", "feed"], 
-    queryFn: async () => {
-      console.log(`Fetching all feed posts`);
-      const response = await apiService.get(`/posts`); 
-      return response.posts || []; 
-    },
-    enabled: isInitialized && isAuthenticated, // Only fetch if logged in
-  });
-}
-*/
-
-// --- Hook: useCreatePost ---
-/**
- * Provides a mutation function to create a new post.
- */
-export function useCreatePost() {
-  const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth(); // Get current user to invalidate their posts query
-
-  return useMutation({
-    mutationFn: async (postData) => {
-      // Add image upload logic here later if needed
-      console.log("Creating post:", postData);
-      const response = await apiService.post('/posts', postData);
-      return response; // Assuming interceptor returns response.data
-    },
-    onSuccess: (newPost) => {
-      console.log("Post created successfully:", newPost);
-      // --- Cache Update Strategy: Invalidate User's Posts Query ---
-      // Invalidate the specific user's posts query to trigger a refetch.
-      // Also invalidate the general feed query if it were being used.
-      queryClient.invalidateQueries({ queryKey: ["posts", "user", currentUser?._id] });
-      // queryClient.invalidateQueries({ queryKey: ["posts", "feed"] }); // If using general feed
-      toast.success("Post created successfully");
-    },
-    onError: (error) => {
-      console.error("Failed to create post:", error);
-      toast.error(error.message || "Failed to create post");
-    },
-  });
-}
-
-// --- Hook: useReactToPost ---
-/**
- * Provides a mutation function to react (like/unlike) a post.
- */
-export function useReactToPost() {
-  const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth(); // Get current user
-
-  return useMutation({
-    mutationFn: async ({ postId, emoji }) => {
-      console.log(`Reacting to Post ${postId} with ${emoji}`);
-      const response = await apiService.post('/reactions', {
-        targetType: 'Post',
-        targetId: postId,
-        emoji: emoji,
-      });
-      return { postId, updatedReactions: response }; 
-    },
-    // Instead of invalidating, let's try optimistic updates or manual cache updates for reactions later
-    // For now, simple invalidation:
-    onSuccess: (data, variables) => {
-      console.log(`Reaction successful for Post ${variables.postId}:`, data.updatedReactions);
-      // --- Cache Update Strategy: Invalidate Relevant Queries ---
-      // Invalidate queries that display this post (user's feed, potentially general feed)
-      // Getting the authorId would be ideal here, but for simplicity, 
-      // invalidate current user's posts and potentially the general feed.
-      // A better approach involves updating the query cache directly.
-      queryClient.invalidateQueries({ queryKey: ["posts", "user"] }); // Invalidate all user post queries
-      // queryClient.invalidateQueries({ queryKey: ["posts", "feed"] }); // If using general feed
-      // queryClient.invalidateQueries({ queryKey: ["posts", "user", postAuthorId] }); // Ideal if authorId known
-    },
-    onError: (error) => {
-      console.error("Failed to react to post:", error);
-      toast.error(error.message || "Failed to update reaction");
-    },
-  });
-}
-
-// --- Hook: useDeletePost ---
-/**
- * Provides a mutation function to delete a post.
- */
-export function useDeletePost() {
-  const queryClient = useQueryClient();
-  const { user: currentUser } = useAuth(); // Get current user
-
-  return useMutation({
-    mutationFn: async (postId) => {
-      console.log(`Deleting post: ${postId}`);
-      await apiService.delete(`/posts/${postId}`);
-      return postId; 
-    },
-    onSuccess: (postId) => {
-      console.log(`Post ${postId} deleted successfully`);
-      // --- Cache Update Strategy: Invalidate Relevant Queries ---
-      queryClient.invalidateQueries({ queryKey: ["posts", "user", currentUser?._id] });
-      // queryClient.invalidateQueries({ queryKey: ["posts", "feed"] }); // If using general feed
-      toast.success("Post deleted successfully");
-    },
-    onError: (error) => {
-      console.error("Failed to delete post:", error);
-      toast.error(error.message || "Failed to delete post");
-    },
-  });
-}
+```bash
+npx shadcn-ui@latest add card avatar button textarea dropdown-menu alert dialog
 ```
 
-**Explanation:**
+## 2. Create Post Creation Component (`PostForm.jsx`)
 
-*   **`usePostsQuery` Commented Out**: We comment this out as it's not the primary hook used in the current `HomePage` (tabbed) or `ProfilePage` structure, which rely on `useUserPosts` (from `useUserQuery.js`).
-*   **Mutations (`useCreatePost`, `useReactToPost`, `useDeletePost`)**: These are kept. Note the `onSuccess` handlers now primarily focus on invalidating the *user-specific* post queries (`queryKey: ["posts", "user", currentUser?._id]`) because that's where the changes will be most immediately visible (in the user's own profile tab or page). Invalidation for reactions is broad (`["posts", "user"]`) for simplicity, but could be refined.
+This component allows the logged-in user to create a new post.
 
-## 3. Create Post Creation Component
-
-Create/Verify `src/features/post/PostForm.jsx`. (The code from the original Step 5 can be kept, as it correctly uses `useAuth` and `useCreatePost`).
+Create `src/features/post/PostForm.jsx`:
 
 ```jsx
 // src/features/post/PostForm.jsx
-// (Keep code as provided in original Step 5)
-import React from "react";
+import React, { useState } from "react";
+import PropTypes from 'prop-types';
 import { useForm } from "react-hook-form";
-// ... other imports (yup, useAuth, useCreatePost, Avatar, Button, Card, Textarea, Form, icons, Link, toast, getInitials)
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useAppStore } from "@/lib/store"; // To get current user for avatar
+import apiService from "@/lib/apiService"; // To make API call
+import { toast } from "sonner";
 
-const postSchema = yup.object({ /* ... */ }).required();
+// ShadCN UI
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Image as ImageIcon, Send } from "lucide-react"; // Icons
+import { getInitials } from "@/utils/formatters";
 
-function PostForm() {
-  const { user } = useAuth(); 
-  const { mutate: createPostMutate, isPending: isCreatingPost } = useCreatePost();
-  const form = useForm({ /* ... resolver, defaultValues ... */ });
+// Validation Schema
+const postSchema = yup.object({
+  content: yup.string().required("Post content cannot be empty").max(500, "Post too long!"),
+  // image: yup.string().url("Invalid image URL").nullable(), // Add later if needed
+}).required();
 
-  const onSubmit = async (data) => { /* ... call createPostMutate ... */ };
+/**
+ * Form for creating a new post.
+ */
+function PostForm({ onPostCreated }) {
+  const currentUser = useAppStore(state => state.currentUser);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const firstName = user?.name?.split(' ')[0] || 'User';
+  const form = useForm({
+    resolver: yupResolver(postSchema),
+    defaultValues: {
+      content: "",
+      // image: "",
+    },
+  });
+
+  const { handleSubmit, reset, control } = form;
+
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      // Add image upload logic here if implementing image uploads
+      const postData = { content: data.content }; // Add image: data.image if needed
+      
+      // Use apiService directly
+      const newPost = await apiService.post('/posts', postData);
+      
+      toast.success("Post created successfully!");
+      reset(); // Clear the form
+      if (onPostCreated) {
+        onPostCreated(newPost); // Notify parent component
+      }
+    } catch (err) {
+      console.error("Failed to create post:", err);
+      const errorMsg = err.message || "Failed to create post. Please try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const firstName = currentUser?.name?.split(' ')[0] || 'there';
 
   return (
     <Card className="mb-6 shadow-sm">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="pt-6">
-            {/* ... Avatar + Textarea inside FormField ... */}
+        {/* Display general submission error if needed */} 
+        {/* {error && <Alert variant="destructive">...</Alert>} */}
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="pt-4 flex gap-3">
+             {/* User Avatar */} 
+            <Avatar className="hidden sm:block h-10 w-10 border">
+              <AvatarImage src={currentUser?.avatarUrl || ''} alt={currentUser?.name} />
+              <AvatarFallback>{getInitials(currentUser?.name)}</AvatarFallback>
+            </Avatar>
+            
+            {/* Textarea Field */} 
+            <FormField
+              control={control}
+              name="content"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  {/* No visible label needed here */}
+                  <FormControl>
+                    <Textarea
+                      placeholder={`What's on your mind, ${firstName}?`}
+                      className="min-h-[80px] resize-none border-muted focus-visible:ring-1 focus-visible:ring-primary"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs"/>
+                </FormItem>
+              )}
+            />
           </CardContent>
-          <CardFooter className="flex justify-between border-t px-4 py-3">
-            {/* ... Add Image Button (Placeholder) ... */}
-            {/* ... Submit Button w/ Loading State ... */}
+          
+          <CardFooter className="flex justify-between border-t px-4 py-2">
+             {/* Placeholder for adding image - functionality not implemented */}
+            <Button type="button" variant="ghost" size="icon" disabled={true || isSubmitting} title="Add image (coming soon)">
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <span className="sr-only">Add image</span>
+            </Button>
+            
+            {/* Submit Button */} 
+            <Button type="submit" disabled={isSubmitting} size="sm">
+              <Send className="h-4 w-4 mr-1.5" />
+              {isSubmitting ? "Posting..." : "Post"}
+            </Button>
           </CardFooter>
         </form>
       </Form>
@@ -190,31 +145,253 @@ function PostForm() {
   );
 }
 
+PostForm.propTypes = {
+  onPostCreated: PropTypes.func, // Callback after successful creation
+};
+
 export default PostForm;
+
 ```
 
-## 4. Create/Update the Post List Component
+**Explanation:**
 
-Ensure `src/features/post/PostList.jsx` exists and is up-to-date. This component is responsible for rendering a list of posts and handling interactions like liking, deleting, and toggling comments (comments handled in the next step). (The code from the original Step 5 can be kept).
+*   Uses RHF/Yup for the simple text area form.
+*   Gets `currentUser` from `useAppStore` for the avatar.
+*   `onSubmit` calls `apiService.post('/posts', ...)`.
+*   Uses local `useState` for `isSubmitting` and `error`.
+*   Calls the `onPostCreated` prop function on success, passing the newly created post data from the API response.
+
+## 3. Create Post Display Components (`PostCard.jsx`, `PostList.jsx`)
+
+We need a component to display a single post (`PostCard`) and one to list multiple posts (`PostList`).
+
+Create `src/features/post/PostCard.jsx`:
+
+```jsx
+// src/features/post/PostCard.jsx
+import React, { useState } from "react";
+import PropTypes from 'prop-types';
+import { Link } from "react-router-dom";
+import { formatDistanceToNowStrict } from 'date-fns';
+import { useAppStore } from "@/lib/store";
+import apiService from "@/lib/apiService";
+import { toast } from "sonner";
+
+// ShadCN UI & Icons
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Heart, MessageCircle, MoreHorizontal, Trash2 } from 'lucide-react';
+
+// Utils
+import { getInitials } from "@/utils/formatters";
+import { cn } from "@/lib/utils";
+
+/**
+ * Displays a single post card with interactions.
+ */
+function PostCard({ post, onDeleteSuccess, onReactionSuccess }) {
+  const currentUser = useAppStore(state => state.currentUser);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (!post) return null;
+
+  const isCurrentUserPost = currentUser?._id === post.author?._id;
+  // Check if the current user has liked this post
+  const isLiked = post.reactions?.some(r => r.author?._id === currentUser?._id && r.emoji === 'like');
+  const likeCount = post.reactions?.filter(r => r.emoji === 'like').length || 0;
+
+  // --- Like/Unlike Handler ---
+  const handleLike = async () => {
+    if (isLiking) return;
+    setIsLiking(true);
+    try {
+      await apiService.post('/reactions', { 
+        targetType: 'Post',
+        targetId: post._id,
+        emoji: 'like' // Hardcoding 'like' for this button
+      });
+      // Notify parent to refetch data or handle update optimistically
+      if (onReactionSuccess) onReactionSuccess(post._id);
+    } catch (error) {
+      console.error("Failed to react to post:", error);
+      toast.error(error.message || "Failed to update reaction");
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  // --- Delete Handlers ---
+  const handleDelete = async () => {
+    setShowDeleteConfirm(false); // Close dialog first
+    if (isDeleting || !isCurrentUserPost) return;
+    setIsDeleting(true);
+    try {
+      await apiService.delete(`/posts/${post._id}`);
+      toast.success("Post deleted");
+      if (onDeleteSuccess) onDeleteSuccess(post._id); // Notify parent
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      toast.error(error.message || "Failed to delete post");
+      setIsDeleting(false); // Reset deleting state on error
+    }
+    // No finally block needed for isDeleting, as component might unmount
+  };
+
+  const openDeleteConfirm = () => setShowDeleteConfirm(true);
+
+  return (
+    <Card className={cn("w-full shadow-sm", isDeleting && "opacity-50 pointer-events-none")}>
+      {/* Card Header: Author Info + Options Dropdown */}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 border-b">
+        <Link to={`/user/${post.author?._id}`} className="flex items-center gap-2 group">
+          <Avatar className="h-9 w-9 border">
+            <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.name} />
+            <AvatarFallback>{getInitials(post.author?.name)}</AvatarFallback>
+          </Avatar>
+          <div className="text-sm">
+            <p className="font-medium group-hover:text-primary transition-colors">{post.author?.name || "Unknown User"}</p>
+            {post.createdAt && (
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNowStrict(new Date(post.createdAt), { addSuffix: true })}
+              </p>
+            )}
+          </div>
+        </Link>
+        
+        {/* Delete Dropdown (only for own posts) */} 
+        {isCurrentUserPost && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">More options</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={openDeleteConfirm}
+                className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete Post
+              </DropdownMenuItem>
+              {/* Add Edit option later if needed */}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </CardHeader>
+
+      {/* Card Content: Post Text & Image */}
+      <CardContent className="p-3 text-sm">
+        <p className="whitespace-pre-wrap break-words">{post.content}</p>
+        {post.image && (
+          <div className="mt-3 rounded-md overflow-hidden border aspect-video bg-muted"> {/* Changed aspect ratio */} 
+            <img 
+              src={post.image}
+              alt="Post image"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+      </CardContent>
+
+      {/* Card Footer: Actions (Like, Comment) */}
+      <CardFooter className="p-2 border-t flex justify-between items-center">
+        <div className="flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLike} 
+            disabled={isLiking || isDeleting}
+            className={cn("flex items-center gap-1", isLiked && "text-red-500 hover:text-red-600")}
+          >
+            <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+            <span className="text-xs">{likeCount}</span>
+            <span className="sr-only">Like post</span>
+          </Button>
+          <Button variant="ghost" size="sm" className="flex items-center gap-1 text-muted-foreground" disabled={true || isDeleting}> {/* Disable comments for now */}
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs">{post.commentCount || 0}</span>
+            <span className="sr-only">Comment on post</span>
+          </Button>
+        </div>
+        {/* Add Share button later if needed */}
+      </CardFooter>
+
+      {/* Delete Confirmation Dialog */} 
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this post.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
+}
+
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    content: PropTypes.string,
+    image: PropTypes.string,
+    author: PropTypes.shape({
+      _id: PropTypes.string,
+      name: PropTypes.string,
+      avatarUrl: PropTypes.string,
+    }),
+    createdAt: PropTypes.string,
+    reactions: PropTypes.array,
+    commentCount: PropTypes.number,
+  }).isRequired,
+  onDeleteSuccess: PropTypes.func.isRequired,
+  onReactionSuccess: PropTypes.func.isRequired,
+};
+
+export default PostCard;
+```
+
+Create/Update `src/features/post/PostList.jsx`:
 
 ```jsx
 // src/features/post/PostList.jsx
-// (Keep code as provided in original Step 5)
-import React, { useState } from "react"; 
+import React from "react";
 import PropTypes from 'prop-types';
-// ... other imports (Link, Avatar, date-fns, icons, Card, getInitials, Button, DropdownMenu, useAuth, useReactToPost, useDeletePost, cn, CommentList)
+import PostCard from "./PostCard";
+import { Card, CardContent } from "@/components/ui/card"; // For empty state
 
-function PostList({ posts = [] }) {
-  const { user: currentUser } = useAuth();
-  const { mutate: reactToPostMutate, isPending: isReacting } = useReactToPost(); 
-  const { mutate: deletePostMutate, isPending: isDeleting } = useDeletePost();
-  const [deletingPostId, setDeletingPostId] = useState(null);
-  const [expandedComments, setExpandedComments] = useState({}); 
-
-  const handleReaction = (postId, emoji) => { /* ... call reactToPostMutate ... */ };
-  const handleDeleteClick = (postId) => { /* ... confirm and call deletePostMutate ... */ };
-  const toggleComments = (postId) => { /* ... update expandedComments state ... */ };
-
+/**
+ * Renders a list of PostCard components.
+ */
+function PostList({ posts = [], onDeleteSuccess, onReactionSuccess }) {
   if (!posts || posts.length === 0) {
     return (
       <Card className="mt-4 shadow-sm">
@@ -229,56 +406,163 @@ function PostList({ posts = [] }) {
 
   return (
     <div className="space-y-4">
-      {posts.map((post) => {
-          const isLikedByCurrentUser = /* ... check reactions ... */;
-          const isCurrentlyDeleting = /* ... check deletingPostId ... */;
-          const areCommentsExpanded = /* ... check expandedComments ... */;
-
-          return (
-            <Card key={post._id} className={/* ... conditional class ... */}> 
-              <CardHeader className="p-0">{/* ... Author Info + Delete Dropdown ... */}</CardHeader>
-              <CardContent className="px-4 pb-2 pt-0">{/* ... Post Content + Image ... */}</CardContent>
-              <CardFooter className="px-4 py-2 bg-muted/50 border-t">
-                {/* ... Like Button + Comment Button ... */}
-              </CardFooter>
-              {/* ... Expanded Comments Section (using CommentList from next step) ... */}
-            </Card>
-          )
-      })}
+      {posts.map((post) => (
+        <PostCard 
+          key={post._id} 
+          post={post} 
+          onDeleteSuccess={onDeleteSuccess} 
+          onReactionSuccess={onReactionSuccess}
+        />
+      ))}
     </div>
   );
 }
-PostList.propTypes = { /* ... */ };
+
+PostList.propTypes = {
+  posts: PropTypes.array,
+  onDeleteSuccess: PropTypes.func.isRequired,
+  onReactionSuccess: PropTypes.func.isRequired,
+};
+
 export default PostList;
 ```
 
-## 5. Integration Notes
+**Explanation:**
 
-*   The `PostForm` component is used within the `Profile` component (`src/features/user/Profile.jsx`) as detailed in Step 4.
-*   The `PostList` component is used within both the `Profile` component (showing the current user's posts fetched via `useUserPosts`) and the `ProfilePage` component (`src/pages/ProfilePage.jsx`) (showing the viewed user's posts fetched via `useUserPosts`).
-*   No general `Feed` component is implemented in this step, as the main views now focus on user-specific content within tabs or profile pages.
+*   **`PostCard.jsx`**: Displays a single post, including author info, content, image (if any), and action buttons (Like, Comment placeholder, Delete).
+    *   Handles like/unlike logic by calling `apiService.post('/reactions')`. Uses local state `isLiking`.
+    *   Handles delete logic using `AlertDialog` for confirmation and calls `apiService.delete('/posts/:id')`. Uses local state `isDeleting`, `showDeleteConfirm`.
+    *   Calls `onDeleteSuccess` or `onReactionSuccess` props after successful API calls to notify the parent.
+*   **`PostList.jsx`**: Simple component that maps over the `posts` array and renders a `PostCard` for each, passing down the necessary props and callbacks.
 
-## 6. Running the Application
+## 4. Update `HomePage` for Feed and Post Creation
 
-Run `npm run dev` and test post functionality:
+Modify `HomePage` to fetch the main feed, render `PostForm`, and `PostList`.
 
-1.  **Navigate to HomePage:** Log in. The "Profile" tab should show the `PostForm` and your existing posts (via `Profile` -> `PostList`).
-2.  **Create Post:** Type content into the `PostForm` and click "Post". The post list below should update to include your new post (after cache invalidation).
-3.  **Like Post:** Click the heart icon on a post. It should visually update (if styles are set up), and the count might change after refetch.
-4.  **Delete Post:** Click the ellipsis (...) on one of your own posts and select "Delete". Confirm the deletion. The post should disappear from the list.
-5.  **Navigate to ProfilePage:** View your own profile via `/user/yourUserId` or another user's profile (`/user/user2`). The posts displayed should be specific to that user, fetched via `useUserPosts`.
+Update `src/pages/HomePage.jsx`:
 
-## 7. Frequently Asked Questions (FAQ)
+```jsx
+// src/pages/HomePage.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { useAppStore } from "@/lib/store";
+import apiService from "@/lib/apiService";
 
-*   **Q: Why invalidate queries in `onSuccess` instead of updating the cache directly?**
-    *   A: Invalidation is simpler to implement initially. It tells React Query "this data is stale, refetch it". Direct cache updates (`queryClient.setQueryData`) can provide a faster UI response (optimistic updates) but require more careful logic to handle potential rollbacks if the mutation fails server-side. We prioritize simplicity here.
-*   **Q: Why don't we need a general `usePostsQuery` or `Feed` component now?**
-    *   A: With the tabbed layout on `HomePage` focusing on the current user (Profile, Friends, etc.) and `ProfilePage` showing specific users, there isn't a dedicated page displaying a combined feed of *all* posts. We fetch posts per-user using `useUserPosts`. If a global feed page were needed later, `usePostsQuery` and a `Feed` component could be reintroduced.
-*   **Q: Will fetching *all* posts/comments be slow?**
-    *   A: With the limited sample data in the mock API, performance impact is negligible. In a real application with potentially thousands of items, fetching everything at once would be inefficient and a different data fetching strategy (like cursor-based loading or virtualization) would be necessary for production.
+// Components
+import PostForm from "@/features/post/PostForm";
+import PostList from "@/features/post/PostList";
+import LoadingScreen from "@/components/LoadingScreen";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+/**
+ * Home page: Displays PostForm and the main post feed.
+ * Fetches feed data using useEffect/apiService.
+ */
+function HomePage() {
+  const currentUser = useAppStore(state => state.currentUser);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch posts function (memoized)
+  const fetchPosts = useCallback(async () => {
+    // Don't set loading to true on refetch to avoid layout shifts
+    // setLoading(true); 
+    setError(null);
+    console.log("HomePage: Fetching feed posts...");
+    try {
+      // Fetch the general feed posts
+      const response = await apiService.get('/posts');
+      // Assuming the interceptor returns the full object { posts, count, ... }
+      setPosts(response.posts || []); 
+      console.log("HomePage: Feed posts fetched.", response.posts?.length);
+    } catch (err) {
+      console.error("HomePage: Failed to fetch posts:", err);
+      setError(err.message || "Could not load feed.");
+      setPosts([]); // Clear posts on error
+    } finally {
+      // Only set initial loading to false
+      if (loading) setLoading(false); 
+    }
+  }, [loading]); // Depend on `loading` to set it false only once
+
+  // Initial fetch on mount
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]); // Run fetchPosts when the function instance changes (effectively once)
+
+  // Handler for when a new post is created by PostForm
+  // Also used for refreshing after delete/like
+  const handleDataChange = () => {
+    console.log("HomePage: Data changed (post created/deleted/liked), refetching posts...");
+    fetchPosts(); // Refetch the entire posts list
+    // More advanced: Could try to update state optimistically or only fetch updated post
+  };
+
+  // --- Render Logic ---
+  if (loading) {
+    return <LoadingScreen message="Loading feed..." />;
+  }
+
+  return (
+    <div className="max-w-xl mx-auto space-y-6"> {/* Centered column layout */} 
+      {/* Welcome message - optional */}
+      {/* <h1 className="text-2xl font-semibold">Home Feed</h1> */} 
+      
+      {/* Post Creation Form */} 
+      <PostForm onPostCreated={handleDataChange} />
+
+      {/* Display Error if fetching failed */} 
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Feed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Post List */} 
+      <PostList 
+        posts={posts} 
+        onDeleteSuccess={handleDataChange} 
+        onReactionSuccess={handleDataChange} 
+      />
+    </div>
+  );
+}
+
+export default HomePage;
+```
+
+**Explanation:**
+
+*   Fetches posts for the main feed using `useEffect`, `useState`, and `apiService.get('/posts')`.
+*   Includes `PostForm`, passing the `handleDataChange` callback function as the `onPostCreated` prop.
+*   Includes `PostList`, passing the fetched `posts` array and the `handleDataChange` function for both `onDeleteSuccess` and `onReactionSuccess` props.
+*   `handleDataChange` simply calls `fetchPosts()` again to refresh the entire list whenever a post is created, deleted, or liked. This is a simple strategy for ensuring data consistency.
+
+## 5. Running the Application
+
+Run `npm run dev` and test post functionality on the Home page:
+
+1.  **Log in:** You should land on the `HomePage`.
+2.  **View Feed:** You should see the `PostForm` at the top, followed by a list of posts from various users (user1, user2, user3 from mock data).
+3.  **Create Post:** Use the `PostForm`, type a message, click "Post". A success toast should appear, the form should clear, and the new post should appear at the top of the `PostList` below (after the refetch completes).
+4.  **Like Post:** Click the heart icon on any post. It should update visually (turn red) after the action completes and the list refetches.
+5.  **Delete Own Post:** Find a post you just created. Click the ellipsis (...) and choose "Delete". Confirm the deletion. The post should be removed from the feed after the refetch.
+6.  **Check Profile Page:** Navigate to your own profile page (`/user/user1`). The posts list there should also reflect the creation/deletion changes.
+
+## 6. Frequently Asked Questions (FAQ)
+
+*   **Q: How does the feed update after creating/deleting/liking a post?**
+    *   A: The `PostForm` and `PostCard` components call callback functions (`onPostCreated`, `onDeleteSuccess`, `onReactionSuccess`) passed down from `HomePage`. These callbacks all trigger the `handleDataChange` function in `HomePage`, which in turn calls `fetchPosts()` again. This refetches the entire list of posts from `/api/posts` and updates the `posts` state, causing the `PostList` to re-render with the latest data.
+*   **Q: Isn't refetching the whole list inefficient?**
+    *   A: Yes, for large feeds, it can be. This is a simple approach for the tutorial. More advanced techniques include: updating the local state array directly (optimistic updates), only fetching the single updated/created post and merging it into the state, or using pagination/infinite scrolling (fetching only visible posts).
+*   **Q: Why is the like button sometimes slow to update visually?**
+    *   A: Because we are waiting for the API call (`apiService.post('/reactions', ...)`) to complete and then refetching the entire post list via `handleDataChange`. An optimistic update (changing the button's appearance *before* the API call finishes and reverting if it fails) would make it feel instantaneous.
 
 ## What's Next?
 
-Users can now create, view, and interact with posts within their profile context. The next logical step is adding comments.
+Users can now create posts and see a basic feed. The next essential feature is comments.
 
-In **Step 6: Comments System**, we'll build the components and hooks necessary to allow users to comment on posts.
+In **Step 6: Comments System**, we'll build the components and logic to allow users to view and add comments to posts.

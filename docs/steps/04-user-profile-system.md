@@ -1,493 +1,31 @@
 # Step 4: User Profile System
 
-In this step, we'll implement the user profile system. Users will be able to view profiles (their own via the `HomePage` tab, and others' via a dedicated `ProfilePage`), and edit their own profile information. This involves:
+In this step, we'll implement the user profile page (`/user/:userId`). Users will be able to view profiles, including an "About" section and a list of the user's posts. If viewing their own profile, they'll also see an option to edit their information.
 
-1.  **Setting up React Query:** Integrating the library for managing server state.
-2.  **Creating Data Fetching Hooks:** Using `useQuery` and `useMutation` to fetch/update user data and posts.
-3.  **Building Profile Components:** Creating:
-    *   `ProfilePage`: For viewing any user's profile (`/user/:userId`).
+This involves:
+
+1.  **Creating Profile Components:** Building:
+    *   `ProfilePage`: The main page component for `/user/:userId`.
     *   `ProfileAbout`: Displays the read-only "About" section.
-    *   `ProfileEditForm`: Allows the user to edit their profile details.
-    *   `Profile` (Tab Component): Displays the *current user's* info, post form, and posts within the `HomePage` tab.
-4.  **Adding Dynamic Routing:** Using `useParams` for `ProfilePage`.
-5.  **Integrating Components:** Placing the components into `ProfilePage` and `HomePage`.
+    *   `ProfileEditForm`: Allows the current user to edit their profile details.
+    *   Re-using `PostList` (from a later step, but we anticipate its structure).
+2.  **Fetching Data:** Using `useEffect` and `apiService` within `ProfilePage` to fetch user and post data.
+3.  **Managing State:** Using `useState` for loading/error states within `ProfilePage`.
+4.  **Adding Dynamic Routing:** Using `useParams` to get the `userId`.
+5.  **Integrating Components:** Assembling the components within `ProfilePage` using Tabs.
 
-## 1. Set Up React Query Provider
-
-React Query requires a `QueryClientProvider` to wrap your application. This provider makes the query client available to all components and hooks. We also add the `ReactQueryDevtools` for easier debugging during development.
-
-Update `src/main.jsx`:
-
-```jsx
-// src/main.jsx
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import React Query
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Import DevTools
-
-// import { HelmetProvider } from 'react-helmet-async'; // Optional: if using Helmet
-
-import App from './App';
-
-// Import Tailwind CSS
-import './index.css';
-
-// --- React Query Client Setup ---
-// Create a client instance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Configuration options for all queries
-      refetchOnWindowFocus: false, // Don't refetch data automatically when window gains focus
-      retry: 1, // Retry failed requests once
-      staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
-    },
-  },
-});
-
-// --- Conditional Mock Server Initialization ---
-if (import.meta.env.DEV && !import.meta.env.VITE_API_URL) {
-  import('./mockApi/server').then(({ mockServer }) => {
-    mockServer({ environment: 'development' });
-    console.log('🔶 Mock API Server Started (Development Mode)');
-  }).catch(error => {
-    console.error("Failed to start mock server:", error);
-  });
-} else if (import.meta.env.VITE_API_URL) {
-  console.log(` Bypassing mock server. Using real API at: ${import.meta.env.VITE_API_URL}`);
-}
-
-const container = document.getElementById('root');
-const root = createRoot(container);
-
-root.render(
-  <React.StrictMode>
-    {/* <HelmetProvider> */}
-      {/* Wrap the app in QueryClientProvider */}
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-        {/* Add React Query DevTools (only renders in development) */}
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </QueryClientProvider>
-    {/* </HelmetProvider> */}
-  </React.StrictMode>
-);
-```
-
-**Explanation:**
-
-*   `QueryClient`: Creates an instance of the React Query client, which manages caching and data fetching logic.
-*   `QueryClientProvider`: Wraps the application, making the `queryClient` available via hooks like `useQuery`.
-*   `ReactQueryDevtools`: A helpful tool (visible only in development) for inspecting query states, cache, and triggering actions.
-
-## 2. Understanding the Mock API Endpoints for User Profiles
-
-Our mock API (`src/mockApi/server.js`) already includes endpoints for this feature:
-
-*   `GET /api/users/:id`: Get a specific user's profile by their ID.
-*   `GET /api/posts/user/:userId`: Get posts created by a specific user.
-*   `PUT /api/users/me`: Update the *current* user's profile (our mock simplifies this to only allow updating `user1`).
-
-Remember, we interact with these endpoints via `apiService`; we don't modify the mock server itself.
-
-## 3. Install Additional UI Components
+## 1. Install Additional UI Components
 
 We need components for tabs (to switch between Posts/About sections) and text areas (for the edit form).
 
 ```bash
-npx shadcn@latest add tabs textarea alert
+npx shadcn-ui@latest add tabs textarea
 ```
 
 *   `tabs`: Creates tabbed navigation.
 *   `textarea`: Multi-line text input.
-*   `alert`: Used for displaying form errors.
 
-## 4. Create User Data Hooks with React Query
-
-Now, let's create custom hooks using React Query to fetch and update user-related data. This encapsulates the data fetching logic.
-
-Create `src/hooks/useUserQuery.js`:
-
-```jsx
-// src/hooks/useUserQuery.js
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import apiService from "@/lib/apiService"; // Our Axios instance
-import { toast } from "sonner"; // For notifications
-
-// --- Custom Hook: useUserQuery ---
-/**
- * Fetches a single user's profile data by their ID.
- * Uses React Query's `useQuery` for data fetching and caching.
- * @param {string | undefined} userId - ID of the user to fetch. The query is disabled if userId is falsy.
- * @returns {QueryResult} The result object from `useQuery`, containing user data, loading state, error state, etc.
- */
-export function useUserQuery(userId) {
-  return useQuery({
-    // queryKey: Unique identifier for this query. 
-    // React Query uses this for caching. Includes the user ID so different profiles have different cache entries.
-    queryKey: ["users", userId], 
-    
-    // queryFn: The asynchronous function that performs the data fetching.
-    queryFn: async () => {
-      console.log(`Fetching user: ${userId}`); // Debug log
-      // Use our apiService to make the GET request.
-      // Assuming apiService interceptor returns response.data directly on success.
-      const response = await apiService.get(`/users/${userId}`);
-      return response.data; // Return the user data
-    },
-    
-    // enabled: Controls if the query should automatically run.
-    // We only run the query if a valid `userId` is provided. `!!userId` converts userId to a boolean.
-    enabled: !!userId, 
-
-    // staleTime: How long data is considered fresh (won't refetch on mount/focus). Default is 0.
-    // staleTime: 5 * 60 * 1000, // Example: 5 minutes (can be set globally too)
-
-    // cacheTime: How long inactive query data remains in cache. Default is 5 minutes.
-    // cacheTime: 10 * 60 * 1000, // Example: 10 minutes
-  });
-}
-
-// --- Custom Hook: useUpdateProfile ---
-/**
- * Provides a mutation function to update the current user's profile.
- * Uses React Query's `useMutation` for handling the update operation.
- * @returns {MutationResult} The result object from `useMutation`, containing mutation function, status, etc.
- */
-export function useUpdateProfile() {
-  // Get the QueryClient instance - needed to invalidate/update cache after mutation.
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    // mutationFn: The asynchronous function that performs the update.
-    // It receives an object, typically containing the data needed for the update.
-    mutationFn: async ({ userId, ...updateData }) => { 
-      console.log(`Updating profile for user: ${userId}`, updateData); // Debug log
-      // Use apiService to make the PUT request.
-      // Our mock API is hardcoded to update '/users/me', but a real API would use userId.
-      // We'll assume the API call targets the correct user based on authentication or userId.
-      const response = await apiService.put(`/users/me`, updateData); // Mock uses /me
-      // const response = await apiService.put(`/users/${userId}`, updateData); // Real API might use this
-      return response.data; // Return the updated user data from the response
-    },
-    
-    // onSuccess: Callback function executed after a successful mutation.
-    // Receives the data returned by `mutationFn` and the variables passed to `mutate`.
-    onSuccess: (updatedUser, variables) => {
-      console.log("Profile update successful:", updatedUser);
-      
-      // --- Cache Invalidation/Update Strategy ---
-      // It's crucial to update the cache after a mutation so the UI reflects changes.
-      
-      // Option 1: Invalidate queries related to the updated user.
-      // This tells React Query that the data for these keys is stale and needs refetching.
-      queryClient.invalidateQueries({ queryKey: ["users", variables.userId] });
-      // Also invalidate the current user query if applicable
-      queryClient.invalidateQueries({ queryKey: ["users", "me"] }); 
-      // You might also need to invalidate related data, like user posts lists, etc.
-      // queryClient.invalidateQueries({ queryKey: ["posts", "user", variables.userId] });
-
-      // Option 2 (More optimistic): Directly update the cache with the new data.
-      // This can feel faster as the UI updates immediately without waiting for a refetch.
-      // queryClient.setQueryData(["users", variables.userId], updatedUser);
-      // queryClient.setQueryData(["users", "me"], updatedUser); // Update 'me' query too
-
-      // For this tutorial, invalidation is simpler to demonstrate.
-      
-      toast.success("Profile updated successfully");
-    },
-    
-    // onError: Callback function executed if the mutation fails.
-    onError: (error) => {
-      console.error("Profile update failed:", error);
-      toast.error(error.message || "Failed to update profile");
-    },
-  });
-}
-
-// --- Custom Hook: useUserPosts ---
-/**
- * Fetches posts created by a specific user.
- * @param {string | undefined} userId - ID of the user whose posts to fetch. Query disabled if falsy.
- * @returns {QueryResult} Result object from `useQuery` for the user's posts.
- */
-export function useUserPosts(userId) {
-  return useQuery({
-    // Query key includes user ID to cache posts per user.
-    queryKey: ["posts", "user", userId], 
-    queryFn: async () => {
-      console.log(`Fetching posts for user: ${userId}`); // Debug log
-      const response = await apiService.get(`/posts/user/${userId}`);
-      // Assuming the API returns an object like { posts: [], count: X, totalPages: Y }
-      return response.data; 
-    },
-    enabled: !!userId, // Only fetch if userId is provided
-  });
-}
-```
-
-**Explanation:**
-
-*   **`useQuery`**: Hook for fetching data.
-    *   `queryKey`: An array that uniquely identifies the data. React Query uses this for caching. When the key changes, or if data is invalidated, React Query might refetch.
-    *   `queryFn`: The async function that performs the actual API call. It *must* return a promise that resolves with the data or throws an error.
-    *   `enabled`: A boolean to conditionally enable/disable the query. Useful for dependent queries or queries that need an ID before running.
-*   **`useMutation`**: Hook for operations that change data (POST, PUT, DELETE).
-    *   `mutationFn`: The async function that performs the API call to modify data. It receives variables passed when calling the `mutate` function.
-    *   `onSuccess`: Callback executed after the mutation succeeds. Ideal place to invalidate related queries or update the cache directly.
-    *   `onError`: Callback executed if the mutation fails.
-*   **`useQueryClient`**: Hook to get the Query Client instance, needed for interacting with the cache (e.g., `invalidateQueries`).
-*   **`invalidateQueries`**: Tells React Query that data associated with certain `queryKey`s is stale and should be refetched the next time it's needed.
-
-## 5. Create `ProfilePage` Component (for Viewing Others)
-
-This page (`/user/:userId`) displays any user's profile using the hooks we created. It includes tabs for Posts and About sections.
-
-Create `src/pages/ProfilePage.jsx`:
-
-```jsx
-// src/pages/ProfilePage.jsx
-import React, { useState } from "react";
-import { useParams } from "react-router-dom"; // Hook to get URL parameters
-import { useUserQuery, useUserPosts } from "@/hooks/useUserQuery"; // Our data hooks
-import useAuth from "@/hooks/useAuth"; // To check if it's the current user's profile
-import { formatDistanceToNow } from "date-fns"; // For relative date formatting
-
-// ShadCN UI Components
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"; // For errors
-import { Pencil, UserPlus, UserMinus, Calendar, AlertCircle } from "lucide-react"; // Icons
-
-// Feature Components (We'll create these next)
-import ProfileAbout from "@/features/user/ProfileAbout";
-import ProfileEditForm from "@/features/user/ProfileEditForm";
-import PostList from "@/features/post/PostList"; // Re-use PostList
-import LoadingScreen from "@/components/LoadingScreen";
-
-// Utilities
-import { getInitials } from "@/utils/formatters"; // Import utility
-
-/**
- * User Profile Page: Displays another user's information, posts, about section.
- * Fetches data via React Query hooks based on URL param.
- * Allows editing only if it's the current user's profile (edge case).
- */
-function ProfilePage() {
-  // Get the user ID from the URL (e.g., /user/user1 -> id = "user1")
-  const { userId } = useParams(); 
-  // Get the currently logged-in user from our auth hook
-  const { user: currentUser } = useAuth();
-  // State to toggle the profile editing form
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // --- Data Fetching using React Query ---
-  // Fetch the profile user's data
-  const { 
-    data: profileUser, // Renamed data to profileUser for clarity
-    isLoading: isLoadingUser,
-    isError: isUserError,
-    error: userError
-  } = useUserQuery(userId); // Pass the userId from the URL
-  
-  // Fetch the posts for this profile user
-  const { 
-    data: postsData, // Contains { posts: [], count: X, totalPages: Y }
-    isLoading: isLoadingPosts,
-    // We could add error handling for posts too if needed
-  } = useUserPosts(userId); // Pass the same userId
-
-  // --- Computed State ---
-  // Check if the profile being viewed belongs to the currently logged-in user
-  const isCurrentUserProfile = currentUser?._id === userId;
-
-  // --- Render Logic ---
-
-  // Handle loading state for the user profile
-  if (isLoadingUser) {
-    return <LoadingScreen message="Loading profile..." />;
-  }
-
-  // Handle error state for the user profile
-  if (isUserError) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Profile</AlertTitle>
-        <AlertDescription>
-          {userError?.message || "An unexpected error occurred."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-  
-  // If data loaded but user is not found (e.g., invalid ID)
-  if (!profileUser) {
-     return (
-       <Alert variant="destructive">
-         <AlertCircle className="h-4 w-4" />
-         <AlertTitle>User Not Found</AlertTitle>
-         <AlertDescription>
-           The profile for this user could not be found.
-         </AlertDescription>
-       </Alert>
-     );
-  }
-
-  // --- JSX Structure ---
-  return (
-    <div className="space-y-8">
-      {/* --- Profile Header Section --- */}
-      <div className="relative">
-        {/* Cover Image */}
-        <div className="h-48 md:h-64 w-full overflow-hidden rounded-lg bg-muted">
-          {profileUser.coverUrl ? (
-            <img
-              src={profileUser.coverUrl}
-              alt={`${profileUser.name}'s cover photo`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            // Placeholder gradient if no cover image
-            <div className="w-full h-full bg-gradient-to-r from-primary/50 to-secondary/50" />
-          )}
-        </div>
-
-        {/* Avatar and Basic Info */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-end px-4 sm:px-6 -mt-12 sm:-mt-16 relative z-10">
-          <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background">
-            <AvatarImage src={profileUser.avatarUrl || ''} alt={profileUser.name} />
-            <AvatarFallback className="text-4xl">
-              {getInitials(profileUser.name)}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="ml-0 sm:ml-4 mt-2 sm:mb-2 text-center sm:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold">{profileUser.name}</h1>
-            {/* Join Date - Using date-fns for formatting */}
-            {profileUser.createdAt && (
-               <div className="flex items-center justify-center sm:justify-start text-sm text-muted-foreground mt-1">
-                 <Calendar className="h-4 w-4 mr-1.5" />
-                 <span>
-                   Joined {formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true })}
-                 </span>
-               </div>
-            )}
-          </div>
-
-          {/* Action Buttons (Edit/Add Friend) */}
-          <div className="ml-auto mt-4 sm:mt-0 sm:mb-2">
-            {isCurrentUserProfile ? (
-              // Show Edit/Cancel button if it's the current user's profile
-              <Button 
-                onClick={() => setIsEditing(!isEditing)} 
-                variant={isEditing ? "outline" : "default"}
-                size="sm"
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                {isEditing ? "Cancel Editing" : "Edit Profile"}
-              </Button>
-            ) : (
-              // Show Add/Remove Friend button for other profiles (functionality later)
-              <Button size="sm" onClick={() => toast.info("Friend actions coming soon!")}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add Friend 
-                {/* Add logic here later based on friendship status */}
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* --- Profile Content Tabs --- */}
-      <Tabs defaultValue="posts" className="w-full">
-        {/* Tab Triggers */}
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 mb-6">
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="friends">Friends</TabsTrigger>
-          {/* <TabsTrigger value="photos">Photos</TabsTrigger> */}
-        </TabsList>
-        
-        {/* Posts Tab Content */}
-        <TabsContent value="posts">
-          {isLoadingPosts ? (
-            <LoadingScreen message="Loading posts..." fullScreen={false} />
-          ) : (
-            // Pass the fetched posts array to the PostList component
-            <PostList posts={postsData?.posts || []} /> 
-          )}
-        </TabsContent>
-        
-        {/* About Tab Content */}
-        <TabsContent value="about">
-          {/* Show edit form only if `isEditing` is true AND it's the current user's profile */}
-          {isEditing && isCurrentUserProfile ? (
-            <ProfileEditForm 
-              user={profileUser} 
-              // Pass callbacks to close the form on cancel/success
-              onCancel={() => setIsEditing(false)} 
-              onSuccess={() => setIsEditing(false)} 
-            />
-          ) : (
-            // Otherwise, show the read-only About component
-            <ProfileAbout user={profileUser} />
-          )}
-        </TabsContent>
-        
-        {/* Friends Tab Content (Placeholder) */}
-        <TabsContent value="friends">
-          <Card className="mt-4">
-            <CardHeader><CardTitle>Friends</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Friends list feature coming soon!
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Photos Tab Content (Placeholder) */}
-        {/* <TabsContent value="photos">
-          <Card className="mt-4">
-            <CardHeader><CardTitle>Photos</CardTitle></CardHeader>
-            <CardContent>
-               <p className="text-center text-muted-foreground py-8">
-                 Photos gallery feature coming soon!
-               </p>
-             </CardContent>
-           </Card>
-         </TabsContent> */}
-      </Tabs>
-    </div>
-  );
-}
-
-export default ProfilePage; // Changed from UserProfilePage
-```
-
-**Explanation:**
-
-*   **`useParams`**: Gets the `userId` from the URL (`/user/:userId`).
-*   **`useUserQuery(userId)`**: Fetches the profile data for the specific user ID. React Query handles caching and loading/error states (`isLoadingUser`, `isUserError`, `userError`).
-*   **`useUserPosts(userId)`**: Fetches the posts for that user.
-*   **`isCurrentUserProfile`**: A boolean flag to determine if the viewed profile belongs to the logged-in user.
-*   **`isEditing` State**: Controls whether to show the `ProfileAbout` (view) or `ProfileEditForm` (edit) component.
-*   **Conditional Rendering**: Shows loading screens or error messages based on query states. Shows the "Edit Profile" button only on the current user's profile.
-*   **Date Formatting**: Uses `formatDistanceToNow` from `date-fns` for the "Joined..." date.
-*   **`Tabs`**: ShadCN component used to structure the profile content.
-*   **Passing Data**: Fetched `profileUser` and `postsData` are passed as props to child components (`ProfileAbout`, `ProfileEditForm`, `PostList`).
-
-## 6. Create User Feature Components
+## 2. Create User Profile Feature Components
 
 These components handle specific parts of the profile display and editing.
 
@@ -497,29 +35,38 @@ Create `src/features/user/ProfileAbout.jsx`:
 // src/features/user/ProfileAbout.jsx
 import React from "react";
 import PropTypes from 'prop-types';
-import { Mail, MapPin, Briefcase, Link as LinkIcon } from "lucide-react"; // Renamed Link to LinkIcon
+import { Mail, MapPin, Briefcase, Link as LinkIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils"; // Import cn
 
 /**
  * Displays the read-only "About" section of a user's profile.
  */
-function ProfileAbout({ user }) {
-  if (!user) return null; // Handle case where user data might not be loaded yet
+function ProfileAbout({ user, className }) {
+  // Ensure user object exists
+  if (!user) {
+    return <p className="text-muted-foreground italic">User data not available.</p>;
+  }
+
+  const hasInfo = user.aboutMe || user.jobTitle || user.city || user.country || user.email || user.website;
 
   return (
-    <Card>
+    <Card className={cn("w-full", className)}> {/* Allow passing className */} 
       <CardHeader>
-        <CardTitle>About {user.name}</CardTitle>
+        {/* Use user.name safely */}
+        <CardTitle>About {user.name || 'User'}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* About Me Text */}
-        {user.aboutMe && (
+        {user.aboutMe ? (
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <p>{user.aboutMe}</p>
           </div>
-        )}
+        ) : null}
 
-        {/* Details List */}
+        {/* Details List - only render if there is info */}
+        {hasInfo && user.aboutMe && <hr className="my-4 border-border" />} {/* Separator */} 
+
         <div className="space-y-3">
           {user.jobTitle && (
             <div className="flex items-center text-sm">
@@ -527,26 +74,25 @@ function ProfileAbout({ user }) {
               <span>{user.jobTitle}{user.company && ` at ${user.company}`}</span>
             </div>
           )}
-           {(user.city || user.country) && (
+          {(user.city || user.country) && (
             <div className="flex items-center text-sm">
               <MapPin className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
               <span>Lives in {user.city}{user.city && user.country && ", "}{user.country}</span>
             </div>
           )}
-           {user.email && ( // Consider privacy implications of showing email publicly
+          {/* Conditionally show email - consider privacy */}
+          {user.email && ( 
             <div className="flex items-center text-sm">
               <Mail className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-              {/* Use mailto link for email */}
-              <a href={`mailto:${user.email}`} className="hover:underline">{user.email}</a>
+              <a href={`mailto:${user.email}`} className="hover:underline truncate">{user.email}</a>
             </div>
           )}
-          {/* Add other fields like website, social links if available in your data */}
           {user.website && (
             <div className="flex items-center text-sm">
               <LinkIcon className="h-4 w-4 mr-3 text-muted-foreground flex-shrink-0" />
-              <a 
-                href={user.website.startsWith('http') ? user.website : `https://${user.website}`} 
-                target="_blank" 
+              <a
+                href={user.website.startsWith('http') ? user.website : `https://${user.website}`}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline truncate"
               >
@@ -555,14 +101,17 @@ function ProfileAbout({ user }) {
             </div>
           )}
         </div>
-         {!user.aboutMe && !user.jobTitle && !user.city && !user.country && !user.email && (
-             <p className="text-sm text-muted-foreground italic">No additional information provided.</p>
-         )}
+
+        {/* Message if no details provided */}
+        {!hasInfo && (
+          <p className="text-sm text-muted-foreground italic">No additional information provided.</p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+// Define PropTypes for the user object
 ProfileAbout.propTypes = {
   user: PropTypes.shape({
     _id: PropTypes.string,
@@ -576,8 +125,9 @@ ProfileAbout.propTypes = {
     company: PropTypes.string,
     jobTitle: PropTypes.string,
     website: PropTypes.string,
-    // Add other expected fields
+    // Add other expected fields if necessary
   }),
+  className: PropTypes.string, // Allow className prop
 };
 
 export default ProfileAbout;
@@ -587,55 +137,56 @@ Create `src/features/user/ProfileEditForm.jsx`:
 
 ```jsx
 // src/features/user/ProfileEditForm.jsx
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from 'prop-types';
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-
-// Hooks & Services
-import { useUpdateProfile } from "@/hooks/useUserQuery"; // The mutation hook
+import { useAppStore } from "@/lib/store"; // Import store for potential future use (e.g., updating currentUser)
+import apiService from "@/lib/apiService"; // To make the API call
+import { toast } from "sonner"; // For notifications
 
 // ShadCN UI Components
-import { 
-  Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage 
-} from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-/**
- * Yup validation schema for the profile edit form.
- */
+// Validation schema
 const profileSchema = yup.object({
-  name: yup.string().required("Name is required").min(2, "Name is too short"),
-  aboutMe: yup.string().max(500, "About me cannot exceed 500 characters"),
-  // Allow empty strings or valid URLs
-  avatarUrl: yup.string().url("Must be a valid URL (e.g., https://...)").nullable().transform(value => value || null),
-  coverUrl: yup.string().url("Must be a valid URL (e.g., https://...)").nullable().transform(value => value || null),
-  // Add other editable fields here (city, country, jobTitle, company, etc.)
-  city: yup.string().max(50, "City name too long"),
-  country: yup.string().max(50, "Country name too long"),
-  company: yup.string().max(100, "Company name too long"),
-  jobTitle: yup.string().max(100, "Job title too long"),
+  name: yup.string().required("Name is required").min(2, "Name is too short").max(50, "Name too long"),
+  aboutMe: yup.string().max(500, "About me cannot exceed 500 characters").nullable(),
+  avatarUrl: yup.string().url("Avatar URL must be a valid URL (e.g., https://...)").nullable().transform(value => value || null),
+  coverUrl: yup.string().url("Cover URL must be a valid URL (e.g., https://...)").nullable().transform(value => value || null),
+  city: yup.string().max(50, "City name too long").nullable(),
+  country: yup.string().max(50, "Country name too long").nullable(),
+  company: yup.string().max(100, "Company name too long").nullable(),
+  jobTitle: yup.string().max(100, "Job title too long").nullable(),
+  website: yup.string().url("Website must be a valid URL").nullable().transform(value => value || null),
+  // Add social links if editable
+  facebookLink: yup.string().url("Invalid Facebook URL").nullable().transform(value => value || null),
+  instagramLink: yup.string().url("Invalid Instagram URL").nullable().transform(value => value || null),
+  linkedinLink: yup.string().url("Invalid LinkedIn URL").nullable().transform(value => value || null),
+  twitterLink: yup.string().url("Invalid Twitter URL").nullable().transform(value => value || null),
 }).required();
 
 /**
- * Form component for editing the current user's profile information.
- * Uses React Hook Form for state management and Yup for validation.
- * Calls the `useUpdateProfile` mutation hook on submit.
+ * Form component for editing the current user's profile.
+ * Uses apiService directly to PUT updates.
  */
-function ProfileEditForm({ user, onCancel, onSuccess }) {
-  // Get the mutation function and its state from the custom hook
-  const { mutate: updateProfileMutate, isPending: isUpdating, error: updateError } = useUpdateProfile();
-  
+function ProfileEditForm({ user, onCancel, onSuccess, className }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  // Get Zustand action to potentially update current user state immediately
+  const updateUserInStore = useAppStore(state => state.updateCurrentUser); // Assuming we add this action
+
   // Initialize React Hook Form
   const form = useForm({
     resolver: yupResolver(profileSchema),
-    // Set default values from the user prop
     defaultValues: {
       name: user?.name || "",
       aboutMe: user?.aboutMe || "",
@@ -645,188 +196,100 @@ function ProfileEditForm({ user, onCancel, onSuccess }) {
       country: user?.country || "",
       company: user?.company || "",
       jobTitle: user?.jobTitle || "",
-      // Initialize other fields here
+      website: user?.website || "",
+      facebookLink: user?.facebookLink || "",
+      instagramLink: user?.instagramLink || "",
+      linkedinLink: user?.linkedinLink || "",
+      twitterLink: user?.twitterLink || "",
     },
   });
 
   // Form submission handler
   const onSubmit = async (data) => {
-    console.log("Form data submitted:", data);
-    // Call the mutation function provided by useUpdateProfile
-    // Pass the necessary variables (userId and the form data)
-    updateProfileMutate(
-      { userId: user._id, ...data }, 
-      {
-        // Optional: Add callbacks here if needed, though onSuccess/onError in the hook is usually preferred
-        onSuccess: () => {
-          console.log("Mutation succeeded from component");
-          if (onSuccess) onSuccess(); // Call the prop callback to close the form
-        },
-        onError: (error) => {
-           console.error("Mutation failed from component", error);
-           // Error is already handled by the hook's onError and displayed below
-        }
-      }
-    );
+    setIsSubmitting(true);
+    setSubmitError(null);
+    console.log("Submitting profile update:", data);
+
+    try {
+      // Use apiService to make the PUT request to the /users/me endpoint
+      // The mock API handles updating user1 based on this endpoint
+      const updatedUser = await apiService.put('/users/me', data);
+      
+      toast.success("Profile updated successfully!");
+      
+      // Optional: Update the user in Zustand store immediately for faster UI feedback
+      // if (updateUserInStore) updateUserInStore(updatedUser); 
+      
+      if (onSuccess) onSuccess(updatedUser); // Pass updated user data back if needed
+      
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      const errorMsg = error.message || "Failed to update profile. Please try again.";
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Card>
+    <Card className={cn("w-full", className)}>
       <CardHeader>
-        <CardTitle>Edit Profile</CardTitle>
+        <CardTitle>Edit Your Profile</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Display mutation errors */}
-        {updateError && (
+        {/* Display submission errors */}
+        {submitError && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Update Failed</AlertTitle>
-            <AlertDescription>
-              {updateError.message || "Could not update profile. Please try again."}
-            </AlertDescription>
+            <AlertDescription>{submitError}</AlertDescription>
           </Alert>
         )}
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Name Field */}
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl><Input placeholder="Your full name" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Name */}
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem><FormLabel>Full Name*</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+            {/* Avatar URL */}
+            <FormField control={form.control} name="avatarUrl" render={({ field }) => (
+              <FormItem><FormLabel>Avatar URL</FormLabel><FormControl><Input type="url" placeholder="https://..." {...field} disabled={isSubmitting} /></FormControl><FormDescription>URL of your profile picture.</FormDescription><FormMessage /></FormItem> )}/>
+            {/* Cover URL */}
+            <FormField control={form.control} name="coverUrl" render={({ field }) => (
+              <FormItem><FormLabel>Cover Photo URL</FormLabel><FormControl><Input type="url" placeholder="https://..." {...field} disabled={isSubmitting} /></FormControl><FormDescription>URL of your cover image.</FormDescription><FormMessage /></FormItem> )}/>
+            {/* About Me */}
+            <FormField control={form.control} name="aboutMe" render={({ field }) => (
+              <FormItem><FormLabel>About Me</FormLabel><FormControl><Textarea placeholder="Tell us about yourself..." className="resize-y min-h-[100px]" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
             
-            {/* About Me Field */}
-            <FormField
-              control={form.control}
-              name="aboutMe"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>About Me</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Tell us a little bit about yourself" 
-                      className="resize-none min-h-[100px]" // Allow vertical resize
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    A brief description of yourself. Max 500 characters.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Location & Work in Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="city" render={({ field }) => (
+                <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+              <FormField control={form.control} name="country" render={({ field }) => (
+                <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+              <FormField control={form.control} name="jobTitle" render={({ field }) => (
+                <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+              <FormField control={form.control} name="company" render={({ field }) => (
+                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+            </div>
 
-            {/* Job Title & Company */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
-                 control={form.control}
-                 name="jobTitle"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Job Title</FormLabel>
-                     <FormControl><Input placeholder="e.g., Software Engineer" {...field} /></FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-               <FormField
-                 control={form.control}
-                 name="company"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Company</FormLabel>
-                     <FormControl><Input placeholder="e.g., CoderSchool" {...field} /></FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-             </div>
+            {/* Website & Social Links */}
+             <FormField control={form.control} name="website" render={({ field }) => (
+                <FormItem><FormLabel>Website URL</FormLabel><FormControl><Input type="url" placeholder="https://yourwebsite.com" {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+              {/* Add fields for facebookLink, instagramLink, linkedinLink, twitterLink similarly */} 
+             {/* Example: LinkedIn */}
+             <FormField control={form.control} name="linkedinLink" render={({ field }) => (
+                <FormItem><FormLabel>LinkedIn Profile URL</FormLabel><FormControl><Input type="url" placeholder="https://linkedin.com/in/..." {...field} disabled={isSubmitting} /></FormControl><FormMessage /></FormItem> )}/>
+              {/* ... other social links ... */}
 
-            {/* City & Country */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
-                 control={form.control}
-                 name="city"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>City</FormLabel>
-                     <FormControl><Input placeholder="e.g., Ho Chi Minh City" {...field} /></FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-               <FormField
-                 control={form.control}
-                 name="country"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>Country</FormLabel>
-                     <FormControl><Input placeholder="e.g., Vietnam" {...field} /></FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-             </div>
-            
-            {/* Avatar URL Field */}
-            <FormField
-              control={form.control}
-              name="avatarUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Profile Picture URL</FormLabel>
-                  <FormControl>
-                    <Input type="url" placeholder="https://example.com/avatar.png" {...field} value={field.value ?? ''} />
-                  </FormControl>
-                  <FormDescription>
-                    Link to your profile picture (must be a valid URL).
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {/* Cover URL Field */}
-            <FormField
-              control={form.control}
-              name="coverUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cover Photo URL</FormLabel>
-                  <FormControl>
-                    <Input type="url" placeholder="https://example.com/cover.jpg" {...field} value={field.value ?? ''} />
-                  </FormControl>
-                  <FormDescription>
-                    Link to your cover photo (must be a valid URL).
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onCancel} // Call cancel callback from props
-                disabled={isUpdating} // Disable while updating
-              >
+            <div className="flex justify-end gap-4 pt-4">
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button 
-                type="submit"
-                disabled={isUpdating} // Disable while updating
-              >
-                {isUpdating ? "Saving..." : "Save Changes"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>
@@ -840,6 +303,7 @@ ProfileEditForm.propTypes = {
   user: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onSuccess: PropTypes.func.isRequired,
+  className: PropTypes.string,
 };
 
 export default ProfileEditForm;
@@ -847,242 +311,355 @@ export default ProfileEditForm;
 
 **Explanation:**
 
-*   **`ProfileAbout`**: Simple component that receives the `user` object and displays its properties.
-*   **`ProfileEditForm`**:
-    *   Uses `useForm` and `yupResolver` for form state and validation.
-    *   Gets the `mutate` function (renamed to `updateProfileMutate`) and loading/error states (`isPending`, `error`) from the `useUpdateProfile` hook.
-    *   Calls `updateProfileMutate` in the `onSubmit` handler, passing the `userId` and form `data`.
-    *   Disables buttons while the mutation is pending (`isUpdating`).
-    *   Displays mutation errors using an `Alert`.
-    *   Calls `onCancel` or `onSuccess` (passed as props from `ProfilePage`) to signal completion or cancellation, allowing the parent to hide the form.
+*   **`ProfileAbout.jsx`**: Simple component displaying user data passed via props. Uses `cn` for class merging.
+*   **`ProfileEditForm.jsx`**: Uses React Hook Form (`useForm`) and Yup (`yupResolver`) for form handling and validation. Imports `apiService` directly. The `onSubmit` function calls `apiService.put('/users/me', ...)` and manages its own loading (`isSubmitting`) and error (`submitError`) states using `useState`. It calls the `onSuccess` or `onCancel` prop functions passed down from `ProfilePage`.
 
-## 7. Create `Profile` Component (for `HomePage` Tab)
+## 3. Create `ProfilePage` Component (Main View)
 
-This component is specifically for the "Profile" tab on the *current user's* `HomePage`. It displays their basic info, the `PostForm`, and their own posts.
+This is the core page component for `/user/:userId`. It fetches data, manages state, and arranges the sub-components.
 
-Create `src/features/user/Profile.jsx`:
+Create `src/pages/ProfilePage.jsx`:
 
 ```jsx
-// src/features/user/Profile.jsx
-import React from 'react';
-import PropTypes from 'prop-types';
-import useAuth from "@/hooks/useAuth";
-import { useUserPosts } from "@/hooks/useUserQuery"; // Hook to fetch user's posts
+// src/pages/ProfilePage.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { useAppStore } from "@/lib/store"; // To get current user ID
+import apiService from "@/lib/apiService"; // To fetch data
+import { formatDistanceToNow } from "date-fns";
 
-// Reusable Components
-import PostForm from "@/features/post/PostForm";
-import PostList from "@/features/post/PostList"; // Re-use PostList component
+// ShadCN UI Components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"; // Added Card imports
+import { Pencil, UserPlus, UserMinus, Calendar, AlertCircle } from "lucide-react";
+
+// Feature Components
+import ProfileAbout from "@/features/user/ProfileAbout";
+import ProfileEditForm from "@/features/user/ProfileEditForm";
+// Assume PostList exists (we'll create it later) - create a placeholder for now
+const PostListPlaceholder = ({ posts }) => (
+  <Card><CardHeader><CardTitle>Posts</CardTitle></CardHeader>
+    <CardContent className="text-center text-muted-foreground py-8">
+      User posts will appear here. (PostList component coming soon!)
+      {posts && <p className="text-xs mt-2">(Loaded {posts.length} post items)</p>}
+    </CardContent>
+  </Card>
+);
+PostListPlaceholder.propTypes = { posts: PropTypes.array }; // Add PropTypes
+
 import LoadingScreen from "@/components/LoadingScreen";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { getInitials } from "@/utils/formatters";
+import PropTypes from 'prop-types'; // Import PropTypes
 
 /**
- * Profile Tab Component:
- * Displays the current user's profile information (implicitly via context),
- * the PostForm, and their own posts.
- * Designed to be used within the HomePage tab structure.
+ * User Profile Page: Fetches and displays user info and posts.
+ * Uses useEffect and apiService for data fetching.
+ * Manages loading/error states locally.
  */
-function Profile({ profile }) { // Receives the current user profile from HomePage
-  const { user: currentUser } = useAuth(); // Double-check if profile prop is needed or useAuth is sufficient
-  const userId = profile?._id; // Get user ID from the profile prop
+function ProfilePage() {
+  const { userId } = useParams(); // Get target userId from URL
+  const currentUser = useAppStore(state => state.currentUser); // Get logged-in user
 
-  // Fetch only the posts for the current user
-  const { 
-    data: postsData, 
-    isLoading: isLoadingPosts,
-    isError: isPostsError,
-    error: postsError 
-  } = useUserPosts(userId, {
-    // Enable the query only if we have a userId
-    enabled: !!userId,
-  });
+  // State for this page
+  const [profileUser, setProfileUser] = useState(null); // Data for the displayed profile
+  const [userPosts, setUserPosts] = useState([]);       // Posts by the profile user
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);    // Toggle edit mode
 
-  // Display loading state for posts
-  if (isLoadingPosts) {
-    return <LoadingScreen message="Loading your posts..." fullScreen={false} />;
-  }
+  const isCurrentUserProfile = currentUser?._id === userId;
+
+  // Data fetching function using useCallback to memoize
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    console.log(`ProfilePage: Fetching data for userId: ${userId}`);
+    try {
+      // Fetch profile and posts in parallel
+      const [userResponse, postsResponse] = await Promise.all([
+        apiService.get(`/users/${userId}`),
+        apiService.get(`/posts/user/${userId}`)
+      ]);
+      
+      // apiService interceptor returns { user } for /users/:id
+      setProfileUser(userResponse.user); 
+      // apiService interceptor returns { posts, count, totalPages } for /posts/user/:userId
+      setUserPosts(postsResponse.posts || []);
+      console.log("ProfilePage: Data fetched successfully", { user: userResponse.user, posts: postsResponse.posts });
+      
+    } catch (err) {
+      console.error("ProfilePage: Error fetching data:", err);
+      setError(err.message || "Failed to load profile data.");
+      setProfileUser(null); // Clear user data on error
+      setUserPosts([]); // Clear posts on error
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]); // Dependency: re-run if userId changes
+
+  // Fetch data on component mount and when userId changes
+  useEffect(() => {
+    if (userId) {
+      fetchData();
+    }
+  }, [userId, fetchData]);
+
+  // Handler for successful profile update
+  const handleUpdateSuccess = (updatedUserData) => {
+    // Option 1: Refetch all data (simple)
+    fetchData(); 
+    // Option 2: Update local state directly (faster UI)
+    // setProfileUser(updatedUserData); 
+    setIsEditing(false); // Close the edit form
+  };
   
-  // Display error state for posts
-  if (isPostsError) {
+  // --- Render Logic ---
+  if (loading) {
+    return <LoadingScreen message="Loading profile..." />;
+  }
+
+  if (error) {
     return (
-      <Alert variant="destructive" className="mt-4">
+      <Alert variant="destructive" className="max-w-lg mx-auto">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Posts</AlertTitle>
-        <AlertDescription>
-          {postsError?.message || "Could not fetch your posts. Please try again later."}
-        </AlertDescription>
+        <AlertTitle>Error Loading Profile</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* 1. Post Creation Form */}
-      {/* Ensure currentUser is available before rendering PostForm */}
-      {currentUser && <PostForm />} 
+  if (!profileUser) {
+     return (
+       <Alert variant="default" className="max-w-lg mx-auto">
+         <AlertCircle className="h-4 w-4" />
+         <AlertTitle>User Not Found</AlertTitle>
+         <AlertDescription>
+           Could not find a profile for the specified user ID.
+         </AlertDescription>
+       </Alert>
+     );
+  }
 
-      {/* 2. User's Posts List */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4 mt-6">Your Posts</h2>
-        {/* Pass the fetched posts to the PostList component */}
-        <PostList posts={postsData?.posts || []} />
-      </div>
+  return (
+    <div className="space-y-6 md:space-y-8">
+      {/* --- Profile Header --- */}
+      <Card className="overflow-hidden"> {/* Use Card for structure */} 
+        <div className="relative">
+          {/* Cover Image */}
+          <div className="h-48 md:h-60 w-full bg-muted"> {/* Adjusted height */} 
+            {profileUser.coverUrl ? (
+              <img
+                src={profileUser.coverUrl}
+                alt={`${profileUser.name}'s cover photo`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-primary/30 to-secondary/30" />
+            )}
+          </div>
+
+          {/* Avatar & Info Area */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-end px-4 sm:px-6 -mt-12 sm:-mt-16 relative z-10">
+            <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background bg-background rounded-full flex-shrink-0">
+              <AvatarImage src={profileUser.avatarUrl || ''} alt={profileUser.name} />
+              <AvatarFallback className="text-4xl">
+                {getInitials(profileUser.name)}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="ml-0 sm:ml-4 mt-2 sm:mt-0 sm:pb-2 text-center sm:text-left flex-grow min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold truncate" title={profileUser.name}>{profileUser.name}</h1>
+              {profileUser.createdAt && (
+                 <div className="flex items-center justify-center sm:justify-start text-sm text-muted-foreground mt-1">
+                   <Calendar className="h-4 w-4 mr-1.5" />
+                   <span>Joined {formatDistanceToNow(new Date(profileUser.createdAt), { addSuffix: true })}</span>
+                 </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="ml-auto mt-4 sm:mt-0 sm:pb-2 flex-shrink-0">
+              {isCurrentUserProfile ? (
+                <Button 
+                  onClick={() => setIsEditing(!isEditing)} 
+                  variant={isEditing ? "outline" : "default"}
+                  size="sm"
+                >
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  {isEditing ? "Cancel" : "Edit Profile"}
+                </Button>
+              ) : (
+                // Placeholder Friend Button - functionality later
+                <Button size="sm" onClick={() => toast.info("Friend actions coming soon!")}>
+                  <UserPlus className="h-4 w-4 mr-1.5" /> Add Friend
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+      {/* --- Edit Form (Conditional) --- */}
+      {isEditing && isCurrentUserProfile && (
+         <ProfileEditForm 
+            user={profileUser} 
+            onCancel={() => setIsEditing(false)} 
+            onSuccess={handleUpdateSuccess} // Pass handler to refetch/update data
+            className="mb-6" // Add margin when form is shown
+         />
+      )}
+
+      {/* --- Profile Content Tabs (Only show if not editing) --- */}
+      {!isEditing && (
+        <Tabs defaultValue="posts" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6"> {/* Simplified tabs */}
+            <TabsTrigger value="posts">Posts ({userPosts.length})</TabsTrigger>
+            <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="friends">Friends</TabsTrigger> {/* Placeholder */} 
+          </TabsList>
+          
+          <TabsContent value="posts">
+             {/* Use placeholder until PostList is built */}
+             <PostListPlaceholder posts={userPosts} />
+          </TabsContent>
+          
+          <TabsContent value="about">
+            <ProfileAbout user={profileUser} />
+          </TabsContent>
+          
+          <TabsContent value="friends">
+            <Card>
+              <CardHeader><CardTitle>Friends</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground py-8">Friends list feature coming soon!</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
 
-Profile.propTypes = {
-  profile: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    // Add other fields if needed by this component
-  }).isRequired,
-};
-
-export default Profile;
+export default ProfilePage;
 ```
 
 **Explanation:**
 
-*   This component is simpler than `ProfilePage` because it assumes it's showing the *current* user.
-*   It fetches the user's posts using `useUserPosts(userId)`. Note the `enabled: !!userId` option ensures the query only runs when the ID is available.
-*   It renders the `PostForm`. We assume `PostForm` handles its own logic for creating posts for the current user.
-*   It renders the `PostList` component, passing the fetched posts specific to the current user.
+*   **Data Fetching**: Uses `useEffect` hook triggered by `userId` changes. Inside, `fetchData` (memoized with `useCallback`) calls `apiService.get` for both user details and user posts in parallel using `Promise.all`.
+*   **State Management**: Uses `useState` hooks (`profileUser`, `userPosts`, `loading`, `error`, `isEditing`) to manage the component's local state.
+*   **Error Handling**: `try...catch` block in `fetchData` sets the `error` state, which is then displayed using the `Alert` component.
+*   **Loading State**: `loading` state is set to `true` before fetching and `false` in the `finally` block. `LoadingScreen` is shown while `loading` is true.
+*   **`isCurrentUserProfile`**: Determines if the logged-in user (`currentUser` from `useAppStore`) matches the `userId` from the URL.
+*   **Conditional Rendering**: Shows the edit button only for the current user. Shows `ProfileEditForm` only when `isEditing` is true and it's the current user's profile. Shows the Tabs only when *not* editing.
+*   **`handleUpdateSuccess`**: This function is passed to `ProfileEditForm`. When called (after a successful PUT request), it currently refetches all profile data using `fetchData()` and closes the edit form (`setIsEditing(false)`). This ensures the displayed data is up-to-date.
+*   **`PostListPlaceholder`**: Since `PostList` isn't built yet, a simple placeholder is used.
+*   **Layout**: Uses `Card` for the header section and `Tabs` for content switching.
 
-## 8. Update Routes and `HomePage`
+## 4. Update Routes
 
-First, ensure the route for `ProfilePage` exists in `src/routes/index.jsx`:
+Ensure the route for `ProfilePage` exists in `src/routes/index.jsx`.
 
 ```jsx
-// src/routes/index.jsx (Ensure this route exists)
-// ... other imports ...
-import ProfilePage from "../pages/ProfilePage"; // Make sure it's imported
+// src/routes/index.jsx
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import LoadingScreen from "@/components/LoadingScreen";
+
+// Layouts
+import BlankLayout from "../layouts/BlankLayout";
+import MainLayout from "../layouts/MainLayout";
+
+// Route Guards
+import AuthRequire from "./AuthRequire";
+import GuestRoute from "./GuestRoute";
+
+// Pages (Lazy load pages)
+const HomePage = React.lazy(() => import("../pages/HomePage"));
+const LoginPage = React.lazy(() => import("../pages/LoginPage"));
+const AccountPage = React.lazy(() => import("../pages/AccountPage"));
+const ProfilePage = React.lazy(() => import("../pages/ProfilePage")); // <-- Add ProfilePage
+const NotFoundPage = React.lazy(() => import("../pages/NotFoundPage"));
 
 function Router() {
   return (
-    <React.Suspense fallback={/* ... */}>
+    <React.Suspense fallback={<LoadingScreen message="Loading page..." />}>
       <Routes>
-        <Route path="/" element={<AuthRequire><MainLayout /></AuthRequire>}>
+        {/* --- Protected Routes --- */}
+        <Route
+          path="/"
+          element={
+            <AuthRequire>
+              <MainLayout />
+            </AuthRequire>
+          }
+        >
           <Route index element={<HomePage />} />
           <Route path="account" element={<AccountPage />} />
-          {/* Route for viewing any user profile */}
-          <Route path="user/:userId" element={<ProfilePage />} /> 
+          <Route path="user/:userId" element={<ProfilePage />} /> {/* <-- Add ProfilePage route */} 
         </Route>
-        {/* ... Guest Routes ... */}
+
+        {/* --- Guest Routes --- */}
+        <Route element={<BlankLayout />}>
+          <Route
+            path="/login"
+            element={
+              <GuestRoute>
+                <LoginPage />
+              </GuestRoute>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Routes>
     </React.Suspense>
   );
 }
+
 export default Router;
 ```
 
-Next, update `src/pages/HomePage.jsx` to use the new `Profile` component in its first tab:
+**Explanation:**
 
-```jsx
-// src/pages/HomePage.jsx
-import React, { useState } from "react";
-import useAuth from "@/hooks/useAuth";
-import LoadingScreen from "@/components/LoadingScreen";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { User, UserPlus, Mail, Users } from "lucide-react";
+*   Added `React.lazy` import for `ProfilePage`.
+*   Added `<Route path="user/:userId" element={<ProfilePage />} />`. The `:userId` part makes it a dynamic route parameter.
 
-// Import components needed for tabs
-import Profile from "@/features/user/Profile"; // *** Import the new Profile component ***
-import ProfileCover from "@/features/user/ProfileCover";
-import FriendList from "@/features/friend/FriendList"; // Placeholder for now
-import FriendRequests from "@/features/friend/FriendRequests"; // Placeholder
-import AddFriend from "@/features/friend/AddFriend"; // Placeholder
+## 5. Test the Profile Page
 
-function HomePage() {
-  const { user, isInitialized } = useAuth();
-  const [currentTab, setCurrentTab] = useState("profile");
+1.  **Start the app:** `npm run dev`
+2.  **Log in.**
+3.  **Navigate:** Manually change the URL in your browser to view different profiles:
+    *   `/user/user1` (Your own profile - you should see the "Edit Profile" button)
+    *   `/user/user2` (Another user's profile - you should see "Add Friend")
+    *   `/user/user3`
+    *   `/user/invalid-id` (Should show the "User Not Found" alert)
+4.  **Check Tabs:** Click between the "Posts", "About", and "Friends" tabs.
+5.  **Test Editing (on your own profile /user/user1):**
+    *   Click "Edit Profile".
+    *   The tabs should disappear, and the `ProfileEditForm` should appear.
+    *   Make a change (e.g., add to the "About Me" section).
+    *   Click "Save Changes".
+    *   You should see a success toast.
+    *   The form should disappear, and the tabs should reappear.
+    *   The "About" tab should now display your updated information (because `handleUpdateSuccess` triggered `fetchData`).
+    *   Click "Edit Profile" again, then click "Cancel". The form should close without saving.
 
-  if (!isInitialized) { /* ... loading ... */ }
-  if (!user) { /* ... user loading placeholder ... */ }
+## 6. Frequently Asked Questions (FAQ)
 
-  // Define the tabs structure, using the new Profile component for the first tab
-  const PROFILE_TABS = [
-    {
-      value: "profile",
-      icon: <User className="w-5 h-5" />,
-      // *** Use the Profile component, passing the user data ***
-      component: <Profile profile={user} />,
-      label: "Profile"
-    },
-    {
-      value: "friends",
-      icon: <Users className="w-5 h-5" />,
-      component: <FriendList />, 
-      label: "Friends"
-    },
-    {
-      value: "requests",
-      icon: <Mail className="w-5 h-5" />,
-      component: <FriendRequests />, 
-      label: "Requests"
-    },
-    {
-      value: "add_friend",
-      icon: <UserPlus className="w-5 h-5" />,
-      component: <AddFriend />,
-      label: "Add Friend"
-    },
-  ];
+*   **Q: Why fetch data in `useEffect` instead of using a library like React Query or SWR?**
+    *   A: For this tutorial, we're keeping dependencies minimal and demonstrating the core React concepts (`useEffect`, `useState`) for data fetching with `async/await` and `apiService`. Libraries like React Query offer powerful caching, background updates, and state management features but add complexity we're avoiding here. In a real-world application, especially one with more complex data needs, using a dedicated data-fetching library is highly recommended.
+*   **Q: Why use local state (`useState`) in `ProfilePage` for loading/error instead of Zustand?**
+    *   A: Profile data fetching is specific to this page/route. Using local state keeps the state management contained within the component that needs it, reducing complexity in the global Zustand store. If profile data or its loading status needed to be accessed by many *unrelated* components, moving it to Zustand might make sense.
+*   **Q: How does the `ProfileEditForm` update the displayed profile?**
+    *   A: When the form is submitted successfully (`onSubmit` -> `apiService.put`), it calls the `onSuccess` prop function (`handleUpdateSuccess` in `ProfilePage`). `handleUpdateSuccess` then calls `fetchData()` again, which re-runs the API calls to get the latest user and post data, updating the `profileUser` state in `ProfilePage` and causing a re-render with the new information.
+*   **Q: What does `useParams()` do?**
+    *   A: It's a hook from `react-router-dom` that extracts dynamic parameters from the URL. For the route `<Route path="user/:userId" ... />`, `useParams()` inside `ProfilePage` returns an object like `{ userId: "user1" }` if the URL is `/user/user1`.
 
-  return (
-    <div className="container mx-auto px-4 pt-4">
-      {/* Cover and tabs card */}
-      <Card className="mb-6 h-60 md:h-80 relative overflow-hidden shadow-sm">
-        <ProfileCover profile={user} />
-        {/* Tab Navigation (Keep as is) */}
-        <div className="absolute bottom-0 ...">
-          <Tabs value={currentTab} onValueChange={setCurrentTab} ...>
-            <TabsList ...>
-              {PROFILE_TABS.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} ...>
-                  {tab.icon}
-                  <span className="hidden md:inline">{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      </Card>
+## What's Next?
 
-      {/* Tab content */}
-      <Card className="p-4 md:p-6 shadow-sm">
-        <Tabs value={currentTab} className="w-full">
-          {PROFILE_TABS.map((tab) => (
-            <TabsContent key={tab.value} value={tab.value} className="mt-0">
-              {/* Render the component associated with the active tab */}
-              {tab.component}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </Card>
-    </div>
-  );
-}
-export default HomePage;
-```
+We now have a functional user profile page where users can view information and posts, and edit their own details. 
 
-## 9. Running the Application
-
-Run `npm run dev` and test:
-
-1.  **Your Profile (HomePage):** Log in and view the default `HomePage`. The "Profile" tab should be active, showing the `PostForm` and a list of *your* posts.
-2.  **Edit Profile:** Click your user avatar in the header, go to "Your Profile" (this leads to `/user/yourUserId`). Click the "Edit Profile" button. The `ProfileEditForm` should appear in the "About" tab. Make changes and save. Verify the profile updates (you might need to refresh or wait for cache invalidation).
-3.  **View Other Profile:** Find another user ID from `mockApi/data.js` (e.g., `user2`). Navigate directly to `/user/user2`. You should see their profile (`ProfilePage`), including their posts and about info. The "Edit Profile" button should *not* be visible. The "Add Friend" button should be visible (though non-functional).
-
-## Summary
-
-In this step, we've:
-
-*   Set up React Query for server state management.
-*   Created hooks (`useUserQuery`, `useUserPosts`, `useUpdateProfile`) for fetching and updating user data.
-*   Built the `ProfilePage` for viewing any user's profile via `/user/:userId`.
-*   Built `ProfileAbout` and `ProfileEditForm` for displaying and editing profile details.
-*   Created a dedicated `Profile` component for the current user's view within the `HomePage` "Profile" tab, including their `PostForm` and posts.
-*   Integrated these components into the routing and `HomePage` structure.
-
-Users can now view profiles and edit their own information. Next, we'll focus on implementing the post creation and feed functionality in more detail.
+In **Step 5: Post Creation & Feed**, we'll build the components for creating new posts and displaying the main activity feed on the `HomePage`.

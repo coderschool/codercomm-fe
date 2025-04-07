@@ -261,6 +261,35 @@ export function mockServer({ environment = 'development' } = {}) {
         return newComment; 
       });
 
+      // DELETE COMMENT (Allows user1 to delete their own comments)
+      this.delete('/comments/:commentId', (schema, request) => {
+        const { commentId } = request.params;
+        const currentUser = 'user1'; // Assume user1
+        console.log(`🔶 Mock Delete Comment: commentId=${commentId}, user=${currentUser}`);
+
+        const commentIndex = currentComments.findIndex(c => c._id === commentId);
+
+        if (commentIndex === -1) {
+          return new Response(404, {}, { message: 'Comment not found' });
+        }
+
+        const comment = currentComments[commentIndex];
+        if (comment.author._id !== currentUser) {
+          return new Response(403, {}, { message: 'User not authorized to delete this comment' });
+        }
+
+        // Remove the comment
+        currentComments.splice(commentIndex, 1);
+        
+        // Also remove related reactions
+        currentReactions = currentReactions.filter(r => 
+          !(r.targetType === 'Comment' && r.targetId === commentId)
+        );
+        
+        console.log(`  -> Comment ${commentId} removed.`);
+        return new Response(204); // No Content on successful deletion
+      });
+
 
       // --- Reaction Routes ---
       // ADD/UPDATE/REMOVE REACTION (as user1)
