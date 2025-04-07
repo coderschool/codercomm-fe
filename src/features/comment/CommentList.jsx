@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import PropTypes from 'prop-types';
-import { useCommentsQuery } from "@/hooks/useCommentQuery";
+import { useAppStore } from "@/lib/store";
 import { Loader2 } from "lucide-react";
 import CommentItem from "./CommentItem";
 import CommentForm from "./CommentForm";
@@ -11,12 +11,25 @@ import { AlertCircle } from "lucide-react";
  * Displays a list of comments for a post and includes the comment input form.
  */
 function CommentList({ postId }) {
-  const { 
-    data: comments, // Renamed data to comments
-    isLoading,
-    isError,
-    error 
-  } = useCommentsQuery(postId); // Fetch comments for this post
+  // Select the specific comment state and fetch action for this postId
+  const { commentState, fetchComments } = useAppStore((state) => ({
+    commentState: state.comments[postId], // Get state slice for this specific post
+    fetchComments: state.fetchComments,
+  }));
+
+  // Fetch comments when the component mounts or postId changes
+  useEffect(() => {
+    if (postId) {
+      fetchComments(postId); // Fetch first page by default
+    }
+    // No cleanup needed here as the fetch action handles its own state
+  }, [postId, fetchComments]);
+
+  // Extract state, providing defaults
+  const comments = commentState?.list ?? [];
+  const isLoading = commentState?.isLoading ?? false;
+  const error = commentState?.error ?? null;
+  const isInitialLoad = commentState === undefined && !error; // Check if state exists yet
 
   return (
     <div className="mt-4 pt-4 border-t border-border/50">
@@ -24,36 +37,35 @@ function CommentList({ postId }) {
       <CommentForm postId={postId} />
       
       {/* Loading State */}
-      {isLoading && (
+      {(isLoading || isInitialLoad) && comments.length === 0 && (
         <div className="flex justify-center py-4">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       )}
 
       {/* Error State */}
-      {isError && (
+      {error && (
         <Alert variant="destructive" className="mt-2">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription className="text-xs">
-                {error?.message || "Could not load comments."}
+                {error || "Could not load comments."}
             </AlertDescription>
         </Alert>
       )}
 
       {/* Comments List */}
-      {!isLoading && !isError && (
+      {!isInitialLoad && !error && (
         <> 
-          {comments?.length === 0 ? (
+          {comments.length === 0 && !isLoading ? (
             <div className="text-center text-muted-foreground text-xs py-4">
               No comments yet. Be the first!
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-              {comments?.map(comment => (
+              {comments.map(comment => (
                 <CommentItem key={comment._id} comment={comment} postId={postId} />
               ))}
-              {/* Add pagination / "Load More" button here later if needed */}
             </div>
           )}
         </>

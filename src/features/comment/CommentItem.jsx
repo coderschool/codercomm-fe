@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 
 // Hooks & Utilities
-import useAuth from "@/hooks/useAuth";
-import { useReactToComment, useDeleteComment } from "@/hooks/useCommentQuery";
+import { useAppStore } from "@/lib/store";
 import { getInitials } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 
@@ -18,35 +17,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Heart, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { Heart, MoreVertical, Trash2 } from "lucide-react";
 
 /**
  * Displays a single comment item with author, content, timestamp, and actions.
  */
 function CommentItem({ comment, postId }) {
-  const { user: currentUser } = useAuth();
-  // Get mutation hooks and their states
-  const { mutate: reactToCommentMutate, isPending: isReacting } = useReactToComment();
-  const { mutate: deleteCommentMutate, isPending: isDeleting } = useDeleteComment();
+  // Select user and actions from store
+  const { currentUser, reactToComment, deleteComment } = useAppStore((state) => ({
+    currentUser: state.currentUser,
+    reactToComment: state.reactToComment,
+    deleteComment: state.deleteComment,
+  }));
 
   // Handler for liking/unliking a comment
   const handleReaction = () => {
-    if (isReacting) return; // Prevent multiple clicks
-    reactToCommentMutate({ 
-        commentId: comment._id, 
-        emoji: 'like',
-        postId: postId // Pass postId for invalidation
-    });
+    // isReacting state is managed implicitly by store state update
+    reactToComment(comment._id, 'like'); // Call store action
   };
 
   // Handler for deleting a comment
   const handleDeleteClick = () => {
-    if (isDeleting) return; // Prevent multiple clicks
+    // isDeleting state is managed implicitly by store state update
     if (window.confirm("Are you sure you want to delete this comment?")) {
-      deleteCommentMutate(comment._id, { 
-          // Pass postId in the second argument (variables) for onSuccess callback
-          postId: postId 
-      });
+      deleteComment(comment._id); // Call store action
     }
   };
   
@@ -79,13 +73,8 @@ function CommentItem({ comment, postId }) {
                     variant="ghost" 
                     size="icon" 
                     className="h-6 w-6 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    disabled={isDeleting}
                   >
-                    {isDeleting ? (
-                         <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                        <MoreVertical className="h-3 w-3" />
-                    )}
+                    <MoreVertical className="h-3 w-3" />
                     <span className="sr-only">Comment options</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -94,7 +83,6 @@ function CommentItem({ comment, postId }) {
                   <DropdownMenuItem 
                     onClick={handleDeleteClick}
                     className="text-destructive focus:text-destructive text-xs flex items-center gap-2 cursor-pointer"
-                    disabled={isDeleting}
                   >
                     <Trash2 className="h-3 w-3" />
                     <span>Delete</span>
@@ -122,7 +110,6 @@ function CommentItem({ comment, postId }) {
             variant="ghost" 
             size="xs" // Custom size potentially needed or use padding
             onClick={handleReaction}
-            disabled={isReacting}
             className={cn(
                 "flex items-center gap-0.5 h-auto p-0 hover:text-primary", 
                 isLikedByCurrentUser ? 'text-primary' : 'text-muted-foreground'
@@ -161,7 +148,7 @@ CommentItem.propTypes = {
     updatedAt: PropTypes.string,
     reactions: PropTypes.array,
   }).isRequired,
-  postId: PropTypes.string.isRequired, // Need postId for invalidation/mutation
+  postId: PropTypes.string.isRequired, // Keep postId prop for now, might be useful contextually
 };
 
 export default CommentItem; 

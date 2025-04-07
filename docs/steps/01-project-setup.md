@@ -219,7 +219,7 @@ Create or update your `src/index.css` file:
 ShadCN UI is a collection of reusable UI components built on top of TailwindCSS and Radix UI. Initialize it in your project:
 
 ```bash
-npx shadcn-ui@latest init
+npx shadcn@latest init
 ```
 
 This command will ask you a few questions to configure `components.json`. Choose the defaults, ensuring it matches your setup (e.g., using `src/index.css`, `tailwind.config.js`, alias `@/*`). This sets up the foundation for adding individual ShadCN components later.
@@ -727,39 +727,6 @@ export function mockServer({ environment = 'development' } = {}) {
         }
       });
       
-      // REGISTER: Simulates creating a new user (but doesn't persist beyond refresh without seeding/db)
-      // For this tutorial, let's make it fail to encourage login
-      this.post('/users', (schema, request) => {
-         console.log("🔶 Mock Register Attempt (will fail):", JSON.parse(request.requestBody).email);
-         return new Response(400, {}, { message: 'Mock registration is disabled. Please use login.' });
-         /* // If enabling registration simulation:
-         const { name, email } = JSON.parse(request.requestBody);
-         const newUser = {
-            _id: `user-${Date.now()}`,
-            username: email.split('@')[0],
-            name: name,
-            email: email,
-            avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-            coverUrl: `https://picsum.photos/id/${Math.floor(Math.random() * 200)}/800/200`,
-            aboutMe: "New user!",
-            city: "Unknown",
-            country: "Vietnam",
-            company: "",
-            jobTitle: "",
-            facebookLink: "", instagramLink: "", linkedinLink: "", twitterLink: "",
-            createdAt: new Date().toISOString(),
-            postCount: 0, // Add initial counts
-            friendCount: 0
-          };
-          // In a real Mirage setup, you might add this to a Mirage DB collection: schema.db.users.insert(newUser)
-          // users.push(newUser); // Temporarily add to in-memory array (won't persist refresh)
-          console.log("🔶 Mock Register Success:", email);
-          return {
-            user: newUser,
-            accessToken: `mock-token-for-${newUser._id}-${Date.now()}`
-          };
-         */
-      });
 
       // --- User Routes ---
       // GET CURRENT USER: Returns details for 'user1'
@@ -804,37 +771,16 @@ export function mockServer({ environment = 'development' } = {}) {
         };
       });
 
-      // GET USERS LIST (supports search & pagination)
+      // GET USERS LIST
       this.get('/users', (schema, request) => {
-        const { name = '', page = 1, limit = 10 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Users List: name='${name}', page=${pageNum}, limit=${limitNum}`);
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Users List: name='${name}'`);
 
         let filteredUsers = users.filter(
           user => user.name.toLowerCase().includes(name.toLowerCase())
         );
 
-        const totalUsers = filteredUsers.length;
-        const totalPages = Math.ceil(totalUsers / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedUsers = filteredUsers.slice(start, end);
-
-        // Add friendship status relative to user1
-        const results = paginatedUsers.map(user => {
-          const friendship = friendships.find(
-            fs => (fs.from === "user1" && fs.to === user._id) ||
-                  (fs.to === "user1" && fs.from === user._id)
-          );
-          return { ...user, friendship: friendship || null }; // Return copy
-        });
-
-        return {
-          users: results,
-          count: totalUsers,
-          totalPages: totalPages
-        };
+        return { users: filteredUsers, totalPages: 1, count: filteredUsers.length };
       });
       
       // UPDATE USER PROFILE (Simplified: just returns the updated data)
@@ -854,11 +800,7 @@ export function mockServer({ environment = 'development' } = {}) {
       // --- Post Routes ---
       // GET FEED POSTS (for user1, includes friends posts, paginated)
       this.get('/posts', (schema, request) => {
-        const { page = 1, limit = 5 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Feed Posts (user1): page=${pageNum}, limit=${limitNum}`);
-
+        console.log(`🔶 Mock Get All Posts`);
         // Get user1's accepted friends
         const userFriendships = friendships.filter(
           fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
@@ -873,9 +815,9 @@ export function mockServer({ environment = 'development' } = {}) {
         relevantPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         const totalPosts = relevantPosts.length;
-        const totalPages = Math.ceil(totalPosts / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
+        const totalPages = Math.ceil(totalPosts / 10);
+        const start = (parseInt(request.queryParams.page) - 1) * 10;
+        const end = start + 10;
         const paginatedPosts = relevantPosts.slice(start, end);
 
         // Add comment counts and reactions
@@ -891,30 +833,22 @@ export function mockServer({ environment = 'development' } = {}) {
           };
         });
 
-        return {
-          posts: results,
-          count: totalPosts,
-          totalPages: totalPages
-        };
+        return { posts: results, count: totalPosts, totalPages: totalPages };
       });
 
       // GET POSTS BY USER ID (paginated)
       this.get('/posts/user/:userId', (schema, request) => {
-        const { userId } = request.params;
-        const { page = 1, limit = 5 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Posts By User: userId=${userId}, page=${pageNum}, limit=${limitNum}`);
-
+        const userId = request.params.userId;
+        console.log(`🔶 Mock Get Posts for User: ${userId}`);
         let userPosts = posts.filter(post => post.author._id === userId);
 
         // Sort by creation date, newest first
         userPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         const totalPosts = userPosts.length;
-        const totalPages = Math.ceil(totalPosts / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
+        const totalPages = Math.ceil(totalPosts / 10);
+        const start = (parseInt(request.queryParams.page) - 1) * 10;
+        const end = start + 10;
         const paginatedPosts = userPosts.slice(start, end);
 
         // Add comment counts and reactions
@@ -930,11 +864,7 @@ export function mockServer({ environment = 'development' } = {}) {
           };
         });
 
-        return {
-          posts: results,
-          count: totalPosts,
-          totalPages: totalPages
-        };
+        return { posts: results, count: totalPosts, totalPages: totalPages };
       });
 
       // CREATE POST (as user1)
@@ -984,21 +914,17 @@ export function mockServer({ environment = 'development' } = {}) {
       // --- Comment Routes ---
       // GET COMMENTS FOR A POST (paginated)
       this.get('/posts/:postId/comments', (schema, request) => {
-        const { postId } = request.params;
-        const { page = 1, limit = 3 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Comments: postId=${postId}, page=${pageNum}, limit=${limitNum}`);
-
+        const postId = request.params.postId;
+        console.log(`🔶 Mock Get Comments for Post: ${postId}`);
         let postComments = comments.filter(comment => comment.post === postId);
 
         // Sort by creation date, newest first
         postComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         const totalComments = postComments.length;
-        const totalPages = Math.ceil(totalComments / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
+        const totalPages = Math.ceil(totalComments / 10);
+        const start = (parseInt(request.queryParams.page) - 1) * 10;
+        const end = start + 10;
         const paginatedComments = postComments.slice(start, end);
 
         // Add reactions to comments
@@ -1012,11 +938,7 @@ export function mockServer({ environment = 'development' } = {}) {
           };
         });
 
-        return {
-          comments: results,
-          count: totalComments,
-          totalPages: totalPages
-        };
+        return { comments: results, count: totalComments, totalPages: totalPages };
       });
 
       // ADD COMMENT (as user1)
@@ -1096,130 +1018,67 @@ export function mockServer({ environment = 'development' } = {}) {
 
 
       // --- Friendship Routes (User1's perspective) ---
-      // GET FRIENDS LIST (accepted friends of user1, paginated)
+      // GET FRIENDS LIST (accepted friends of user1)
       this.get('/friends', (schema, request) => {
-        const { name = '', page = 1, limit = 10 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Friends List (user1): name='${name}', page=${pageNum}, limit=${limitNum}`);
-
-        const userFriendships = friendships.filter(
-          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-        );
-        const friendIds = userFriendships.map(fs => fs.from === "user1" ? fs.to : fs.from);
-        let friendUsers = users.filter(user => friendIds.includes(user._id));
-
-        // Filter by name if provided
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Friends (for user1): name='${name}'`);
+        const friendIds = currentFriendships
+            .filter(f => f.status === 'accepted' && (f.from === currentUser || f.to === currentUser))
+            .map(f => (f.from === currentUser ? f.to : f.from));
+            
+        let friendUsers = currentUsers.filter(u => friendIds.includes(u._id));
+        
         if (name) {
-          friendUsers = friendUsers.filter(
-            user => user.name.toLowerCase().includes(name.toLowerCase())
-          );
+            friendUsers = friendUsers.filter(u => u.name.toLowerCase().includes(name.toLowerCase()));
         }
-
-        const totalFriends = friendUsers.length;
-        const totalPages = Math.ceil(totalFriends / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedFriends = friendUsers.slice(start, end);
-
-        // Add the friendship object itself for context if needed
-        const results = paginatedFriends.map(user => {
-            const friendship = friendships.find(
-                fs => ((fs.from === "user1" && fs.to === user._id) || (fs.to === "user1" && fs.from === user._id)) && fs.status === 'accepted'
-            );
-            return { ...user, friendship: friendship || null }; // Return copy
-        });
-
-        return {
-          users: results, // Renamed from 'friends' to 'users' for consistency
-          count: totalFriends,
-          totalPages: totalPages
-        };
+        
+        // Return ALL friends
+        return { users: friendUsers, totalPages: 1, count: friendUsers.length }; 
       });
 
       // GET INCOMING FRIEND REQUESTS (requests sent TO user1)
       this.get('/friends/requests/incoming', (schema, request) => {
-        // Note: Pagination params often not needed for request lists, but included for consistency
-        const { name = '', page = 1, limit = 100 } = request.queryParams; 
+        const { name = '' } = request.queryParams; 
         console.log(`🔶 Mock Get Incoming Requests (for user1): name='${name}'`);
 
-        let incomingRequests = friendships.filter(
+        let incomingRequests = currentFriendships.filter(
           fs => fs.to === "user1" && fs.status === "pending"
         );
-
-        // Map to required format, embedding requester user info
-        let formattedRequests = incomingRequests.map(friendship => {
-          const requester = users.find(user => user._id === friendship.from);
-          return {
-            ...friendship, // Copy friendship details
-            requester: requester ? { ...requester } : null // Embed requester, handle if not found
-          };
-        }).filter(req => req.requester); // Filter out any requests where requester wasn't found
-
-        // Filter by requester name if provided
+        
+        // Populate requester info
+        incomingRequests = incomingRequests.map(req => ({
+          ...req,
+          requester: currentUsers.find(u => u._id === req.from)
+        }));
+        
         if (name) {
-          formattedRequests = formattedRequests.filter(req =>
-            req.requester.name.toLowerCase().includes(name.toLowerCase())
-          );
+           incomingRequests = incomingRequests.filter(req => req.requester?.name.toLowerCase().includes(name.toLowerCase()));
         }
         
-        // Simple pagination for consistency (usually lists are short)
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const totalRequests = formattedRequests.length;
-        const totalPages = Math.ceil(totalRequests / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedRequests = formattedRequests.slice(start, end);
-
-
-        return {
-          requests: paginatedRequests,
-          count: totalRequests,
-          totalPages: totalPages
-        };
+        // Return ALL requests
+        return { requests: incomingRequests, totalPages: 1, count: incomingRequests.length };
       });
 
       // GET OUTGOING FRIEND REQUESTS (requests sent BY user1)
       this.get('/friends/requests/outgoing', (schema, request) => {
-        const { name = '', page = 1, limit = 100 } = request.queryParams;
-        console.log(`🔶 Mock Get Outgoing Requests (from user1): name='${name}'`);
-
-        let outgoingRequests = friendships.filter(
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Outgoing Requests (for user1): name='${name}'`);
+        let outgoingRequests = currentFriendships.filter(
           fs => fs.from === "user1" && fs.status === "pending"
         );
+        
+        // Populate recipient info
+        outgoingRequests = outgoingRequests.map(req => ({
+          ...req,
+          recipient: currentUsers.find(u => u._id === req.to)
+        }));
 
-        // Map embedding recipient info
-        let formattedRequests = outgoingRequests.map(friendship => {
-          const recipient = users.find(user => user._id === friendship.to);
-          return {
-            ...friendship, // Copy friendship details
-            recipient: recipient ? { ...recipient } : null // Embed recipient
-          };
-        }).filter(req => req.recipient); // Filter if recipient not found
-
-        // Filter by recipient name
-        if (name) {
-          formattedRequests = formattedRequests.filter(req =>
-            req.recipient.name.toLowerCase().includes(name.toLowerCase())
-          );
+         if (name) {
+           outgoingRequests = outgoingRequests.filter(req => req.recipient?.name.toLowerCase().includes(name.toLowerCase()));
         }
         
-        // Simple pagination
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const totalRequests = formattedRequests.length;
-        const totalPages = Math.ceil(totalRequests / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedRequests = formattedRequests.slice(start, end);
-
-
-        return {
-          requests: paginatedRequests,
-          count: totalRequests,
-          totalPages: totalPages
-        };
+        // Return ALL requests
+        return { requests: outgoingRequests, totalPages: 1, count: outgoingRequests.length };
       });
 
       // --- Friendship Action Routes (Simplified Success Responses) ---
@@ -1392,7 +1251,7 @@ Visit `http://localhost:5173` (or the port Vite assigns) in your browser. You sh
 *   **Q: What is TailwindCSS?**
     *   A: Tailwind is a utility-first CSS framework. Instead of writing custom CSS rules, you apply pre-defined utility classes directly in your HTML/JSX (e.g., `text-blue-500`, `p-4`, `flex`). This speeds up styling and maintains consistency.
 *   **Q: What is ShadCN UI? Why use it with Tailwind?**
-    *   A: ShadCN UI provides beautifully designed, accessible UI components (Buttons, Cards, Forms, etc.) that you *copy* into your project, built using Tailwind classes. Unlike libraries like Material UI or Chakra UI, you own the code, making customization easier. It works seamlessly *with* Tailwind. We initialize it (`shadcn-ui init`) and then add specific components as needed.
+    *   A: ShadCN UI provides beautifully designed, accessible UI components (Buttons, Cards, Forms, etc.) that you *copy* into your project, built using Tailwind classes. Unlike libraries like Material UI or Chakra UI, you own the code, making customization easier. It works seamlessly *with* Tailwind. We initialize it (`shadcn init`) and then add specific components as needed.
 *   **Q: Why use absolute imports (`@/components/...`)?**
     *   A: Absolute imports make it easier to move files around without breaking import paths. `@/` points to your `src/` directory, so `import Button from '@/components/ui/button'` works from anywhere in `src/` without needing `../../..`.
 *   **Q: What is MirageJS again? Do I need to learn it?**

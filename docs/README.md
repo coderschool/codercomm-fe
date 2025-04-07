@@ -19,20 +19,20 @@ Follow these steps in order to build the complete CoderComm application:
 2. [**Authentication System**](./steps/02-authentication-system.md)  
    Create login and registration pages, implement JWT-based authentication, and set up protected routes.
 
-3. [**Main Layout and Navigation**](./steps/03-layout-navigation.md)  
+3. [**Main Layout and Basic Header**](./steps/03-main-layout-navigation.md)  
    Design a responsive layout with a sidebar navigation system and a mobile-friendly header.
 
-4. [**User Profile System**](./steps/04-user-profile.md)  
+4. [**User Profile System**](./steps/04-user-profile-system.md)  
    Develop user profiles with editing functionality and display user-specific content.
 
-5. [**Post Creation and Feed**](./steps/05-posts-feed.md)  
-   Build a post creation form, implement an infinite scrolling feed, and add post interactions.
+5. [**Post Creation and Display**](./steps/05-post-creation-feed.md)  
+   Build a post creation form, display posts within profile contexts, and add post interactions.
 
 6. [**Comments System**](./steps/06-comments-system.md)  
    Add comment creation and display, implement comment interactions, and create expandable comment sections.
 
-7. [**Friend System**](./steps/07-friend-system.md)  
-   Implement friend management tabs in the homepage for viewing, finding, and managing friends.
+7. [**Friend System (Tab Integration)**](./steps/07-friend-system.md)  
+   Implement friend list, requests, and user search within tabs on the main home page.
 
 8. [**Summary and Next Steps**](./steps/08-summary-and-next-steps.md)  
    Review what you've built and explore ideas for enhancing the application.
@@ -42,11 +42,11 @@ Follow these steps in order to build the complete CoderComm application:
 By the end of this tutorial, your application will have:
 
 - **User Authentication**: Registration, login, and protected routes
-- **User Profiles**: View and edit profiles
-- **Posts and Feed**: Create posts and view a feed of posts from yourself and others
-- **Comments**: Add comments to posts and reply to other users
-- **Friend System**: Send, accept, and decline friend requests directly from your homepage
-- **Responsive Design**: Works on desktop and mobile devices
+- **User Profiles**: View profiles (own via tab, others via page) and edit own profile
+- **Posts and Display**: Create posts and view posts within user profile contexts (no separate global feed)
+- **Comments**: Add comments to posts and interact with them
+- **Friend System**: Manage friends and requests via tabs on the home page
+- **Responsive Design**: Basic responsiveness handled by layout and components
 
 ## Technologies Used
 

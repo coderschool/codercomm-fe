@@ -19,33 +19,35 @@ You've created a comprehensive social media application with these core features
    - Set up global state management with Zustand (including persistence)
 
 3. **Main Layout & Navigation**
-   - Designed a responsive layout system
-   - Created a responsive sidebar navigation component (using ShadCN `Sheet` for mobile)
-   - Built a mobile-friendly header with user menu and actions
+   - Designed a simple layout (`MainLayout`) with a consistent header (`MainHeader`).
+   - Built a header with user menu (dropdown) and placeholder action icons.
+   - Implemented primary user navigation (Profile, Friends, Requests) via **tabs** on the `HomePage`.
+   - Removed responsive sidebar/sheet navigation in favor of the tabbed interface.
 
 4. **User Profile System**
-   - Developed detailed user profile pages (`/user/:userId`)
-   - Added profile editing functionality for the current user
-   - Created tabs for posts and "About" sections
-   - Fetched and displayed user-specific posts on profiles
+   - Developed detailed user profile pages (`ProfilePage` at `/user/:userId`) for viewing any user.
+   - Created a dedicated `Profile` component to display the *current* user's info, post form, and posts within the `HomePage` "Profile" tab.
+   - Added profile editing functionality (`ProfileEditForm`) accessible via the user's profile view.
+   - Created tabs within `ProfilePage` for Posts and "About" sections.
+   - Fetched and displayed user-specific posts on profiles/tabs using `useUserPosts`.
 
-5. **Post Creation & Feed**
-   - Built a post creation form with validation
-   - Implemented an infinite scrolling feed on the home page
-   - Added post interactions (like/unlike via `/reactions`, delete)
-   - Used React Query cache invalidation to update UI after mutations
+5. **Post Creation & Display**
+   - Built a `PostForm` component with validation, integrated into the `HomePage` profile tab.
+   - Created a `PostList` component to display posts, used within profile contexts.
+   - Added post interactions (like/unlike, delete) using React Query mutation hooks.
+   - Used React Query cache invalidation to update the UI after post mutations.
 
 6. **Comments System**
-   - Added comment creation on posts
-   - Implemented comment display below posts
-   - Built comment interactions (like/unlike via `/reactions`, delete)
-   - Created expandable comment sections within the post list
+   - Added comment creation (`CommentForm`) and display (`CommentList`, `CommentItem`) below posts.
+   - Implemented comment interactions (like/unlike, delete).
+   - Created expandable comment sections within `PostList`.
 
-7. **Friend System**
-   - Implemented viewing friend lists (paginated)
-   - Created pages for managing incoming and outgoing friend requests
-   - Added a page for searching/finding users (with infinite scroll)
-   - Integrated friend actions (send, accept, decline, cancel, unfriend) using mutation hooks and query invalidation
+7. **Friend System (via Tabs)**
+   - Implemented viewing friend lists (`FriendList` component) within a `HomePage` tab.
+   - Created a component (`FriendRequests`) for managing incoming/outgoing requests within a `HomePage` tab.
+   - Added a component (`AddFriend`) for searching/finding users within a `HomePage` tab.
+   - Integrated friend actions (send, accept, decline, cancel, unfriend) using mutation hooks and query invalidation within these tab components.
+   - Removed separate pages for friend management.
 
 ## Technical Skills Developed
 
@@ -56,7 +58,7 @@ Through building this application, you've gained experience with:
 - **Form Handling**: Using React Hook Form with Yup for validation schemas
 - **API Integration**: Making HTTP requests with Axios, handling responses and errors, using interceptors
 - **State Management**: Using Zustand for global state, including middleware (`devtools`, `persist`)
-- **Data Fetching & Server State**: Implementing React Query (`useQuery`, `useInfiniteQuery`, `useMutation`, `QueryClientProvider`, `useQueryClient`, query keys, query invalidation) for efficient data loading, caching, and updates.
+- **Data Fetching & Server State**: Implementing React Query (`useQuery`, `useMutation`, `QueryClientProvider`, `useQueryClient`, query keys, query invalidation) for efficient data loading, caching, and updates.
 - **UI Components**: Building with ShadCN UI and Tailwind CSS for styling and layout
 - **Responsive Design**: Creating layouts that adapt using CSS and the `useMediaQuery` hook
 - **Mock API**: Using MirageJS to simulate a backend for frontend development
@@ -67,7 +69,7 @@ Through building this application, you've gained experience with:
 The application follows these key architectural principles:
 
 1. **Feature-Based Organization**: Code related to specific features (user, post, comment, friend) is grouped, promoting modularity.
-2. **Custom Hooks**: Data fetching (`useQuery`, `useInfiniteQuery`) and data modification (`useMutation`) logic are encapsulated in reusable custom hooks (e.g., `useAuth`, `useUserQuery`, `usePostQuery`, etc.), separating data concerns from UI components.
+2. **Custom Hooks**: Data fetching (`useQuery`) and data modification (`useMutation`) logic are encapsulated in reusable custom hooks, separating data concerns from UI components.
 3. **Component Composition**: UI is built by combining smaller, focused components (e.g., `UserCard`, `ActionButton`, `CommentItem`).
 4. **Clear State Separation**: Global UI state (like auth status) is managed by Zustand, while server cache state (fetched data) is managed by React Query.
 5. **Consistent Patterns**: Similar features (e.g., fetching lists, handling mutations) follow consistent implementation patterns using React Query hooks.
@@ -127,9 +129,10 @@ Here are some ideas to take the CoderComm application to the next level:
 ### Technical Improvements
 
 1. **Performance Optimization**
-   - Review React Query cache times (`staleTime`, `cacheTime`)
-   - Implement code splitting more granularly (e.g., per route or feature)
-   - Analyze component re-renders using React DevTools Profiler
+   - Review React Query cache times.
+   - Implement code splitting.
+   - Analyze component re-renders.
+   - Consider virtualized lists (e.g., `react-window` or `react-virtual`) for potentially long lists like friends or comments.
 
 2. **Testing**
    - Add unit tests (e.g., with Vitest/Jest and React Testing Library) for components and hooks

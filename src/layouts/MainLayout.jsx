@@ -4,18 +4,18 @@ import MainHeader from "./MainHeader";
 
 /**
  * MainLayout - Main layout component for authenticated pages
- * Includes header, content area, and footer
+ * Includes header and content area.
  */
 function MainLayout() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <MainHeader />
 
-      <main className="flex-grow container mx-auto px-4 py-6">
+      <main className="flex-grow"> 
         <Outlet />
       </main>
 
-      {/* Add a Footer component here later if needed */}
+      {/* Footer was not present in the target commit's MainLayout structure */}
     </div>
   );
 }

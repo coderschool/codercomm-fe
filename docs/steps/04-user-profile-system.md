@@ -1,11 +1,16 @@
 # Step 4: User Profile System
 
-In this step, we'll implement a core feature: the user profile system. Users will be able to view profiles (including their own and others') and edit their own profile information. This involves:
+In this step, we'll implement the user profile system. Users will be able to view profiles (their own via the `HomePage` tab, and others' via a dedicated `ProfilePage`), and edit their own profile information. This involves:
 
-1.  **Setting up React Query:** Integrating the library for managing server state (fetching user data, posts).
-2.  **Creating Data Fetching Hooks:** Using React Query's `useQuery` and `useMutation` to fetch and update user data.
-3.  **Building Profile Components:** Creating components to display profile information (`ProfilePage`, `ProfileAbout`), handle editing (`ProfileEditForm`), and show user posts (`PostList`).
-4.  **Adding Dynamic Routing:** Using `useParams` to fetch data for specific user IDs based on the URL.
+1.  **Setting up React Query:** Integrating the library for managing server state.
+2.  **Creating Data Fetching Hooks:** Using `useQuery` and `useMutation` to fetch/update user data and posts.
+3.  **Building Profile Components:** Creating:
+    *   `ProfilePage`: For viewing any user's profile (`/user/:userId`).
+    *   `ProfileAbout`: Displays the read-only "About" section.
+    *   `ProfileEditForm`: Allows the user to edit their profile details.
+    *   `Profile` (Tab Component): Displays the *current user's* info, post form, and posts within the `HomePage` tab.
+4.  **Adding Dynamic Routing:** Using `useParams` for `ProfilePage`.
+5.  **Integrating Components:** Placing the components into `ProfilePage` and `HomePage`.
 
 ## 1. Set Up React Query Provider
 
@@ -93,7 +98,7 @@ Remember, we interact with these endpoints via `apiService`; we don't modify the
 We need components for tabs (to switch between Posts/About sections) and text areas (for the edit form).
 
 ```bash
-npx shadcn-ui@latest add tabs textarea alert
+npx shadcn@latest add tabs textarea alert
 ```
 
 *   `tabs`: Creates tabbed navigation.
@@ -237,9 +242,9 @@ export function useUserPosts(userId) {
 *   **`useQueryClient`**: Hook to get the Query Client instance, needed for interacting with the cache (e.g., `invalidateQueries`).
 *   **`invalidateQueries`**: Tells React Query that data associated with certain `queryKey`s is stale and should be refetched the next time it's needed.
 
-## 5. Create Profile Page Component
+## 5. Create `ProfilePage` Component (for Viewing Others)
 
-This page will display the user's profile, using the hooks we just created. It will fetch user data and their posts, handle loading/error states, and include tabs for different sections.
+This page (`/user/:userId`) displays any user's profile using the hooks we created. It includes tabs for Posts and About sections.
 
 Create `src/pages/ProfilePage.jsx`:
 
@@ -273,8 +278,9 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { getInitials } from "@/utils/formatters"; // Import utility
 
 /**
- * User Profile Page: Displays user information, posts, about section, etc.
- * Handles fetching data via React Query hooks and allows editing for the current user.
+ * User Profile Page: Displays another user's information, posts, about section.
+ * Fetches data via React Query hooks based on URL param.
+ * Allows editing only if it's the current user's profile (edge case).
  */
 function ProfilePage() {
   // Get the user ID from the URL (e.g., /user/user1 -> id = "user1")
@@ -850,279 +856,233 @@ export default ProfileEditForm;
     *   Displays mutation errors using an `Alert`.
     *   Calls `onCancel` or `onSuccess` (passed as props from `ProfilePage`) to signal completion or cancellation, allowing the parent to hide the form.
 
-## 7. Create/Update Post List Component
+## 7. Create `Profile` Component (for `HomePage` Tab)
 
-We need a component to display posts. Let's reuse/create `src/features/post/PostList.jsx`. We'll make sure it uses the correct date formatting and avatar initials utilities.
+This component is specifically for the "Profile" tab on the *current user's* `HomePage`. It displays their basic info, the `PostForm`, and their own posts.
 
-Update `src/features/post/PostList.jsx`:
+Create `src/features/user/Profile.jsx`:
 
 ```jsx
-// src/features/post/PostList.jsx
-import React from "react";
+// src/features/user/Profile.jsx
+import React from 'react';
 import PropTypes from 'prop-types';
-import { Link } from "react-router-dom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDistanceToNow } from "date-fns"; // Use date-fns
-import { MessageSquare, Heart } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"; // Use Card
-import { getInitials } from "@/utils/formatters"; // Import utility
+import useAuth from "@/hooks/useAuth";
+import { useUserPosts } from "@/hooks/useUserQuery"; // Hook to fetch user's posts
+
+// Reusable Components
+import PostForm from "@/features/post/PostForm";
+import PostList from "@/features/post/PostList"; // Re-use PostList component
+import LoadingScreen from "@/components/LoadingScreen";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 /**
- * Displays a list of posts.
+ * Profile Tab Component:
+ * Displays the current user's profile information (implicitly via context),
+ * the PostForm, and their own posts.
+ * Designed to be used within the HomePage tab structure.
  */
-function PostList({ posts = [] }) {
+function Profile({ profile }) { // Receives the current user profile from HomePage
+  const { user: currentUser } = useAuth(); // Double-check if profile prop is needed or useAuth is sufficient
+  const userId = profile?._id; // Get user ID from the profile prop
 
-  if (!posts || posts.length === 0) {
+  // Fetch only the posts for the current user
+  const { 
+    data: postsData, 
+    isLoading: isLoadingPosts,
+    isError: isPostsError,
+    error: postsError 
+  } = useUserPosts(userId, {
+    // Enable the query only if we have a userId
+    enabled: !!userId,
+  });
+
+  // Display loading state for posts
+  if (isLoadingPosts) {
+    return <LoadingScreen message="Loading your posts..." fullScreen={false} />;
+  }
+  
+  // Display error state for posts
+  if (isPostsError) {
     return (
-      <Card className="mt-4">
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground py-8">
-            No posts found.
-          </p>
-        </CardContent>
-      </Card>
+      <Alert variant="destructive" className="mt-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error Loading Posts</AlertTitle>
+        <AlertDescription>
+          {postsError?.message || "Could not fetch your posts. Please try again later."}
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {posts.map((post) => (
-        <Card key={post._id} className="overflow-hidden">
-          <CardHeader className="p-0">
-             {/* Post Author Info */}
-             <div className="flex items-center p-4">
-               <Link to={`/user/${post.author._id}`} className="flex-shrink-0">
-                 <Avatar className="h-10 w-10 border">
-                   <AvatarImage src={post.author.avatarUrl || ''} alt={post.author.name} />
-                   <AvatarFallback>{getInitials(post.author.name)}</AvatarFallback>
-                 </Avatar>
-               </Link>
-               <div className="ml-3">
-                 <Link 
-                   to={`/user/${post.author._id}`}
-                   className="text-sm font-semibold hover:underline"
-                 >
-                   {post.author.name}
-                 </Link>
-                 <p className="text-xs text-muted-foreground">
-                   {/* Format date using date-fns */}
-                   {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                 </p>
-               </div>
-               {/* Add Post Menu (ellipsis) here later */}
-             </div>
-          </CardHeader>
-          
-          <CardContent className="px-4 pb-2 pt-0">
-             {/* Post Content */}
-             {post.content && (
-               <p className="text-sm whitespace-pre-wrap mb-3">
-                 {post.content}
-               </p>
-             )}
-             
-             {/* Post Image (if exists) */}
-             {post.image && (
-               <div className="mt-2 -mx-4 sm:mx-0">
-                 <img 
-                   src={post.image} 
-                   alt="Post attachment" 
-                   className="max-h-[400px] w-full object-cover" 
-                 />
-               </div>
-             )}
-          </CardContent>
-          
-          <CardFooter className="px-4 py-2 bg-muted/50 border-t">
-            {/* Post Actions/Stats */}
-            <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1 hover:text-primary">
-                  <Heart className="h-4 w-4" />
-                  <span>{post.reactions?.length || 0} Likes</span> {/* Use reaction length */}
-                </button>
-                <button className="flex items-center gap-1 hover:text-primary">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{post.commentCount || 0} Comments</span> {/* Use comment count */}
-                </button>
-              </div>
-              {/* Add Share button/count later */}
-            </div>
-          </CardFooter>
-        </Card>
-      ))}
+    <div className="space-y-6">
+      {/* 1. Post Creation Form */}
+      {/* Ensure currentUser is available before rendering PostForm */}
+      {currentUser && <PostForm />} 
+
+      {/* 2. User's Posts List */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4 mt-6">Your Posts</h2>
+        {/* Pass the fetched posts to the PostList component */}
+        <PostList posts={postsData?.posts || []} />
+      </div>
     </div>
   );
 }
 
-PostList.propTypes = {
-  posts: PropTypes.arrayOf(PropTypes.shape({
+Profile.propTypes = {
+  profile: PropTypes.shape({
     _id: PropTypes.string.isRequired,
-    content: PropTypes.string,
-    image: PropTypes.string,
-    createdAt: PropTypes.string.isRequired,
-    author: PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string,
-      avatarUrl: PropTypes.string,
-    }).isRequired,
-    reactions: PropTypes.array, // Assuming reactions are fetched with posts
-    commentCount: PropTypes.number, // Assuming count is fetched
-  })),
+    // Add other fields if needed by this component
+  }).isRequired,
 };
 
-export default PostList;
+export default Profile;
 ```
 
 **Explanation:**
 
-*   Imports `getInitials` and `formatDistanceToNow` for consistency.
-*   Uses ShadCN `Card` components for better structure.
-*   Displays post content, image (if available), author info, and relative time.
-*   Includes placeholders for like/comment counts (using `reactions.length` and `commentCount` if available on the post object from the API).
+*   This component is simpler than `ProfilePage` because it assumes it's showing the *current* user.
+*   It fetches the user's posts using `useUserPosts(userId)`. Note the `enabled: !!userId` option ensures the query only runs when the ID is available.
+*   It renders the `PostForm`. We assume `PostForm` handles its own logic for creating posts for the current user.
+*   It renders the `PostList` component, passing the fetched posts specific to the current user.
 
-## 8. Update Routes for Profile Page
+## 8. Update Routes and `HomePage`
 
-Ensure the route for the profile page is correctly defined in `src/routes/index.jsx`.
+First, ensure the route for `ProfilePage` exists in `src/routes/index.jsx`:
 
 ```jsx
-// src/routes/index.jsx
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import LoadingScreen from "@/components/LoadingScreen"; 
+// src/routes/index.jsx (Ensure this route exists)
+// ... other imports ...
+import ProfilePage from "../pages/ProfilePage"; // Make sure it's imported
 
-// Layouts
-import BlankLayout from "../layouts/BlankLayout";
-import MainLayout from "../layouts/MainLayout";
-
-// Route Guards
-import AuthRequire from "./AuthRequire";
-import GuestRoute from "./GuestRoute";
-
-// Pages (Lazy loaded)
-const HomePage = React.lazy(() => import("../pages/HomePage"));
-const LoginPage = React.lazy(() => import("../pages/LoginPage"));
-const RegisterPage = React.lazy(() => import("../pages/RegisterPage"));
-const AccountPage = React.lazy(() => import("../pages/AccountPage"));
-const ProfilePage = React.lazy(() => import("../pages/ProfilePage")); // Use ProfilePage
-const NotFoundPage = React.lazy(() => import("../pages/NotFoundPage"));
-
-/**
- * Main Router configuration
- */
 function Router() {
   return (
-    <React.Suspense fallback={<LoadingScreen message="Loading page..." />}>
+    <React.Suspense fallback={/* ... */}>
       <Routes>
-        {/* Protected Routes */}
-        <Route
-          path="/"
-          element={<AuthRequire><MainLayout /></AuthRequire>}
-        >
+        <Route path="/" element={<AuthRequire><MainLayout /></AuthRequire>}>
           <Route index element={<HomePage />} />
           <Route path="account" element={<AccountPage />} />
-          {/* Dynamic route for user profiles */}
+          {/* Route for viewing any user profile */}
           <Route path="user/:userId" element={<ProfilePage />} /> 
         </Route>
-
-        {/* Guest Routes */}
-        <Route element={<BlankLayout />}>
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
+        {/* ... Guest Routes ... */}
       </Routes>
     </React.Suspense>
   );
 }
-
 export default Router;
 ```
 
-*   We added the dynamic route `path="user/:userId"` which will render `ProfilePage`. The `:userId` part is a URL parameter that `useParams` can extract.
-
-## 9. Update Links in Sidebar and Header
-
-Make sure the links in the Sidebar and Header point to the correct profile URL (`/user/:userId`).
-
-In `src/layouts/Sidebar.jsx`, find the user profile link area and ensure it uses `user?._id`:
+Next, update `src/pages/HomePage.jsx` to use the new `Profile` component in its first tab:
 
 ```jsx
-      {/* User Profile Link Area */}
-      <div className="px-4">
-        <Link 
-          // Ensure this uses the dynamic user ID
-          to={`/user/${user?._id}`} 
-          className="flex items-center gap-3 mb-6"
-        >
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-            <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-          </Avatar>
-          <div className={cn("flex flex-col", isDesktop && "hidden lg:flex")}>
-            <span className="font-medium">{user?.name}</span>
-            <span className="text-xs text-muted-foreground">View profile</span>
-          </div>
-        </Link>
-      </div>
+// src/pages/HomePage.jsx
+import React, { useState } from "react";
+import useAuth from "@/hooks/useAuth";
+import LoadingScreen from "@/components/LoadingScreen";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { User, UserPlus, Mail, Users } from "lucide-react";
+
+// Import components needed for tabs
+import Profile from "@/features/user/Profile"; // *** Import the new Profile component ***
+import ProfileCover from "@/features/user/ProfileCover";
+import FriendList from "@/features/friend/FriendList"; // Placeholder for now
+import FriendRequests from "@/features/friend/FriendRequests"; // Placeholder
+import AddFriend from "@/features/friend/AddFriend"; // Placeholder
+
+function HomePage() {
+  const { user, isInitialized } = useAuth();
+  const [currentTab, setCurrentTab] = useState("profile");
+
+  if (!isInitialized) { /* ... loading ... */ }
+  if (!user) { /* ... user loading placeholder ... */ }
+
+  // Define the tabs structure, using the new Profile component for the first tab
+  const PROFILE_TABS = [
+    {
+      value: "profile",
+      icon: <User className="w-5 h-5" />,
+      // *** Use the Profile component, passing the user data ***
+      component: <Profile profile={user} />,
+      label: "Profile"
+    },
+    {
+      value: "friends",
+      icon: <Users className="w-5 h-5" />,
+      component: <FriendList />, 
+      label: "Friends"
+    },
+    {
+      value: "requests",
+      icon: <Mail className="w-5 h-5" />,
+      component: <FriendRequests />, 
+      label: "Requests"
+    },
+    {
+      value: "add_friend",
+      icon: <UserPlus className="w-5 h-5" />,
+      component: <AddFriend />,
+      label: "Add Friend"
+    },
+  ];
+
+  return (
+    <div className="container mx-auto px-4 pt-4">
+      {/* Cover and tabs card */}
+      <Card className="mb-6 h-60 md:h-80 relative overflow-hidden shadow-sm">
+        <ProfileCover profile={user} />
+        {/* Tab Navigation (Keep as is) */}
+        <div className="absolute bottom-0 ...">
+          <Tabs value={currentTab} onValueChange={setCurrentTab} ...>
+            <TabsList ...>
+              {PROFILE_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} ...>
+                  {tab.icon}
+                  <span className="hidden md:inline">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      </Card>
+
+      {/* Tab content */}
+      <Card className="p-4 md:p-6 shadow-sm">
+        <Tabs value={currentTab} className="w-full">
+          {PROFILE_TABS.map((tab) => (
+            <TabsContent key={tab.value} value={tab.value} className="mt-0">
+              {/* Render the component associated with the active tab */}
+              {tab.component}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </Card>
+    </div>
+  );
+}
+export default HomePage;
 ```
 
-In `src/layouts/MainHeader.jsx`, find the user dropdown menu item for "Your Profile" and ensure it uses `user?._id`:
+## 9. Running the Application
 
-```jsx
-                {/* Link to User's Profile Page */}
-                <DropdownMenuItem asChild>
-                  {/* Ensure this uses the dynamic user ID */}
-                  <Link to={`/user/${user?._id}`} className="cursor-pointer">
-                    <UserCircle className="h-4 w-4 mr-2" />
-                    <span>Your Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-```
+Run `npm run dev` and test:
 
-## 10. Running the Application and Testing Profiles
+1.  **Your Profile (HomePage):** Log in and view the default `HomePage`. The "Profile" tab should be active, showing the `PostForm` and a list of *your* posts.
+2.  **Edit Profile:** Click your user avatar in the header, go to "Your Profile" (this leads to `/user/yourUserId`). Click the "Edit Profile" button. The `ProfileEditForm` should appear in the "About" tab. Make changes and save. Verify the profile updates (you might need to refresh or wait for cache invalidation).
+3.  **View Other Profile:** Find another user ID from `mockApi/data.js` (e.g., `user2`). Navigate directly to `/user/user2`. You should see their profile (`ProfilePage`), including their posts and about info. The "Edit Profile" button should *not* be visible. The "Add Friend" button should be visible (though non-functional).
 
-Start the development server:
+## Summary
 
-```bash
-npm run dev
-```
+In this step, we've:
 
-**Things to Test:**
+*   Set up React Query for server state management.
+*   Created hooks (`useUserQuery`, `useUserPosts`, `useUpdateProfile`) for fetching and updating user data.
+*   Built the `ProfilePage` for viewing any user's profile via `/user/:userId`.
+*   Built `ProfileAbout` and `ProfileEditForm` for displaying and editing profile details.
+*   Created a dedicated `Profile` component for the current user's view within the `HomePage` "Profile" tab, including their `PostForm` and posts.
+*   Integrated these components into the routing and `HomePage` structure.
 
-1.  Log in using `reactlover@coderschool.vn`.
-2.  Click your avatar in the header or sidebar - you should navigate to `/user/user1`.
-3.  You should see your profile information and any posts associated with `user1` from the mock data.
-4.  Click the "Edit Profile" button. The "About" tab should switch to the edit form.
-5.  Try changing your name or "About Me" text and click "Save Changes".
-    *   The form should disappear, and the "About" tab should display the updated information (React Query automatically refetched or used the updated data).
-    *   Check the console for logs from the `useUpdateProfile` hook.
-    *   A success toast should appear.
-6.  Try entering an invalid URL in the Avatar or Cover URL fields and saving – you should see a validation error from Yup.
-7.  Click "Cancel" while editing – the form should disappear without saving changes.
-8.  Try navigating directly to another user's mock profile (if you know their ID, e.g., `/user/user2`). You should see their profile, but the "Edit Profile" button should be replaced by "Add Friend".
-
-## 11. Frequently Asked Questions (FAQ)
-
-*   **Q: What is React Query really doing here? Why not just `useEffect` and `useState`?**
-    *   A: React Query simplifies server state management. Instead of manually handling loading states, error states, caching, background updates, and refetching logic in `useEffect`, React Query handles most of it automatically. `useQuery` fetches, caches, and provides status flags. `useMutation` simplifies handling updates and their side effects (like cache invalidation). This leads to less boilerplate and more robust data handling.
-*   **Q: What does `queryKey: ["users", userId]` mean?**
-    *   A: The `queryKey` is an array used by React Query to cache data. Each unique key corresponds to a unique piece of cached data. By including `userId`, we ensure that the profile data for `user1` is cached separately from `user2`. When `userId` changes (e.g., navigating to a different profile), React Query knows to fetch data for that new key.
-*   **Q: Why use `enabled: !!userId` in `useQuery`?**
-    *   A: It prevents the query from running until `userId` actually has a value. When `ProfilePage` first mounts, `userId` might be temporarily `undefined` before `useParams` provides it. `enabled: false` stops React Query from making an API call with an invalid ID.
-*   **Q: What is `queryClient.invalidateQueries`? Why is it important after an update?**
-    *   A: After you successfully update data (e.g., editing a profile using `useMutation`), the data currently cached by React Query for that user is now outdated. `invalidateQueries({ queryKey: ["users", userId] })` tells React Query: "The data associated with this key is no longer fresh." React Query will then automatically refetch the data the next time a component needs it (or immediately, depending on configuration), ensuring the UI shows the latest information.
-*   **Q: How does `useParams` work?**
-    *   A: It's a hook from `react-router-dom`. When you define a route like `/user/:userId`, `useParams()` in the component rendered by that route (`ProfilePage`) will return an object containing the parameters from the URL. In this case, it would be `{ userId: "someValue" }` if the URL is `/user/someValue`.
-*   **Q: Why separate `ProfileAbout` and `ProfileEditForm`?**
-    *   A: It follows the Single Responsibility Principle. `ProfileAbout` is only concerned with *displaying* data, while `ProfileEditForm` handles the *editing* logic (form state, validation, submission). This separation makes the code easier to manage, understand, and test.
-
-## What's Next?
-
-We've successfully implemented a core part of any social application: viewing and editing user profiles, along with fetching related data like user posts.
-
-In **Step 5: Post Creation and Feed**, we'll focus on:
-
-1.  Building the main home feed to display posts from the user and their friends.
-2.  Creating a form component to allow users to create new posts.
-3.  Integrating post creation with React Query mutations.
+Users can now view profiles and edit their own information. Next, we'll focus on implementing the post creation and feed functionality in more detail.

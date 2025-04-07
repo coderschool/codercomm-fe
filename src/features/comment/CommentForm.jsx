@@ -1,12 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from 'prop-types';
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Components
-import useAuth from "@/hooks/useAuth";
-import { useCreateComment } from "@/hooks/useCommentQuery";
+import { useAppStore } from "@/lib/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,31 +28,41 @@ const commentSchema = yup.object({
  * @param {string} props.postId - ID of the post to comment on
  */
 function CommentForm({ postId }) {
-  const { user } = useAuth();
-  const { mutate: createCommentMutate, isPending: isCreatingComment } = useCreateComment();
-  
+  // Select user and action from store
+  const { currentUser, createComment } = useAppStore((state) => ({
+    currentUser: state.currentUser,
+    createComment: state.createComment,
+  }));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm({
     resolver: yupResolver(commentSchema),
     defaultValues: { content: "" },
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Submitting comment:", data);
-    createCommentMutate(
-      { postId, content: data.content },
-      { onSuccess: () => form.reset() } // Reset form on success
-    );
+    setIsSubmitting(true);
+    try {
+      await createComment(postId, data); // Use store action
+      form.reset(); // Reset form on success
+    } catch (error) {
+      // Error is handled/toasted in the store action
+      console.error("Comment submission failed in form:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!user) return null; // Don't show form if not logged in
+  if (!currentUser) return null; // Don't show form if not logged in
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-3 py-2">
         {/* Current User Avatar */}
         <Avatar className="h-8 w-8 border mt-1 flex-shrink-0">
-          <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
-          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+          <AvatarImage src={currentUser.avatarUrl || ''} alt={currentUser.name} />
+          <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
         </Avatar>
         
         {/* Comment Input Field */}
@@ -69,16 +78,16 @@ function CommentForm({ postId }) {
                     placeholder="Write a comment..."
                     className="pr-10 h-9 text-sm"
                     {...field}
-                    disabled={isCreatingComment}
+                    disabled={isSubmitting}
                   />
                   <Button 
                     type="submit" 
                     size="icon" 
                     variant="ghost"
-                    disabled={isCreatingComment || !form.formState.isValid}
+                    disabled={isSubmitting || !form.formState.isValid}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-primary"
                   >
-                    {isCreatingComment ? (
+                    {isSubmitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />

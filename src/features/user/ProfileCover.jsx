@@ -1,19 +1,13 @@
 import React from "react";
-import useAuth from "@/hooks/useAuth";
-import ActionButton from "@/features/friend/ActionButton";
-import FriendStatus from "@/features/friend/FriendStatus";
+
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-function ProfileCover({ profile }) {
-  const { user } = useAuth();
-  const currentUserId = user?._id;
+function ProfileCover(profile) {
   const {
-    _id: targetUserId,
     name,
     jobTitle,
     coverUrl,
     avatarUrl,
-    friendship,
   } = profile;
 
   const handleError = (e) => {
@@ -21,15 +15,6 @@ function ProfileCover({ profile }) {
     e.target.src = `/covers/cover_${imgIndex}.jpeg`;
     e.target.onError = null;
   };
-
-  const friendStatus = (
-    <FriendStatus
-      className="mt-1"
-      currentUserId={currentUserId}
-      targetUserId={targetUserId}
-      friendship={friendship}
-    />
-  );
 
   // Get first character of name safely
   const nameInitial = name && typeof name === 'string' ? name.charAt(0) : '?';
@@ -46,20 +31,6 @@ function ProfileCover({ profile }) {
         <div className="md:ml-5 mt-3 md:mt-0 text-white text-center md:text-left">
           <h5 className="text-xl font-bold drop-shadow-md">{displayName}</h5>
           <p className="opacity-90 drop-shadow-md">{jobTitle || ""}</p>
-          {currentUserId && targetUserId && currentUserId !== targetUserId && (
-            <>
-              {friendship ? (
-                friendStatus
-              ) : (
-                <ActionButton
-                  className="mt-1"
-                  currentUserId={currentUserId}
-                  targetUserId={targetUserId}
-                  friendship={friendship}
-                />
-              )}
-            </>
-          )}
         </div>
       </div>
       <div className="h-full w-full overflow-hidden">

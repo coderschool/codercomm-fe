@@ -4,14 +4,13 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
 
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
-import useAuth from "@/hooks/useAuth";
+import { useAppStore } from "@/lib/store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
@@ -34,7 +33,7 @@ const defaultValues = {
 function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const auth = useAuth();
+  const login = useAppStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
@@ -49,14 +48,14 @@ function LoginPage() {
     let { email, password } = data;
 
     try {
-      await auth.login({ email, password });
+      await login({ email, password });
       navigate(from, { replace: true });
     } catch (error) {
       console.error("Login Page Error:", error);
       form.reset({ ...data, password: "" });
       setError("root", { 
         type: "manual", 
-        message: error.message || "An unexpected error occurred during login."
+        message: error.message || "Login failed. Please check your credentials."
       });
     }
   };
@@ -83,8 +82,8 @@ function LoginPage() {
           
           <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6 text-sm">
             Don't have an account?{" "}
-            <RouterLink to="/register" className="font-medium underline hover:text-blue-800">
-              Create one here
+            <RouterLink to="/home" className="font-medium underline hover:text-blue-800">
+              Too bad! We learn registration later.
             </RouterLink>
           </div>
 

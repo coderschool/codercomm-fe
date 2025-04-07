@@ -1,14 +1,11 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import useAuth from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store";
 import { getInitials } from "@/utils/formatters";
 import { 
   LogOut, 
   Settings, 
-  UserCircle, 
   Menu,
-  X,
   Bell,
   MessagesSquare
 } from "lucide-react";
@@ -29,25 +26,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import PropTypes from 'prop-types';
 
 /**
  * Main application header.
  * Includes logo, mobile menu toggle, notification/message icons, and user dropdown menu.
- * @param {object} props - Component props.
- * @param {() => void} props.onMenuToggle - Function to toggle the mobile sidebar.
  */
-function MainHeader({ onMenuToggle }) {
+function MainHeader() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { currentUser, logout } = useAppStore((state) => ({
+    currentUser: state.currentUser,
+    logout: state.logout,
+  }));
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login", { replace: true });
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -58,7 +51,6 @@ function MainHeader({ onMenuToggle }) {
             variant="ghost" 
             size="icon" 
             className="lg:hidden"
-            onClick={onMenuToggle}
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
@@ -110,13 +102,13 @@ function MainHeader({ onMenuToggle }) {
             </Tooltip>
           </TooltipProvider>
 
-          {user && (
+          {currentUser && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9 border">
-                    <AvatarImage src={user.avatarUrl || ''} alt={user.name || 'User'} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    <AvatarImage src={currentUser.avatarUrl || ''} alt={currentUser.name || 'User'} />
+                    <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
                   </Avatar>
                   <span className="sr-only">User menu</span>
                 </Button>
@@ -124,19 +116,13 @@ function MainHeader({ onMenuToggle }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
+                    <p className="text-sm font-medium leading-none">{currentUser.name || 'User'}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email || 'No email'}
+                      {currentUser.email || 'No email'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={`/user/${user?._id}`} className="cursor-pointer">
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    <span>Your Profile</span>
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/account" className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
@@ -157,8 +143,5 @@ function MainHeader({ onMenuToggle }) {
   );
 }
 
-MainHeader.propTypes = {
-  onMenuToggle: PropTypes.func.isRequired,
-};
 
 export default MainHeader;

@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from 'prop-types';
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Services
-import { useUpdateProfile } from "@/hooks/useUserQuery"; // The mutation hook
+import { useAppStore } from "@/lib/store";
 
 // ShadCN UI Components
 import { 
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
@@ -32,6 +32,11 @@ const profileSchema = yup.object({
   country: yup.string().max(50, "Country name too long"),
   company: yup.string().max(100, "Company name too long"),
   jobTitle: yup.string().max(100, "Job title too long"),
+  // Social Links (Optional, must be valid URLs if provided)
+  facebookLink: yup.string().url("Must be a valid URL").nullable().transform(value => value || null),
+  instagramLink: yup.string().url("Must be a valid URL").nullable().transform(value => value || null),
+  linkedinLink: yup.string().url("Must be a valid URL").nullable().transform(value => value || null),
+  twitterLink: yup.string().url("Must be a valid URL").nullable().transform(value => value || null),
 }).required();
 
 /**
@@ -40,9 +45,11 @@ const profileSchema = yup.object({
  * Calls the `useUpdateProfile` mutation hook on submit.
  */
 function ProfileEditForm({ user, onCancel, onSuccess }) {
-  // Get the mutation function and its state from the custom hook
-  const { mutate: updateProfileMutate, isPending: isUpdating, error: updateError } = useUpdateProfile();
-  
+  // Get the mutation action from the Zustand store
+  const updateUserProfile = useAppStore((state) => state.updateUserProfile);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
   // Initialize React Hook Form
   const form = useForm({
     resolver: yupResolver(profileSchema),
@@ -56,29 +63,29 @@ function ProfileEditForm({ user, onCancel, onSuccess }) {
       country: user?.country || "",
       company: user?.company || "",
       jobTitle: user?.jobTitle || "",
-      // Initialize other fields here
+      // Social links default values
+      facebookLink: user?.facebookLink || "",
+      instagramLink: user?.instagramLink || "",
+      linkedinLink: user?.linkedinLink || "",
+      twitterLink: user?.twitterLink || "",
     },
   });
 
   // Form submission handler
   const onSubmit = async (data) => {
     console.log("Form data submitted:", data);
-    // Call the mutation function provided by useUpdateProfile
-    // Pass the necessary variables (userId and the form data)
-    updateProfileMutate(
-      { userId: user._id, ...data }, 
-      {
-        // Optional: Add callbacks here if needed, though onSuccess/onError in the hook is usually preferred
-        onSuccess: () => {
-          console.log("Mutation succeeded from component");
-          if (onSuccess) onSuccess(); // Call the prop callback to close the form
-        },
-        onError: (error) => {
-           console.error("Mutation failed from component", error);
-           // Error is already handled by the hook's onError and displayed below
-        }
-      }
-    );
+    setIsSubmitting(true);
+    setSubmitError(null); // Clear previous errors
+    try {
+      await updateUserProfile(data); // Call store action (userId inferred as current user)
+      if (onSuccess) onSuccess(); // Call success callback from props
+    } catch (error) {
+      console.error("Profile update failed in form:", error);
+      setSubmitError(error.message || "Could not update profile. Please try again.");
+      // Optional: Call onError prop if needed
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -87,13 +94,13 @@ function ProfileEditForm({ user, onCancel, onSuccess }) {
         <CardTitle>Edit Profile</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Display mutation errors */}
-        {updateError && (
+        {/* Display submission errors */}
+        {submitError && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Update Failed</AlertTitle>
             <AlertDescription>
-              {updateError.message || "Could not update profile. Please try again."}
+              {submitError}
             </AlertDescription>
           </Alert>
         )}
@@ -223,21 +230,68 @@ function ProfileEditForm({ user, onCancel, onSuccess }) {
               )}
             />
             
+            {/* --- Social Links --- */}
+            <h3 className="text-md font-medium pt-4 border-t">Social Links</h3>
+            <FormField
+              control={form.control}
+              name="facebookLink"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2"><Facebook className="h-4 w-4"/> Facebook</FormLabel>
+                  <FormControl><Input type="url" placeholder="https://facebook.com/yourprofile" {...field} value={field.value ?? ''} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="instagramLink"
+              render={({ field }) => (
+                <FormItem>
+                   <FormLabel className="flex items-center gap-2"><Instagram className="h-4 w-4"/> Instagram</FormLabel>
+                   <FormControl><Input type="url" placeholder="https://instagram.com/yourprofile" {...field} value={field.value ?? ''} /></FormControl>
+                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="linkedinLink"
+              render={({ field }) => (
+                <FormItem>
+                   <FormLabel className="flex items-center gap-2"><Linkedin className="h-4 w-4"/> LinkedIn</FormLabel>
+                   <FormControl><Input type="url" placeholder="https://linkedin.com/in/yourprofile" {...field} value={field.value ?? ''} /></FormControl>
+                   <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="twitterLink"
+              render={({ field }) => (
+                <FormItem>
+                   <FormLabel className="flex items-center gap-2"><Twitter className="h-4 w-4"/> Twitter (X)</FormLabel>
+                   <FormControl><Input type="url" placeholder="https://twitter.com/yourprofile" {...field} value={field.value ?? ''} /></FormControl>
+                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-4 border-t">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={onCancel} // Call cancel callback from props
-                disabled={isUpdating} // Disable while updating
+                disabled={isSubmitting} // Use local state
               >
                 Cancel
               </Button>
               <Button 
                 type="submit"
-                disabled={isUpdating} // Disable while updating
+                disabled={isSubmitting} // Use local state
               >
-                {isUpdating ? "Saving..." : "Save Changes"}
+                {isSubmitting ? "Saving..." : "Save Changes"} // Use local state
               </Button>
             </div>
           </form>

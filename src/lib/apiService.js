@@ -54,9 +54,8 @@ apiService.interceptors.response.use(
     //   url: response.config.url,
     //   data: response.data, // The actual data from the server
     // });
-    // For successful responses (2xx status code), just return the response object
-    // The caller can access response.data
-    return response; 
+    // For successful responses (2xx status code), just return the data part
+    return response.data; // Return response.data directly
   },
   (error) => {
     // Handle errors (non-2xx status codes)

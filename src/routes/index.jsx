@@ -5,21 +5,22 @@ import BlankLayout from "../layouts/BlankLayout";
 import MainLayout from "../layouts/MainLayout";
 import AuthRequire from "./AuthRequire";
 import GuestRoute from "./GuestRoute";
+
+// Import core pages
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
-import RegisterPage from "../pages/RegisterPage";
 import NotFoundPage from "../pages/NotFoundPage";
 import AccountPage from "../pages/AccountPage";
-import UserProfilePage from "../pages/UserProfilePage";
-import ProfilePage from "../pages/ProfilePage";
-import FriendsPage from "../pages/FriendsPage";
-import FriendRequestsPage from "../pages/FriendRequestsPage";
-import UserSearchPage from "../pages/UserSearchPage";
 
+/**
+ * Simplified Router configuration.
+ * Maps routes to their corresponding layouts and page components.
+ */
 function Router() {
   return (
     <React.Suspense fallback={<LoadingScreen message="Loading page..." />}>
       <Routes>
+        {/* Authenticated Routes - Use MainLayout */}
         <Route
           path="/"
           element={
@@ -28,14 +29,12 @@ function Router() {
             </AuthRequire>
           }
         >
+          {/* Core authenticated routes */}
           <Route index element={<HomePage />} />
           <Route path="account" element={<AccountPage />} />
-          <Route path="user/:userId" element={<ProfilePage />} />
-          <Route path="friends" element={<FriendsPage />} />
-          <Route path="requests" element={<FriendRequestsPage />} />
-          <Route path="find-users" element={<UserSearchPage />} />
         </Route>
 
+        {/* Guest Routes - Use BlankLayout */}
         <Route element={<BlankLayout />}>
           <Route
             path="/login"
@@ -45,14 +44,8 @@ function Router() {
               </GuestRoute>
             }
           />
-          <Route
-            path="/register"
-            element={
-              <GuestRoute>
-                <RegisterPage />
-              </GuestRoute>
-            }
-          />
+
+          {/* Catch-all 404 route */}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

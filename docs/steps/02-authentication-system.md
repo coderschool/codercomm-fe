@@ -49,8 +49,6 @@ const useStore = create(
         // --- State Properties ---
         
         // Auth State
-        isAuthenticated: false, // Is the user currently logged in?
-        isInitialized: false,   // Has the app checked for an existing token?
         currentUser: null,      // Holds the logged-in user object
         
         // Other State (Example - we might add more later)
@@ -59,12 +57,10 @@ const useStore = create(
         // Loading and Error States (Organized by feature)
         // It's good practice to track loading/error states per feature
         isLoading: {
-          auth: false, // Loading state specifically for auth operations (login, register, init)
-          // user: false, // Example: Add loading state for user profile fetching later
+          auth: false, // Loading state specifically for auth operations 
         },
         errors: {
           auth: null, // Errors specifically from auth operations
-          // user: null, // Example: Errors from user profile fetching
         },
         
         // --- Actions (Functions to modify state) ---
@@ -147,35 +143,7 @@ const useStore = create(
           }
         },
         
-        // Note: Our mock API currently disables registration, but the action is here
-        register: async (userData) => {
-          set({ isLoading: { ...get().isLoading, auth: true }, errors: { ...get().errors, auth: null } });
-          try {
-            // Call the API's registration endpoint
-            const response = await apiService.post('/users', userData);
-            // Assuming registration also returns user and token
-            const { user, accessToken } = response.data;
-            
-            setSession(accessToken); // Store token
-            
-            set({ 
-              currentUser: user,
-              isAuthenticated: true, // Log user in immediately after registration
-              isLoading: { ...get().isLoading, auth: false },
-            });
-            
-            toast.success('Registration successful');
-            return user;
-          } catch (error) {
-            console.error("Registration Error:", error);
-            set({ 
-              isLoading: { ...get().isLoading, auth: false },
-              errors: { ...get().errors, auth: error.message || 'Registration failed' },
-            });
-            toast.error(error.message || 'Registration failed');
-            throw error; // Re-throw error
-          }
-        },
+       
         
         logout: () => {
           setSession(null); // Clear token
@@ -227,7 +195,7 @@ export const useAppStore = useStore; // Export the hook
 *   **`get`**: Function provided by Zustand to access the current state *inside* actions (useful for calculations or accessing other state pieces).
 *   **`setSession`**: A helper function to manage the JWT token in `localStorage` and set the default `Authorization` header for our API calls.
 *   **State Structure**: We organize state logically (auth, user, loading, errors). Tracking `isLoading` and `errors` per feature helps manage UI feedback effectively.
-*   **Actions**: Functions like `initializeAuth`, `login`, `register`, `logout` handle asynchronous operations (API calls) and update the state accordingly using `set`. They also use `toast` for user feedback.
+*   **Actions**: Functions like `initializeAuth`, `login`, `logout` handle asynchronous operations (API calls) and update the state accordingly using `set`. They also use `toast` for user feedback.
 
 ## 2. Create API Service and Utilities
 
@@ -383,7 +351,6 @@ const useAuth = () => {
     isInitialized,   // boolean: Has auth check finished on app load?
     currentUser,     // object | null: The logged-in user data
     login,           // function: Action to log in
-    register,        // function: Action to register
     logout,          // function: Action to log out
     isLoadingAuth,   // boolean: Is any auth operation in progress?
     errorAuth,       // string | null: Any error message from auth operations
@@ -393,7 +360,6 @@ const useAuth = () => {
     isInitialized: state.isInitialized,
     currentUser: state.currentUser,
     login: state.login,
-    register: state.register,
     logout: state.logout,
     isLoadingAuth: state.isLoading.auth, // Get specific loading state
     errorAuth: state.errors.auth,       // Get specific error state
@@ -405,7 +371,6 @@ const useAuth = () => {
     isInitialized,
     user: currentUser, // Rename currentUser to user for common usage
     login,
-    register,
     logout,
     // Combine loading/error states for easier consumption in components (optional)
     isLoading: isLoadingAuth,
@@ -414,7 +379,6 @@ const useAuth = () => {
     // Note: These might not be perfectly accurate if multiple auth actions run concurrently,
     // but often sufficient for UI feedback.
     isLoggingIn: isLoadingAuth,
-    isRegistering: isLoadingAuth,
     isLoggingOut: isLoadingAuth, // Logout is usually synchronous, but handled for consistency
   };
 };
@@ -573,7 +537,7 @@ export default AuthRequire;
 
 Layout components define the overall structure (like headers, footers) for different sections of the app.
 
-Create `src/layouts/BlankLayout.jsx` (for pages like login/register without main navigation):
+Create `src/layouts/BlankLayout.jsx` (for pages like login without main navigation):
 
 ```jsx
 // src/layouts/BlankLayout.jsx
@@ -582,7 +546,7 @@ import { Outlet } from "react-router-dom";
 
 /**
  * Blank Layout: Renders only the child route's content.
- * Useful for pages like Login, Register, 404 that don't need the main header/nav.
+ * Useful for pages like Login, 404 that don't need the main header/nav.
  */
 function BlankLayout() {
   // Outlet renders the matched child route component
@@ -757,7 +721,6 @@ import GuestRoute from "./GuestRoute";
 // We'll create these page components in the next step
 const HomePage = React.lazy(() => import("../pages/HomePage"));
 const LoginPage = React.lazy(() => import("../pages/LoginPage"));
-const RegisterPage = React.lazy(() => import("../pages/RegisterPage"));
 const NotFoundPage = React.lazy(() => import("../pages/NotFoundPage"));
 // Add other page imports here as you create them (e.g., AccountPage, UserProfilePage)
 // const AccountPage = React.lazy(() => import("../pages/AccountPage")); 
@@ -802,14 +765,7 @@ function Router() {
               </GuestRoute>
             } 
           />
-          <Route 
-            path="/register" 
-            element={
-              <GuestRoute>
-                <RegisterPage />
-              </GuestRoute>
-            } 
-          />
+          
           {/* Add other guest routes like Forgot Password here */}
           
           {/* --- Catch-all Route (404 Not Found) --- */}
@@ -834,7 +790,7 @@ export default Router;
 
 ## 8. Create Authentication Pages
 
-Now, let's create the actual `LoginPage` and `RegisterPage` components.
+Now, let's create the actual `LoginPage` components.
 
 Create `src/pages/LoginPage.jsx`:
 
@@ -941,14 +897,7 @@ function LoginPage() {
             </Alert>
           )}
           
-          {/* Link to Registration Page */}
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6 text-sm">
-            Don't have an account?{" "}
-            <RouterLink to="/register" className="font-medium underline hover:text-blue-800">
-              Create one here
-            </RouterLink>
-          </div>
-
+         
           {/* Login Form using React Hook Form and ShadCN components */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -1047,244 +996,13 @@ function LoginPage() {
 export default LoginPage;
 ```
 
-Create `src/pages/RegisterPage.jsx`:
 
-```jsx
-// src/pages/RegisterPage.jsx
-import React, { useState } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as Yup from "yup";
-
-// ShadCN UI Components
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
-
-// Custom Hook
-import useAuth from "@/hooks/useAuth";
-
-/**
- * Yup validation schema for the registration form.
- */
-const RegisterSchema = Yup.object().shape({
-  name: Yup.string().required("Full Name is required"),
-  email: Yup.string().email("Invalid email format").required("Email is required"),
-  password: Yup.string()
-    .required("Password is required")
-    .min(6, "Password must be at least 6 characters"), // Add password complexity if desired
-  passwordConfirmation: Yup.string()
-    .required("Please confirm your password")
-    .oneOf([Yup.ref("password")], "Passwords must match"), // Check if it matches the password field
-});
-
-// Default form values
-const defaultValues = {
-  name: "",
-  email: "",
-  password: "",
-  passwordConfirmation: "",
-};
-
-/**
- * RegisterPage Component:
- * - Displays the registration form.
- * - Uses React Hook Form and Yup for validation.
- * - Calls the `register` action from `useAuth`.
- * - Handles loading and errors.
- * - Note: Mock API currently disables registration, so this will show an error.
- */
-function RegisterPage() {
-  const navigate = useNavigate();
-  const auth = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
-
-  // React Hook Form setup
-  const form = useForm({
-    resolver: yupResolver(RegisterSchema),
-    defaultValues,
-  });
-
-  const { setError, formState: { errors: formErrors, isSubmitting } } = form;
-
-  // onSubmit function for the form
-  const onSubmit = async (data) => {
-    // Redirect to home page after successful registration (if it worked)
-    const from = "/"; 
-    const { name, email, password } = data;
-
-    try {
-      // Call the register action
-      await auth.register({ name, email, password });
-      // Navigate on success
-      navigate(from, { replace: true });
-    } catch (error) {
-      // Handle registration errors
-      console.error("Registration Page Error:", error);
-      // Reset form, clearing passwords
-      form.reset({ ...data, password: "", passwordConfirmation: "" });
-      // Display the error message from the API (or a generic one)
-      setError("root", { 
-        type: "manual", 
-        message: error.message || "An unexpected error occurred during registration."
-      });
-    }
-  };
-
-  return (
-    <div className="container mx-auto px-4 py-10 flex justify-center items-center min-h-screen">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>
-            Join CoderComm today!
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Display general form errors */}
-          {formErrors.root && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Registration Failed</AlertTitle>
-              <AlertDescription>
-                {formErrors.root.message}
-                {/* Add specific instruction for mock API failure */} 
-                {formErrors.root.message.includes("Mock registration is disabled") && 
-                 " Please use the Login page instead for this demo."}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Link to Login Page */}
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 p-3 rounded-md mb-6 text-sm">
-            Already have an account?{" "}
-            <RouterLink to="/login" className="font-medium underline hover:text-blue-800">
-              Sign in here
-            </RouterLink>
-          </div>
-
-          {/* Registration Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Name Field */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Email Field */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="your.email@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Password Field */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Create a password (min. 6 characters)" 
-                          {...field} 
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {/* Confirm Password Field */}
-              <FormField
-                control={form.control}
-                name="passwordConfirmation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type={showPasswordConfirmation ? "text" : "password"}
-                          placeholder="Enter your password again" 
-                          {...field} 
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                          className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
-                        >
-                          {showPasswordConfirmation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          <span className="sr-only">{showPasswordConfirmation ? "Hide confirmation password" : "Show confirmation password"}</span>
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Submit Button */}
-              <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
-                {isSubmitting ? "Creating account..." : "Register"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-export default RegisterPage;
-```
 
 **Explanation:**
 
-*   **React Hook Form & Yup**: We use `useForm` for form state and `yupResolver` with a Yup schema (`LoginSchema`, `RegisterSchema`) for easy validation.
+*   **React Hook Form & Yup**: We use `useForm` for form state and `yupResolver` with a Yup schema (`LoginSchema`) for easy validation.
 *   **ShadCN UI Components**: We leverage components like `Card`, `Input`, `Button`, `Form`, `FormField`, `Alert` for a consistent UI.
-*   **`useAuth` Hook**: The `auth.login()` or `auth.register()` actions are called within the `onSubmit` handler.
+*   **`useAuth` Hook**: The `auth.login()` actions are called within the `onSubmit` handler.
 *   **Error Handling**: Errors caught from the `auth` actions are displayed using ShadCN's `Alert` component by setting a root form error with `setError('root', ...)`. We also provide specific feedback if the mock registration fails.
 *   **Password Visibility**: State (`showPassword`) is used to toggle password input visibility.
 
@@ -1475,13 +1193,13 @@ root.render(
 
 ## 13. Add Required UI Components
 
-In Step 1, we ran `npx shadcn-ui@latest init`. Now, we need to add the specific components used in this step (Login/Register pages, Header).
+In Step 1, we ran `npx shadcn@latest init`. Now, we need to add the specific components used in this step (Login pages, Header).
 
 Run the following commands in your terminal:
 
 ```bash
-# Add components used in Login/Register/Header
-npx shadcn-ui@latest add button card form input label checkbox alert-dialog avatar dropdown-menu alert
+# Add components used in Login/Header
+npx shadcn@latest add button card form input label checkbox alert-dialog avatar dropdown-menu alert
 ```
 
 *   This command copies the code for these components into your `src/components/ui` directory.
@@ -1511,7 +1229,7 @@ Visit `http://localhost:5173` (or your port):
 ## 15. Frequently Asked Questions (FAQ)
 
 *   **Q: Why use Zustand for auth instead of just React Context?**
-    *   A: While Context *can* work, Zustand offers benefits like easier asynchronous action handling (login, register), built-in middleware (`devtools`, `persist`), and performance optimizations via selectors, which prevent unnecessary re-renders in components that don't need specific state updates. For a growing app, it scales better.
+    *   A: While Context *can* work, Zustand offers benefits like easier asynchronous action handling (login), built-in middleware (`persist`), and performance optimizations via selectors, which prevent unnecessary re-renders in components that don't need specific state updates. For a growing app, it scales better.
 *   **Q: What's the purpose of the `useAuth` hook? Why not use `useAppStore` directly?**
     *   A: `useAuth` acts as an interface or facade specifically for authentication. It selects only the auth-related state and actions, making components cleaner and less coupled to the entire store structure. It also helps optimize re-renders because components only subscribe to the state selected within the hook.
 *   **Q: What are Axios interceptors doing in `apiService.js`?**

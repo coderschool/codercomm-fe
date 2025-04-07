@@ -1,45 +1,64 @@
-import React from "react";
-import useAuth from "@/hooks/useAuth";
-import PostForm from "@/features/post/PostForm";
+import React, { useState } from "react";
+import { useAppStore } from "@/lib/store";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
 import Feed from "@/features/post/Feed";
-import LoadingScreen from "@/components/LoadingScreen";
+import FriendsPage from "@/pages/FriendsPage"; 
+import FriendRequestsPage from "@/pages/FriendRequestsPage"; 
+import UserProfileHeader from "@/features/user/UserProfileHeader"; 
 
 /**
  * Home Page Component:
- * Displays the Post Creation form and the main Feed.
+ * Displays the current user's profile cover and provides tabs for Feed,
+ * Friends, and Requests.
  */
 function HomePage() {
-  const { user, isInitialized } = useAuth();
+  // Get user from Zustand store
+  const { user } = useAppStore((state) => ({
+    user: state.currentUser,
+  }));
+  const [currentTab, setCurrentTab] = useState("feed"); // Default to feed
 
-  // Show loading screen only if auth isn't initialized yet
-  // Feed component will handle its own loading state
-  if (!isInitialized) {
-    return <LoadingScreen message="Loading..." />;
+  if (!user) {
+    console.error("HomePage rendered without a user after AuthRequire.");
+    return (
+      <div className="container mx-auto px-4 pt-4 text-center text-destructive">
+        Error: User data not available. Please try refreshing or logging in again.
+      </div>
+    );
   }
 
-  return (
-    <div className="grid grid-cols-12 gap-6">
-      {/* Main Content Area (Feed and Post Form) */}
-      <div className="col-span-12 lg:col-span-8">
-        {/* Only show PostForm if user is loaded */}
-        {user && <PostForm />} 
-        <Feed />
-      </div>
+  const TABS = [
+    { value: "feed", label: "Feed", component: Feed },
+    { value: "friends", label: "Friends", component: FriendsPage },
+    { value: "requests", label: "Requests", component: FriendRequestsPage },
+  ];
 
-      {/* Sidebar/Widgets Area (Placeholder) */}
-      <div className="hidden lg:block lg:col-span-4">
-        <div className="sticky top-20 space-y-6">
-          {/* Add Friend Suggestions, Trending Topics etc. later */}
-          <div className="bg-card p-4 rounded-lg shadow-sm">
-            <h3 className="font-semibold mb-2">Suggestions</h3>
-            <p className="text-sm text-muted-foreground">Friend suggestions or trending topics could go here.</p>
-          </div>
-           <div className="bg-card p-4 rounded-lg shadow-sm">
-            <h3 className="font-semibold mb-2">Advertisement</h3>
-            <p className="text-sm text-muted-foreground">Placeholder for ads or other widgets.</p>
-          </div>
+  return (
+    <div className="container mx-auto px-4 pt-4">
+      {/* Render the UserProfileHeader above the tabs */}
+      <UserProfileHeader />
+      
+      {/* Tabs Navigation */}
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="mt-6">
+        {/* Sticky TabsList remains the same */}
+        <div className="flex justify-center sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b -mx-4 px-4 py-2 mb-6">
+          <TabsList>
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      </div>
+
+        {/* Tab Content - Rendered directly */}
+        {TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value}>
+            <tab.component {...tab.props} />
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

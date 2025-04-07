@@ -1,5 +1,6 @@
 import React from "react";
-import useAuth from "@/hooks/useAuth";
+// import useAuth from "@/hooks/useAuth"; // Removed
+import { useAppStore } from "@/lib/store"; // Added
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/utils/formatters";
@@ -9,9 +10,12 @@ import { getInitials } from "@/utils/formatters";
  * Displays basic user info. Actual editing will be added later.
  */
 function AccountPage() {
-  const { user } = useAuth();
+  // Get user from Zustand store
+  const { currentUser } = useAppStore((state) => ({
+    currentUser: state.currentUser,
+  }));
 
-  if (!user) {
+  if (!currentUser) {
     // Should ideally not happen if AuthRequire works, but good practice
     return <div>Loading user data...</div>; 
   }
@@ -30,24 +34,24 @@ function AccountPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border">
-              <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
-              <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+              <AvatarImage src={currentUser.avatarUrl || ''} alt={currentUser.name} />
+              <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-lg font-semibold">{user.name}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-lg font-semibold">{currentUser.name}</p>
+              <p className="text-sm text-muted-foreground">{currentUser.email}</p>
             </div>
           </div>
           
           <div>
             <p className="text-sm font-medium text-muted-foreground">Username</p>
-            <p>{user.username || "N/A"}</p>
+            <p>{currentUser.username || "N/A"}</p>
           </div>
           
           <div>
             <p className="text-sm font-medium text-muted-foreground">About Me</p>
             <p className="text-muted-foreground italic">
-              {user.aboutMe || "No bio provided."}
+              {currentUser.aboutMe || "No bio provided."}
             </p>
           </div>
         </CardContent>

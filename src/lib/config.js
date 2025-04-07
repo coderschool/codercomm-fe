@@ -1,9 +1,6 @@
 export const API_URL = import.meta.env.VITE_API_URL;
 
-// Pagination settings
-export const POSTS_PER_PAGE = 5;
-export const COMMENTS_PER_POST = 3;
-export const USERS_PER_PAGE = 12;
+// Removed unused constants for item limits
 
 // Default avatar if user doesn't have one
 export const DEFAULT_AVATAR = "https://res.cloudinary.com/dmwjwtpbk/image/upload/v1711065857/cld-sample.jpg";

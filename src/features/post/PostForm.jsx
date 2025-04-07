@@ -1,22 +1,21 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Components
-import useAuth from "@/hooks/useAuth";
-import { useCreatePost } from "@/hooks/usePostQuery"; // Import the mutation hook
+import { useAppStore } from '@/lib/store';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Image, Send, Loader2 } from "lucide-react"; // Added Loader2
+import { Image, Send, Loader2 } from "lucide-react";
 import { Link } from 'react-router-dom';
-import { toast } from "sonner"; // Import toast
+import { toast } from "sonner";
 
 // Utilities
-import { getInitials } from "@/utils/formatters"; // Import utility
+import { getInitials } from "@/utils/formatters";
 
 /**
  * Yup validation schema for the new post form.
@@ -29,13 +28,15 @@ const postSchema = yup.object({
 
 /**
  * Form component for creating a new post.
- * Uses React Hook Form, Yup for validation, and useCreatePost mutation.
+ * Uses React Hook Form, Yup for validation, and useAppStore for submission.
  */
 function PostForm() {
-  const { user } = useAuth(); // Get current user for avatar and name
-  // Get the mutation function and its status from the hook
-  const { mutate: createPostMutate, isPending: isCreatingPost } = useCreatePost();
-  
+  const { user } = useAppStore((state) => ({ user: state.currentUser }));
+
+  // Get the createPost action from the Zustand store
+  const createPost = useAppStore((state) => state.createPost);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Initialize React Hook Form
   const form = useForm({
     resolver: yupResolver(postSchema),
@@ -48,18 +49,18 @@ function PostForm() {
   // Form submission handler
   const onSubmit = async (data) => {
     console.log("Submitting post:", data);
+    setIsSubmitting(true);
     try {
-      // Call the mutation function with the form data
-      createPostMutate(data, {
-        onSuccess: () => {
-          // Reset the form only after successful submission
-          form.reset(); 
-        }
-        // onError is handled globally by the hook
-      });
+      // Call the Zustand store action
+      await createPost(data);
+      // Reset the form only after successful submission
+      form.reset();
     } catch (error) {
-      // Should not happen if the mutation hook handles errors, but good practice
-      console.error("Error submitting post form directly:", error);
+      // Error is logged and toasted within the store action
+      console.error("Error submitting post form:", error);
+      // No need to toast again here unless more specific message needed
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -68,7 +69,7 @@ function PostForm() {
 
   return (
     <Card className="mb-6 shadow-sm">
-      <Form {...form}> {/* Pass form context */}
+      <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="pt-6">
             <div className="flex gap-3">
@@ -118,13 +119,13 @@ function PostForm() {
             </Button>
             
             {/* Submit Button */}
-            <Button 
-              type="submit" 
-              disabled={isCreatingPost} // Disable while submitting
+            <Button
+              type="submit"
+              disabled={isSubmitting}
               size="sm"
               className="px-4"
             >
-              {isCreatingPost ? (
+              {isSubmitting ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
               ) : (
                   <><Send className="h-4 w-4 mr-2" /> Post</>

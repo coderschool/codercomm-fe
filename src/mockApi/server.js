@@ -15,6 +15,22 @@ export function mockServer({ environment = 'development' } = {}) {
   let currentFriendships = [...friendships];
   let currentUsers = [...users]; // Added for potential registration simulation
 
+  // Helper to find user object by ID
+  const findUser = (userId) => currentUsers.find(u => u._id === userId);
+
+  // Helper function to populate sender/receiver objects in a friendship/request
+  const populateFriendshipUsers = (friendship) => {
+    if (!friendship) return null;
+    const sender = findUser(friendship.from); 
+    const receiver = findUser(friendship.to);
+    // Return a new object with sender/receiver fields, keeping original props
+    return {
+      ...friendship,
+      sender: sender ? { _id: sender._id, name: sender.name, avatarUrl: sender.avatarUrl } : null,
+      receiver: receiver ? { _id: receiver._id, name: receiver.name, avatarUrl: receiver.avatarUrl } : null,
+    };
+  };
+
   return createServer({
     environment,
 
@@ -53,33 +69,6 @@ export function mockServer({ environment = 'development' } = {}) {
         }
       });
       
-      // REGISTER: Simulates creating a new user (but returns an error as configured)
-      this.post('/users', (schema, request) => {
-         console.log("🔶 Mock Register Attempt (will fail):", JSON.parse(request.requestBody).email);
-         return new Response(400, {}, { message: 'Mock registration is disabled. Please use the Login page instead for this demo.' });
-         /* // Example if registration was enabled:
-         const { name, email, password } = JSON.parse(request.requestBody);
-         const newUser = {
-           _id: `user-${Date.now()}`,
-           username: email.split('@')[0].slice(0, 15), // Limit username length
-           name: name,
-           email: email,
-           // Important: Do NOT store plain passwords, even in mock data
-           avatarUrl: `https://i.pravatar.cc/150?u=${Date.now()}`,
-           coverUrl: `https://picsum.photos/seed/${Date.now()}/800/200`,
-           aboutMe: "", city: "", country: "", company: "", jobTitle: "",
-           facebookLink: "", instagramLink: "", linkedinLink: "", twitterLink: "",
-           createdAt: new Date().toISOString(),
-           postCount: 0, friendCount: 0 // Initial counts
-         };
-         currentUsers.push(newUser); // Add to our mutable array
-         console.log("🔶 Mock Register Success:", email);
-         return {
-           user: newUser,
-           accessToken: `mock-token-for-${newUser._id}-${Date.now()}`
-         };
-         */
-      });
 
       // --- User Routes ---
       // GET CURRENT USER: Returns details for 'user1'
@@ -87,324 +76,189 @@ export function mockServer({ environment = 'development' } = {}) {
         console.log("🔶 Mock Get Current User (user1)");
         const user = currentUsers.find(u => u._id === "user1");
         if (!user) return new Response(404, {}, { message: 'User not found' });
-
-        // Add dynamic counts
-        const userPosts = currentPosts.filter(post => post.author._id === "user1");
-        const userFriends = currentFriendships.filter(
-          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-        );
-
         return {
           ...user, // Return a copy
-          postCount: userPosts.length,
-          friendCount: userFriends.length
         };
       });
 
       // GET USER BY ID: Returns details for a specific user
       this.get('/users/:id', (schema, request) => {
-        const { id } = request.params;
-        console.log(`🔶 Mock Get User By ID: ${id}`);
+        const id = request.params.id;
+        console.log(`🔶 Mock Get User: ${id}`);
         const user = currentUsers.find(u => u._id === id);
-
-        if (!user) {
-          return new Response(404, {}, { message: 'User not found' });
-        }
-
-        // Add dynamic counts
-        const userPosts = currentPosts.filter(post => post.author._id === id);
-        const userFriends = currentFriendships.filter(
-          fs => (fs.from === id || fs.to === id) && fs.status === 'accepted'
-        );
-
-        return {
-          ...user, // Return a copy
-          postCount: userPosts.length,
-          friendCount: userFriends.length
-        };
+        if (!user) return new Response(404, {}, { message: 'User not found' });
+        // Add friend counts (mock)
+        user.friendCount = currentFriendships.filter(f => (f.from === id || f.to === id) && f.status === 'accepted').length;
+        user.postCount = currentPosts.filter(p => p.author._id === id).length;
+        return { user };
       });
 
-      // GET USERS LIST (supports search & pagination)
       this.get('/users', (schema, request) => {
-        const { name = '', page = 1, limit = 10 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Users List: name='${name}', page=${pageNum}, limit=${limitNum}`);
-
-        let filteredUsers = currentUsers.filter(
-          user => user.name.toLowerCase().includes(name.toLowerCase())
-        );
-
-        const totalUsers = filteredUsers.length;
-        const totalPages = Math.ceil(totalUsers / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedUsers = filteredUsers.slice(start, end);
-
-        // Add friendship status relative to user1
-        const results = paginatedUsers.map(user => {
-          const friendship = currentFriendships.find(
-            fs => (fs.from === "user1" && fs.to === user._id) ||
-                  (fs.to === "user1" && fs.from === user._id)
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Users List: name='${name}'`);
+        let filteredUsers = name 
+          ? currentUsers.filter(u => u.name.toLowerCase().includes(name.toLowerCase()))
+          : currentUsers;
+        
+        // Add friendship status relative to user1 (mock logged-in user)
+        const currentUser = 'user1'; // Assume user1 is logged in
+        filteredUsers = filteredUsers.map(user => {
+          const rawFriendship = currentFriendships.find(f => 
+            ((f.from === currentUser && f.to === user._id) || (f.from === user._id && f.to === currentUser))
           );
-          // Return only necessary fields + friendship status
-          return { 
-            _id: user._id,
-            name: user.name,
-            username: user.username,
-            avatarUrl: user.avatarUrl,
-            friendship: friendship || null 
-          }; 
+          // Populate the friendship object using the helper
+          const populatedFriendship = populateFriendshipUsers(rawFriendship);
+          return { ...user, friendship: populatedFriendship }; // Use populated object
         });
 
-        return {
-          users: results,
-          count: totalUsers,
-          totalPages: totalPages
-        };
+        // Return ALL filtered users
+        return { users: filteredUsers, totalPages: 1, count: filteredUsers.length }; 
       });
       
-      // UPDATE USER PROFILE (Only allows updating user1 in this mock)
-      this.put('/users/me', (schema, request) => {
-          const updatedData = JSON.parse(request.requestBody);
-          console.log(`🔶 Mock Update User Profile (user1):`, updatedData);
-          const userIndex = currentUsers.findIndex(u => u._id === "user1");
-          if (userIndex > -1) {
-            // Update in-memory data (won't persist refresh)
-            // Only update allowed fields
-            const allowedUpdates = { 
-               name: updatedData.name, 
-               aboutMe: updatedData.aboutMe,
-               avatarUrl: updatedData.avatarUrl,
-               coverUrl: updatedData.coverUrl,
-               city: updatedData.city,
-               country: updatedData.country,
-               company: updatedData.company,
-               jobTitle: updatedData.jobTitle,
-            };
-            currentUsers[userIndex] = { ...currentUsers[userIndex], ...allowedUpdates };
-            // Refetch counts as they are not part of the update payload
-            const userPosts = currentPosts.filter(post => post.author._id === "user1");
-            const userFriends = currentFriendships.filter(
-                fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-            );
-            return { 
-                ...currentUsers[userIndex],
-                postCount: userPosts.length,
-                friendCount: userFriends.length
-            }; // Return the merged data with counts
-          }
-          return new Response(404, {}, { message: 'User not found' });
-      });
-
 
       // --- Post Routes ---
       // GET FEED POSTS (for user1, includes friends posts, paginated)
       this.get('/posts', (schema, request) => {
-        const { page = 1, limit = 5 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Feed Posts (user1): page=${pageNum}, limit=${limitNum}`);
-
-        // Get user1's accepted friends
-        const userFriendships = currentFriendships.filter(
-          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-        );
-        const friendIds = userFriendships.map(fs => fs.from === "user1" ? fs.to : fs.from);
-        const relevantUserIds = ["user1", ...friendIds];
-
-        // Filter posts by author (user1 or friends) using the current in-memory posts
-        let relevantPosts = currentPosts.filter(post => relevantUserIds.includes(post.author._id));
-
-        // Sort by creation date, newest first
-        relevantPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        const totalPosts = relevantPosts.length;
-        const totalPages = Math.ceil(totalPosts / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedPosts = relevantPosts.slice(start, end);
-
-        // Add comment counts and reactions to each post
-        const results = paginatedPosts.map(post => {
-          const postComments = currentComments.filter(comment => comment.post === post._id);
-          const postReactions = currentReactions.filter(reaction =>
-            reaction.targetType === 'Post' && reaction.targetId === post._id
-          );
-          return {
-            ...post, // Return copy of post data
-            commentCount: postComments.length,
-            reactions: postReactions // Attach the actual reactions array
-          };
-        });
-
-        return {
-          posts: results,
-          count: totalPosts,
-          totalPages: totalPages
-        };
+        console.log(`🔶 Mock Get All Posts`);
+        const currentUser = 'user1'; // Assume user1 is logged in
+        const friends = currentFriendships
+            .filter(f => f.status === 'accepted' && (f.from === currentUser || f.to === currentUser))
+            .map(f => (f.from === currentUser ? f.to : f.from));
+        const allowedAuthors = [currentUser, ...friends];
+        
+        let filteredPosts = currentPosts.filter(p => allowedAuthors.includes(p.author._id));
+        
+        // Add comment count and reactions (mock)
+        filteredPosts = filteredPosts.map(post => ({
+          ...post,
+          commentCount: currentComments.filter(c => c.post === post._id).length,
+          reactions: currentReactions.filter(r => r.targetType === 'Post' && r.targetId === post._id)
+        }));
+        
+        filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Return ALL posts
+        return { posts: filteredPosts, totalPages: 1, count: filteredPosts.length };
       });
 
       // GET POSTS BY USER ID (paginated)
       this.get('/posts/user/:userId', (schema, request) => {
-        const { userId } = request.params;
-        const { page = 1, limit = 5 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Posts By User: userId=${userId}, page=${pageNum}, limit=${limitNum}`);
-
-        let userPosts = currentPosts.filter(post => post.author._id === userId);
-
-        // Sort by creation date, newest first
-        userPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        const totalPosts = userPosts.length;
-        const totalPages = Math.ceil(totalPosts / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedPosts = userPosts.slice(start, end);
-
-        // Add comment counts and reactions
-        const results = paginatedPosts.map(post => {
-          const postComments = currentComments.filter(comment => comment.post === post._id);
-          const postReactions = currentReactions.filter(reaction =>
-            reaction.targetType === 'Post' && reaction.targetId === post._id
-          );
-          return {
-            ...post, // Return copy
-            commentCount: postComments.length,
-            reactions: postReactions
-          };
-        });
-
-        return {
-          posts: results,
-          count: totalPosts,
-          totalPages: totalPages
-        };
+        const userId = request.params.userId;
+        console.log(`🔶 Mock Get Posts for User: ${userId}`);
+        let userPosts = currentPosts.filter(p => p.author._id === userId);
+        
+        // Add counts/reactions
+        userPosts = userPosts.map(post => ({
+          ...post,
+          commentCount: currentComments.filter(c => c.post === post._id).length,
+          reactions: currentReactions.filter(r => r.targetType === 'Post' && r.targetId === post._id)
+        }));
+        
+        userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        // Return ALL user posts
+        return { posts: userPosts, totalPages: 1, count: userPosts.length }; 
       });
 
       // CREATE POST (as user1)
       this.post('/posts', (schema, request) => {
-        const { content, image = null } = JSON.parse(request.requestBody);
-        console.log(`🔶 Mock Create Post (user1): content="${content.substring(0, 20)}..."`);
-        const currentUser = currentUsers.find(u => u._id === "user1");
-        if (!currentUser) return new Response(401, {}, { message: 'Unauthorized' });
-
+        const { content, image } = JSON.parse(request.requestBody);
+        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1 is creator
+        console.log(`🔶 Mock Create Post: User=${currentUser._id}`);
+        if (!content) {
+          return new Response(400, {}, { message: 'Post content is required' });
+        }
         const newPost = {
           _id: `post-${Date.now()}`,
           content,
-          image,
-          author: { // Embed author details
-            _id: currentUser._id,
-            name: currentUser.name,
-            avatarUrl: currentUser.avatarUrl
-          },
+          image: image || null,
+          author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          reactions: [], // Start with empty reactions
-          commentCount: 0 // Start with 0 comments
         };
-
-        // Add to in-memory array (prepends to the start)
-        currentPosts.unshift(newPost);
-
-        return newPost; // Return the created post
+        currentPosts.unshift(newPost); // Add to beginning of the array
+        // Return the created post with added counts/reactions
+        return { 
+          ...newPost, 
+          commentCount: 0, 
+          reactions: [] 
+        }; 
       });
       
       // DELETE POST (Allows user1 to delete their own posts)
-      this.delete('/posts/:postId', (schema, request) => {
-        const { postId } = request.params;
-        console.log(`🔶 Mock Delete Post: postId=${postId}`);
-        const index = currentPosts.findIndex(p => p._id === postId);
-        
-        // Basic check: Only allow user1 to delete their own posts in mock
-        if (index > -1 && currentPosts[index].author._id === "user1") {
-            const deletedPost = currentPosts.splice(index, 1)[0]; // Remove and get the post
-            // Also remove related reactions
-            currentReactions = currentReactions.filter(r => !(r.targetType === 'Post' && r.targetId === postId));
-            // Also remove related comments
-            currentComments = currentComments.filter(c => c.post !== postId);
-            console.log(' -> Post deleted successfully along with related reactions/comments.');
-            return new Response(204); // No Content
-        } else if (index === -1) {
-            return new Response(404, {}, { message: "Post not found" });
-        } else {
-            return new Response(403, {}, { message: "Forbidden: Cannot delete other users' posts in mock" });
+      this.delete('/posts/:id', (schema, request) => {
+        const postId = request.params.id;
+        const currentUser = 'user1';
+        const postIndex = currentPosts.findIndex(p => p._id === postId);
+        console.log(`🔶 Mock Delete Post: ${postId}, User=${currentUser}`);
+        if (postIndex === -1) {
+          return new Response(404, {}, { message: 'Post not found' });
         }
+        if (currentPosts[postIndex].author._id !== currentUser) {
+           return new Response(403, {}, { message: 'User not authorized to delete this post' });
+        }
+        currentPosts.splice(postIndex, 1);
+        // Also remove related comments and reactions
+        const commentsToRemove = currentComments.filter(c => c.post === postId).map(c => c._id);
+        currentComments = currentComments.filter(c => c.post !== postId);
+        currentReactions = currentReactions.filter(r => 
+          !(r.targetType === 'Post' && r.targetId === postId) &&
+          !(r.targetType === 'Comment' && commentsToRemove.includes(r.targetId))
+        );
+        return new Response(204); // No content
       });
 
 
       // --- Comment Routes ---
       // GET COMMENTS FOR A POST (paginated)
       this.get('/posts/:postId/comments', (schema, request) => {
-        const { postId } = request.params;
-        const { page = 1, limit = 3 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Comments: postId=${postId}, page=${pageNum}, limit=${limitNum}`);
-
-        let postComments = currentComments.filter(comment => comment.post === postId);
-
-        // Sort by creation date, newest first
-        postComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        const totalComments = postComments.length;
-        const totalPages = Math.ceil(totalComments / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedComments = postComments.slice(start, end);
-
-        // Add reactions to comments
-        const results = paginatedComments.map(comment => {
-          const commentReactions = currentReactions.filter(reaction =>
-            reaction.targetType === 'Comment' && reaction.targetId === comment._id
-          );
-          return {
-            ...comment, // Return copy
-            reactions: commentReactions
-          };
-        });
-
-        return {
-          comments: results,
-          count: totalComments,
-          totalPages: totalPages
-        };
+        const postId = request.params.postId;
+        console.log(`🔶 Mock Get Comments for Post: ${postId}`);
+        let postComments = currentComments.filter(c => c.post === postId);
+        
+        // Add reactions
+        postComments = postComments.map(comment => ({
+           ...comment,
+           reactions: currentReactions.filter(r => r.targetType === 'Comment' && r.targetId === comment._id)
+        }));
+        
+        postComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Older first
+        
+        // Return ALL comments
+        return { comments: postComments, totalPages: 1, count: postComments.length }; 
       });
 
-      // ADD COMMENT (as user1)
-      this.post('/comments', (schema, request) => {
-        const { content, postId } = JSON.parse(request.requestBody);
-        console.log(`🔶 Mock Add Comment (user1): postId=${postId}, content="${content.substring(0, 20)}..."`);
-        const currentUser = currentUsers.find(u => u._id === "user1");
-        if (!currentUser) return new Response(401, {}, { message: 'Unauthorized' });
-
+      // ADD COMMENT (as user1) to a specific post
+      this.post('/posts/:postId/comments', (schema, request) => {
+        const postId = request.params.postId; // Get postId from URL
+        const { content } = JSON.parse(request.requestBody); // Get content from body
+        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1 is creator
+        console.log(`🔶 Mock Create Comment: User=${currentUser._id}, Post=${postId}`);
+        
+        if (!content) {
+          return new Response(400, {}, { message: 'Comment content cannot be empty' });
+        }
+        
+        const postExists = currentPosts.some(p => p._id === postId);
+        if (!postExists) {
+          return new Response(404, {}, { message: 'Post not found' });
+        }
+        
         const newComment = {
-          _id: `comment-${Date.now()}`,
+          _id: `comment-${Date.now()}-${Math.random().toString(16).slice(2)}`, // More unique ID
           content,
-          post: postId, // Link to the post
-          author: { // Embed author details
-            _id: currentUser._id,
-            name: currentUser.name,
-            avatarUrl: currentUser.avatarUrl
-          },
+          post: postId,
+          author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           reactions: [] // Start with empty reactions
         };
-
-        // Add to in-memory array (prepends to start)
-        currentComments.unshift(newComment);
         
-        // Also update commentCount on the related post (in-memory)
-        const postIndex = currentPosts.findIndex(p => p._id === postId);
-        if (postIndex > -1) {
-            // Ensure commentCount exists before incrementing
-            currentPosts[postIndex].commentCount = (currentPosts[postIndex].commentCount || 0) + 1;
-        }
-
-        return newComment; // Return the created comment
+        currentComments.push(newComment); // Add to the global list
+        console.log("  -> New comment added:", newComment);
+        
+        // Return the created comment object
+        return newComment; 
       });
 
 
@@ -412,189 +266,135 @@ export function mockServer({ environment = 'development' } = {}) {
       // ADD/UPDATE/REMOVE REACTION (as user1)
       this.post('/reactions', (schema, request) => {
         const { targetType, targetId, emoji } = JSON.parse(request.requestBody);
-        console.log(`🔶 Mock Reaction (user1): type=${targetType}, id=${targetId}, emoji=${emoji}`);
-        const currentUser = currentUsers.find(u => u._id === "user1");
-        if (!currentUser) return new Response(401, {}, { message: 'Unauthorized' });
-
-        // Find if user1 already reacted to this target
-        const existingReactionIndex = currentReactions.findIndex(reaction =>
-          reaction.targetType === targetType &&
-          reaction.targetId === targetId &&
-          reaction.author._id === currentUser._id
-        );
-
-        if (existingReactionIndex !== -1) {
-          // Existing reaction found
-          if (currentReactions[existingReactionIndex].emoji === emoji) {
-            // Same emoji clicked again: remove reaction (toggle off)
-            console.log(` -> Removing reaction`);
-            currentReactions.splice(existingReactionIndex, 1);
-          } else {
-            // Different emoji clicked: update reaction
-            console.log(` -> Updating reaction emoji`);
-            currentReactions[existingReactionIndex].emoji = emoji;
-          }
-        } else {
-          // No existing reaction: add new reaction
-          console.log(` -> Adding new reaction`);
-          currentReactions.push({
-            _id: `reaction-${Date.now()}`,
-            targetType,
-            targetId,
-            emoji,
-            author: { // Embed author details
-              _id: currentUser._id,
-              name: currentUser.name,
-              avatarUrl: currentUser.avatarUrl
-            },
-            createdAt: new Date().toISOString()
-          });
+        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1
+        console.log(`🔶 Mock Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`);
+        
+        if (!['Post', 'Comment'].includes(targetType) || !targetId || !emoji) {
+           return new Response(400, {}, { message: 'Invalid reaction request' });
         }
-
-        // Return all current reactions for the target
-        // This simulates what a real API might return to update the UI
-        return currentReactions.filter(reaction =>
-          reaction.targetType === targetType && reaction.targetId === targetId
+        
+        // Find existing reaction by this user for this target
+        const existingIndex = currentReactions.findIndex(r => 
+            r.targetType === targetType && 
+            r.targetId === targetId && 
+            r.author._id === currentUser._id &&
+            r.emoji === emoji // Match emoji for toggling specific reaction type
         );
+
+        if (existingIndex > -1) {
+          // User is removing their reaction (e.g., unliking)
+          currentReactions.splice(existingIndex, 1);
+          console.log(` -> Reaction removed`);
+        } else {
+          // Add new reaction
+          const newReaction = {
+             _id: `reaction-${Date.now()}`,
+             targetType,
+             targetId,
+             emoji,
+             author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
+             createdAt: new Date().toISOString(),
+          };
+          currentReactions.push(newReaction);
+          console.log(` -> Reaction added`);
+        }
+        
+        // Return all reactions for the target (or could return success status)
+        const updatedReactions = currentReactions.filter(r => r.targetType === targetType && r.targetId === targetId);
+        return updatedReactions; 
       });
 
 
       // --- Friendship Routes (User1's perspective) ---
       // GET FRIENDS LIST (accepted friends of user1, paginated)
       this.get('/friends', (schema, request) => {
-        const { name = '', page = 1, limit = 10 } = request.queryParams;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        console.log(`🔶 Mock Get Friends List (user1): name='${name}', page=${pageNum}, limit=${limitNum}`);
-
-        const userFriendships = currentFriendships.filter(
-          fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-        );
-        const friendIds = userFriendships.map(fs => fs.from === "user1" ? fs.to : fs.from);
-        let friendUsers = currentUsers.filter(user => friendIds.includes(user._id));
-
-        // Filter by name if provided
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Friends (for user1): name='${name}'`);
+        const currentUser = 'user1';
+        const friendIds = currentFriendships
+            .filter(f => f.status === 'accepted' && (f.from === currentUser || f.to === currentUser))
+            .map(f => (f.from === currentUser ? f.to : f.from));
+            
+        let friendUsers = currentUsers.filter(u => friendIds.includes(u._id));
+        
         if (name) {
-          friendUsers = friendUsers.filter(
-            user => user.name.toLowerCase().includes(name.toLowerCase())
-          );
+            friendUsers = friendUsers.filter(u => u.name.toLowerCase().includes(name.toLowerCase()));
         }
+        
+        // Return ALL friends
+        return { users: friendUsers, totalPages: 1, count: friendUsers.length }; 
+      });
 
-        const totalFriends = friendUsers.length;
-        const totalPages = Math.ceil(totalFriends / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedFriends = friendUsers.slice(start, end);
+      // GET ALL FRIEND REQUESTS (combined incoming/outgoing for user1)
+      this.get('/friends/requests', (schema, request) => {
+        console.log(`🔶 Mock Get All Requests (for user1)`);
+        const currentUser = 'user1';
 
-        // Add the friendship object itself for context if needed
-        const results = paginatedFriends.map(user => {
-            const friendship = currentFriendships.find(
-                fs => ((fs.from === "user1" && fs.to === user._id) || (fs.to === "user1" && fs.from === user._id)) && fs.status === 'accepted'
-            );
-             // Return only necessary fields + friendship status
-             return { 
-                 _id: user._id,
-                 name: user.name,
-                 username: user.username,
-                 avatarUrl: user.avatarUrl,
-                 friendship: friendship || null 
-             }; 
-        });
+        // Incoming Requests Logic
+        let incomingRaw = currentFriendships.filter(
+          fs => fs.to === currentUser && fs.status === "pending"
+        );
+        // Use helper to populate sender/receiver
+        const incomingRequests = incomingRaw.map(populateFriendshipUsers);
 
-        return {
-          users: results, // Renamed from 'friends' to 'users' for consistency
-          count: totalFriends,
-          totalPages: totalPages
+        // Outgoing Requests Logic
+        let outgoingRaw = currentFriendships.filter(
+          fs => fs.from === currentUser && fs.status === "pending"
+        );
+        // Use helper to populate sender/receiver
+        const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
+
+        // Return combined object with populated users
+        return { 
+          incoming: incomingRequests, 
+          outgoing: outgoingRequests 
         };
       });
 
       // GET INCOMING FRIEND REQUESTS (requests sent TO user1)
+      // Note: This route might become redundant if the combined one is always used.
       this.get('/friends/requests/incoming', (schema, request) => {
-        // Note: Pagination params often not needed for request lists, but included for consistency
-        const { name = '', page = 1, limit = 100 } = request.queryParams; 
+        const { name = '' } = request.queryParams; 
         console.log(`🔶 Mock Get Incoming Requests (for user1): name='${name}'`);
 
         let incomingRequests = currentFriendships.filter(
           fs => fs.to === "user1" && fs.status === "pending"
         );
-
-        // Map to required format, embedding requester user info
-        let formattedRequests = incomingRequests.map(friendship => {
-          const requester = currentUsers.find(user => user._id === friendship.from);
-          // Return slim requester info
-          const slimRequester = requester ? { _id: requester._id, name: requester.name, avatarUrl: requester.avatarUrl } : null;
-          return {
-            ...friendship, // Copy friendship details
-            requester: slimRequester
-          };
-        }).filter(req => req.requester); // Filter out any requests where requester wasn't found
-
-        // Filter by requester name if provided
+        
+        // Populate requester info
+        incomingRequests = incomingRequests.map(req => ({
+          ...req,
+          requester: currentUsers.find(u => u._id === req.from)
+        }));
+        
         if (name) {
-          formattedRequests = formattedRequests.filter(req =>
-            req.requester.name.toLowerCase().includes(name.toLowerCase())
-          );
+           incomingRequests = incomingRequests.filter(req => req.requester?.name.toLowerCase().includes(name.toLowerCase()));
         }
         
-        // Simple pagination for consistency (usually lists are short)
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const totalRequests = formattedRequests.length;
-        const totalPages = Math.ceil(totalRequests / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedRequests = formattedRequests.slice(start, end);
-
-
-        return {
-          requests: paginatedRequests,
-          count: totalRequests,
-          totalPages: totalPages
-        };
+        // Return ALL requests
+        return { requests: incomingRequests, totalPages: 1, count: incomingRequests.length };
       });
 
       // GET OUTGOING FRIEND REQUESTS (requests sent BY user1)
       this.get('/friends/requests/outgoing', (schema, request) => {
-        const { name = '', page = 1, limit = 100 } = request.queryParams;
-        console.log(`🔶 Mock Get Outgoing Requests (from user1): name='${name}'`);
-
+        const { name = '' } = request.queryParams;
+        console.log(`🔶 Mock Get Outgoing Requests (for user1): name='${name}'`);
         let outgoingRequests = currentFriendships.filter(
           fs => fs.from === "user1" && fs.status === "pending"
         );
+        
+        // Populate recipient info
+        outgoingRequests = outgoingRequests.map(req => ({
+          ...req,
+          recipient: currentUsers.find(u => u._id === req.to)
+        }));
 
-        // Map embedding recipient info
-        let formattedRequests = outgoingRequests.map(friendship => {
-          const recipient = currentUsers.find(user => user._id === friendship.to);
-          // Return slim recipient info
-           const slimRecipient = recipient ? { _id: recipient._id, name: recipient.name, avatarUrl: recipient.avatarUrl } : null;
-          return {
-            ...friendship, // Copy friendship details
-            recipient: slimRecipient
-          };
-        }).filter(req => req.recipient); // Filter if recipient not found
-
-        // Filter by recipient name
-        if (name) {
-          formattedRequests = formattedRequests.filter(req =>
-            req.recipient.name.toLowerCase().includes(name.toLowerCase())
-          );
+         if (name) {
+           outgoingRequests = outgoingRequests.filter(req => req.recipient?.name.toLowerCase().includes(name.toLowerCase()));
         }
         
-        // Simple pagination
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const totalRequests = formattedRequests.length;
-        const totalPages = Math.ceil(totalRequests / limitNum);
-        const start = (pageNum - 1) * limitNum;
-        const end = start + limitNum;
-        const paginatedRequests = formattedRequests.slice(start, end);
-
-
-        return {
-          requests: paginatedRequests,
-          count: totalRequests,
-          totalPages: totalPages
-        };
+        // Return ALL requests
+        return { requests: outgoingRequests, totalPages: 1, count: outgoingRequests.length };
       });
 
       // --- Friendship Action Routes (Simplified Success Responses) ---
@@ -608,24 +408,24 @@ export function mockServer({ environment = 'development' } = {}) {
              return new Response(400, {}, { message: "You cannot send a friend request to yourself." });
         }
         
-        // Simulate adding a pending request (won't persist refresh)
         const existing = currentFriendships.find(fs => (fs.from === "user1" && fs.to === targetUserId) || (fs.to === "user1" && fs.from === targetUserId));
         if (!existing) {
-            currentFriendships.push({
+            const newFriendshipRaw = {
                 _id: `friendship-${Date.now()}`,
                 from: "user1",
                 to: targetUserId,
                 status: "pending",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
-            });
-            return { success: true, message: "Friend request sent." };
+            };
+            currentFriendships.push(newFriendshipRaw);
+            // Return the populated new friendship object
+            return { friendship: populateFriendshipUsers(newFriendshipRaw) };
         } else if (existing.status === 'pending') {
              return new Response(400, {}, { message: "Friend request already pending." });
         } else if (existing.status === 'accepted') {
              return new Response(400, {}, { message: "You are already friends with this user." });
         } else {
-             // Handle other statuses like declined/blocked if needed
              return new Response(400, {}, { message: "Cannot send friend request." });
         }
       });
@@ -642,13 +442,12 @@ export function mockServer({ environment = 'development' } = {}) {
             if (action === 'accept') {
                 currentFriendships[requestIndex].status = 'accepted';
                 currentFriendships[requestIndex].updatedAt = new Date().toISOString();
-                // Return the updated friendship record
-                return { ...currentFriendships[requestIndex] }; 
+                // Return the updated friendship record, populated
+                return { friendship: populateFriendshipUsers(currentFriendships[requestIndex]) }; 
             } else if (action === 'decline') {
-                // Could change status to 'declined' or just remove it
-                currentFriendships.splice(requestIndex, 1); 
-                // Return success or maybe the ID of the removed request
-                return { success: true, message: "Friend request declined." }; 
+                const declinedRequest = currentFriendships.splice(requestIndex, 1)[0]; 
+                // Return the ID or maybe the populated object that was declined/removed
+                return { declinedFriendshipId: declinedRequest._id }; 
             } else {
                  return new Response(400, {}, { message: "Invalid action." });
             }
@@ -689,10 +488,8 @@ export function mockServer({ environment = 'development' } = {}) {
         }
       });
       
-      // Fallback for unhandled routes
-      this.passthrough(); // Allows requests not handled by Mirage to pass through
-      // Example: Allow requests to external APIs if needed
-      // this.passthrough('https://api.example.com/**'); 
+      // Reset passthrough
+      this.passthrough(); // Allow unhandled requests to pass through (e.g., to Vite dev server)
     }
   });
 }

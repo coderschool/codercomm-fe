@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,129 +13,122 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import useAuth from "@/hooks/useAuth";
-import { useReactToPost, useDeletePost } from "@/hooks/usePostQuery";
+import { useAppStore } from '@/lib/store';
 import { cn } from "@/lib/utils";
-import { useGetPosts, useGetPostsByUser } from "./postHooks";
 import CommentList from "@/features/comment/CommentList";
 
 /**
- * Displays a list of posts with interaction buttons (like, comment, delete).
+ * Displays a list of posts.
+ * If `posts` prop is provided, displays those posts.
+ * Otherwise, fetches and displays all posts from the Zustand store.
+ * Handles interactions like delete and react via store actions.
  */
-function PostList({ posts = [], userId }) {
-  const { user: currentUser } = useAuth();
-  const { mutate: reactToPostMutate, isPending: isReacting } = useReactToPost();
-  const { mutate: deletePostMutate, isPending: isDeleting } = useDeletePost();
-  const [page, setPage] = useState(1);
+function PostList({ posts: postsProp }) {
+  const {
+    storePosts,
+    isLoadingStorePosts,
+    storePostsError,
+    fetchPosts,
+    deletePost,
+    reactToPost,
+    currentUser,
+  } = useAppStore((state) => ({
+    storePosts: state.posts,
+    isLoadingStorePosts: state.isLoadingPosts,
+    storePostsError: state.postsError,
+    fetchPosts: state.fetchPosts,
+    deletePost: state.deletePost,
+    reactToPost: state.reactToPost,
+    currentUser: state.currentUser,
+  }), (left, right) => {
+    return left.isLoadingStorePosts === right.isLoadingStorePosts &&
+           left.storePostsError === right.storePostsError &&
+           left.currentUser === right.currentUser &&
+           (postsProp || (left.storePosts.length === right.storePosts.length && left.storePosts.every((post, i) => post._id === right.storePosts[i]?._id)));
+  });
+
   const [deletingPostId, setDeletingPostId] = useState(null);
   const [expandedComments, setExpandedComments] = useState({});
   
-  // Choose the right query based on whether userId is provided
-  const query = userId
-    ? useGetPostsByUser(userId, page)
-    : useGetPosts(page);
-  
-  const { data, isLoading, error } = query;
-  
-  // Extract posts and total pages from the data
-  const { posts: queryPosts, totalPages } = data || { posts: [], totalPages: 0 };
-  
+  const shouldFetchInternally = postsProp === undefined;
+
+  useEffect(() => {
+    if (shouldFetchInternally) {
+      fetchPosts();
+    }
+  }, [shouldFetchInternally, fetchPosts]);
+
+  const postsToDisplay = postsProp !== undefined ? postsProp : storePosts;
+  const isLoading = postsProp !== undefined ? false : isLoadingStorePosts;
+  const error = postsProp !== undefined ? null : storePostsError;
+
   const handleReaction = (postId, emoji) => {
-    // Prevent reacting while another reaction is in progress (optional)
-    // if (isReacting) return;
-    reactToPostMutate({ postId, emoji });
+    reactToPost(postId, emoji);
   };
 
-  const handleDeleteClick = (postId) => {
-    if (isDeleting) return; // Prevent multiple delete clicks
+  const handleDeleteClick = async (postId) => {
+    if (deletingPostId) return;
     if (window.confirm("Are you sure you want to delete this post?")) {
-      setDeletingPostId(postId); // Set which post is being deleted
-      deletePostMutate(postId, {
-          onSettled: () => setDeletingPostId(null) // Clear deleting state regardless of success/error
-      });
+      setDeletingPostId(postId);
+      try {
+        await deletePost(postId);
+      } catch (error) {
+        console.error("Delete failed in component:", error);
+      } finally {
+        setDeletingPostId(null);
+      }
     }
   };
 
-  // Function to toggle comment visibility for a specific post
   const toggleComments = (postId) => {
-    setExpandedComments(prev => ({
-      ...prev,
-      [postId]: !prev[postId]
-    }));
+    setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  // Loading state
-  if (isLoading && page === 1) {
+  if (isLoading && postsToDisplay.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-muted-foreground">Loading posts...</span>
-        </div>
-      </Card>
+      <div className="flex justify-center items-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
   
-  // Error state
   if (error) {
     return (
-      <Card className="p-6 border-destructive">
+      <Card className="mt-4 shadow-sm border-destructive bg-destructive/10">
         <CardContent className="pt-6">
-          <h3 className="text-xl font-semibold text-destructive mb-2">
-            Error Loading Posts
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            {error.message}
+          <p className="text-center text-destructive py-8">
+            Error loading posts: {error}
           </p>
-          {userId && (
-            <div className="bg-muted p-3 rounded text-xs mb-4">
-              <p>Debug info:</p>
-              <p>User ID: {userId}</p>
-              <p>Endpoint: {`/posts/user/${userId}?page=${page}&limit=5`}</p>
-            </div>
-          )}
-          <Button variant="secondary" onClick={() => setPage(1)}>
-            Try Again
-          </Button>
         </CardContent>
       </Card>
     );
   }
   
-  // Empty state
-  if (!queryPosts || queryPosts.length === 0) {
+  if (!isLoading && postsToDisplay.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="py-8 text-center">
-          <p className="text-xl font-semibold mb-2">
-            No Posts Yet
+      <Card className="mt-4 shadow-sm">
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground py-8">
+            No posts to display yet.
           </p>
-          <p className="text-muted-foreground">
-            {userId ? "This user hasn't posted anything yet." : "Your feed is empty. Follow some users to see their posts."}
-          </p>
-        </div>
+        </CardContent>
       </Card>
     );
   }
   
   return (
     <div className="space-y-4">
-      {queryPosts.map((post) => {
-        // Determine if the current user liked this post
+      {postsToDisplay.map((post) => {
         const isLikedByCurrentUser = post.reactions?.some(
           (reaction) => reaction.author._id === currentUser?._id && reaction.emoji === 'like'
         );
-        // Check if this specific post is being deleted
-        const isCurrentlyDeleting = isDeleting && deletingPostId === post._id;
-        // Check if comments are expanded for this post
+        const isCurrentlyDeleting = deletingPostId === post._id;
         const areCommentsExpanded = !!expandedComments[post._id];
 
         return (
           <Card key={post._id} className={cn("overflow-hidden shadow-sm", isCurrentlyDeleting && "opacity-50 pointer-events-none")}>
             <CardHeader className="p-0">
-              {/* Post Author Info & Delete Menu */}
               <div className="flex items-center justify-between p-4">
-                {/* Author Info */}
                 <div className="flex items-center gap-3">
                   <Link to={`/user/${post.author._id}`} className="flex-shrink-0">
                     <Avatar className="h-10 w-10 border">
@@ -151,12 +144,10 @@ function PostList({ posts = [], userId }) {
                       {post.author.name}
                     </Link>
                     <p className="text-xs text-muted-foreground">
-                      {/* Format date using date-fns */}
                       {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                     </p>
                   </div>
                 </div>
-                {/* Post Menu Dropdown (only for post author) */}
                 {currentUser?._id === post.author._id && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -170,8 +161,6 @@ function PostList({ posts = [], userId }) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {/* Add Edit option later */}
-                      {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
                       <DropdownMenuItem 
                         onClick={() => handleDeleteClick(post._id)}
                         className="text-destructive focus:text-destructive flex items-center gap-2 cursor-pointer"
@@ -187,14 +176,12 @@ function PostList({ posts = [], userId }) {
             </CardHeader>
             
             <CardContent className="px-4 pb-2 pt-0">
-              {/* Post Content */}
               {post.content && (
                 <p className="text-sm whitespace-pre-wrap mb-3">
                   {post.content}
                 </p>
               )}
               
-              {/* Post Image (if exists) */}
               {post.image && (
                 <div className="mt-2 -mx-4 sm:mx-0 rounded-md overflow-hidden border">
                   <img 
@@ -207,26 +194,21 @@ function PostList({ posts = [], userId }) {
             </CardContent>
             
             <CardFooter className="px-4 py-2 bg-muted/50 border-t">
-              {/* Post Actions/Stats */}
               <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  {/* Like Button */}
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => handleReaction(post._id, 'like')}
-                    disabled={isReacting}
                     className={cn(
                       "flex items-center gap-1 hover:text-primary px-2",
                       isLikedByCurrentUser ? 'text-primary' : 'text-muted-foreground'
                     )}
                   >
                     <Heart className={cn("h-4 w-4", isLikedByCurrentUser && 'fill-primary')} />
-                    {/* Display optimistic count or actual count */}
                     <span>{post.reactions?.filter(r => r.emoji === 'like').length || 0}</span> 
                     <span className="sr-only">Likes</span>
                   </Button>
-                  {/* Comment Button - Now toggles comment visibility */}
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -242,11 +224,9 @@ function PostList({ posts = [], userId }) {
                     <span className="sr-only">Comments</span>
                   </Button>
                 </div>
-                {/* Add Share button/count later */}
               </div>
             </CardFooter>
 
-            {/* Conditionally render CommentList based on expanded state */} 
             {areCommentsExpanded && (
               <div className="p-4 pt-2 border-t border-border/50">
                 <CommentList postId={post._id} />
@@ -255,29 +235,6 @@ function PostList({ posts = [], userId }) {
           </Card>
         );
       })}
-      
-      <div className="flex justify-center py-4">
-        {page < totalPages ? (
-          <Button
-            variant="outline"
-            disabled={isLoading}
-            onClick={() => setPage((page) => page + 1)}
-            className="min-w-[150px]"
-          >
-            {isLoading ? (
-              <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto"></span>
-            ) : (
-              "Load more posts"
-            )}
-          </Button>
-        ) : (
-          posts.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              No more posts to load
-            </p>
-          )
-        )}
-      </div>
     </div>
   );
 }
@@ -293,8 +250,8 @@ PostList.propTypes = {
       name: PropTypes.string,
       avatarUrl: PropTypes.string,
     }).isRequired,
-    reactions: PropTypes.array, // Array of reaction objects
-    commentCount: PropTypes.number, 
+    reactions: PropTypes.array,
+    commentCount: PropTypes.number,
   })),
 };
 

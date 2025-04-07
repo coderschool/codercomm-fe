@@ -2,17 +2,20 @@ import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
  
 /**
- * Combine and merge class names with Tailwind utilities
+ * Merges Tailwind CSS classes intelligently, handling conflicts.
+ * Uses `clsx` for conditional classes and `twMerge` to resolve Tailwind conflicts.
+ * @param {...import("clsx").ClassValue} inputs - Class names or conditional class objects.
+ * @returns {string} - The merged class string.
  */
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
 
 /**
- * Format a number with a specified decimal place
- * @param {number} num - The number to format
- * @param {number} [digits=0] - The number of decimal places
- * @returns {string} The formatted number
+ * Format a number with abbreviations (k, M, B).
+ * @param {number} num - The number to format.
+ * @param {number} [digits=0] - The number of decimal places for the abbreviated number.
+ * @returns {string} The formatted number string (e.g., "1.2k", "5M").
  */
 export function fNumber(num, digits = 0) {
   const lookup = [
@@ -21,40 +24,14 @@ export function fNumber(num, digits = 0) {
     { value: 1e6, symbol: "M" },
     { value: 1e9, symbol: "B" },
   ];
+  // Regex to remove trailing zeros after decimal point unless it's the only digit (e.g., 1.0 -> 1, 1.20 -> 1.2)
   const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
   const item = lookup
     .slice()
     .reverse()
-    .find(function (item) {
-      return num >= item.value;
-    });
+    .find(item => num >= item.value);
+    
   return item
     ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol
     : "0";
-}
-
-/**
- * Create pagination parameters for API requests
- * @param {Object} options - Pagination options
- * @param {number} [options.page=1] - Page number
- * @param {number} [options.limit] - Items per page
- * @param {string} [options.filter] - Filter string
- * @param {string} [options.filterKey='name'] - Key to filter by
- * @returns {Object} Parameter object for API request
- */
-export function getPaginationParams({ 
-  page = 1, 
-  limit,
-  filter = '',
-  filterKey = 'name'
-}) {
-  const params = { page };
-  
-  // Add limit if specified
-  if (limit) params.limit = limit;
-  
-  // Add filter if specified
-  if (filter) params[filterKey] = filter;
-  
-  return params;
 }
