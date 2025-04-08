@@ -6,11 +6,14 @@ import MainLayout from "../layouts/MainLayout";
 import AuthRequire from "./AuthRequire";
 import GuestRoute from "./GuestRoute";
 
-// Import core pages
-import HomePage from "../pages/HomePage";
-import LoginPage from "../pages/LoginPage";
-import NotFoundPage from "../pages/NotFoundPage";
-import AccountPage from "../pages/AccountPage";
+// Page Components (Lazy Load)
+const HomePage = React.lazy(() => import("../pages/HomePage"));
+const LoginPage = React.lazy(() => import("../pages/LoginPage"));
+const AccountPage = React.lazy(() => import("../pages/AccountPage"));
+const NotFoundPage = React.lazy(() => import("../pages/NotFoundPage"));
+const UserProfilePage = React.lazy(() => import("../pages/UserProfilePage"));
+const FriendsPage = React.lazy(() => import("../pages/FriendsPage"));
+const FriendRequestsPage = React.lazy(() => import("../pages/FriendRequestsPage"));
 
 /**
  * Simplified Router configuration.
@@ -32,6 +35,9 @@ function Router() {
           {/* Core authenticated routes */}
           <Route index element={<HomePage />} />
           <Route path="account" element={<AccountPage />} />
+          <Route path="user/:userId" element={<UserProfilePage />} />
+          <Route path="friends" element={<FriendsPage />} />
+          <Route path="requests" element={<FriendRequestsPage />} />
         </Route>
 
         {/* Guest Routes - Use BlankLayout */}

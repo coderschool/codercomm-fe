@@ -1,14 +1,1 @@
 # CoderComm Frontend Refactor and Tutorial Plan
-
-// Current Project Specific Rules:
-// - Use Zustand for state management, referencing `src/lib/store.js`.
-
-// - Use React Hook Form with Yup for form handling and validation.
-// - Use ShadCN UI components (`@/components/ui`) and TailwindCSS for styling.
-// - Follow the established file structure (features/, hooks/, pages/, etc.).
-// - Use absolute imports (`@/`) where appropriate.
-// - API interactions should go through `src/lib/apiService.js`.
-// - Prioritize query invalidation (`queryClient.invalidateQueries`) after mutations for simplicity in this tutorial.
-// - Assume the MirageJS mock API (`src/mockApi/`) provides necessary endpoints.
-// - The main user navigation is via tabs on HomePage, not a persistent sidebar.
-// - Focus on clarity and simplicity suitable for learners (1-2 months React experience).

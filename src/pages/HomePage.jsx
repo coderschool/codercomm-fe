@@ -1,64 +1,53 @@
-import React, { useState } from "react";
+import React from "react";
 import { useAppStore } from "@/lib/store";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-import Feed from "@/features/post/Feed";
-import FriendsPage from "@/pages/FriendsPage"; 
-import FriendRequestsPage from "@/pages/FriendRequestsPage"; 
-import UserProfileHeader from "@/features/user/UserProfileHeader"; 
+import UserProfileHeader from "@/features/user/UserProfileHeader";
+import PostList from "@/features/post/PostList";
+import PostForm from "@/features/post/PostForm";
+import { Loader2 } from "lucide-react";
 
 /**
  * Home Page Component:
- * Displays the current user's profile cover and provides tabs for Feed,
- * Friends, and Requests.
+ * Displays the current user's profile header, post form, and their own posts.
  */
 function HomePage() {
-  // Get user from Zustand store
-  const { user } = useAppStore((state) => ({
-    user: state.currentUser,
+  const { currentUser, isLoadingAuth } = useAppStore((state) => ({
+    currentUser: state.currentUser,
+    isLoadingAuth: state.isLoadingAuth,
   }));
-  const [currentTab, setCurrentTab] = useState("feed"); // Default to feed
 
-  if (!user) {
-    console.error("HomePage rendered without a user after AuthRequire.");
-    return (
-      <div className="container mx-auto px-4 pt-4 text-center text-destructive">
-        Error: User data not available. Please try refreshing or logging in again.
+  // Show loading state while initial auth check is happening
+  if (isLoadingAuth) {
+     return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const TABS = [
-    { value: "feed", label: "Feed", component: Feed },
-    { value: "friends", label: "Friends", component: FriendsPage },
-    { value: "requests", label: "Requests", component: FriendRequestsPage },
-  ];
+  // Should not happen after initial load if AuthRequire works, but safety check
+  if (!currentUser) {
+    return (
+        <div className="text-center p-8 text-destructive">
+            Error: User not found. Please try logging in again.
+        </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 pt-4">
-      {/* Render the UserProfileHeader above the tabs */}
-      <UserProfileHeader />
-      
-      {/* Tabs Navigation */}
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="mt-6">
-        {/* Sticky TabsList remains the same */}
-        <div className="flex justify-center sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b -mx-4 px-4 py-2 mb-6">
-          <TabsList>
-            {TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
+    // Use container/max-width for consistent layout
+    <div className="container mx-auto px-4 py-6 space-y-6">
+       {/* Display the Header for the Current User */}
+       <UserProfileHeader user={currentUser} />
 
-        {/* Tab Content - Rendered directly */}
-        {TABS.map((tab) => (
-          <TabsContent key={tab.value} value={tab.value}>
-            <tab.component {...tab.props} />
-          </TabsContent>
-        ))}
-      </Tabs>
+       {/* Center Post Form and List */}
+       <div className="max-w-xl mx-auto">
+          {/* Display Post Form */}
+          <PostForm />
+          
+          {/* Display Posts by the Current User */}
+          <h2 className="text-lg font-semibold mb-4 mt-6">Your Posts</h2>
+          <PostList userId={currentUser._id} />
+       </div>
     </div>
   );
 }

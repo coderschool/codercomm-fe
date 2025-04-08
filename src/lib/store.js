@@ -43,7 +43,7 @@ const useStore = create(
 
       // Authentication State
       currentUser: null,        // Holds the logged-in user object (null if not logged in)
-      isLoadingAuth: false,     // Loading state specifically for auth operations
+      isLoadingAuth: true,     // Loading state specifically for auth operations
       authError: null,          // Errors specifically from auth operations
 
       // Example UI State (Kept)
@@ -69,6 +69,16 @@ const useStore = create(
       // Users State (Primarily for friend search)
       users: { list: [], isLoading: false, error: null, totalPages: 1 },
       
+      // --- NEW: User Profile State ---
+      // Store profiles by userId to avoid re-fetching
+      userProfiles: {},
+      // Example: { userId1: { data: {...}, isLoading: false, error: null }, userId2: ... }
+      
+      // --- NEW: User Posts State ---
+      // Store posts per user ID
+      userPosts: {},
+      // Example: { userId1: { list: [], isLoading: false, error: null, totalPages: 1 }, userId2: ... }
+
       // --- Actions (Functions to modify state) ---
 
       // Auth Actions
@@ -194,19 +204,70 @@ const useStore = create(
         }
       },
 
-      reactToPost: async (postId, reactionType) => {
+      reactToPost: async (postId, emoji) => {
+        const currentUser = get().currentUser;
+        if (!currentUser) return; 
+        console.log(`Attempting reaction (${emoji}) on post ${postId}...`);
         try {
-          // Assuming endpoint like /posts/:id/react
-          await apiService.post(`/posts/${postId}/react`, { reactionType });
-          // Toast might be too noisy here, maybe just update UI
-          // Simple strategy: refetch posts after reaction
-          get().fetchPosts(); // Refetch the first page
-        } catch (error) {
-          console.error("React to Post Error:", error);
-          const errorMessage = error?.message || 'Failed to react to post';
-          toast.error(errorMessage);
-          // Optionally set a specific error state
-        }
+          // Optimistic Update for main feed (posts) and user-specific feed (userPosts)
+          set(state => {
+            const updatedPosts = [...state.posts];
+            const updatedUserPosts = { ...state.userPosts };
+            let userIdForPost = null;
+
+            // Update main post list
+            const postIndex = updatedPosts.findIndex(p => p._id === postId);
+            if (postIndex !== -1) {
+               const post = updatedPosts[postIndex];
+               userIdForPost = post.author._id; // Get author ID
+               const existingReactionIndex = post.reactions?.findIndex(
+                   r => r.author._id === currentUser._id && r.emoji === emoji
+               );
+               let newReactions = [...(post.reactions || [])];
+               if (existingReactionIndex !== -1) {
+                  newReactions.splice(existingReactionIndex, 1);
+               } else {
+                  newReactions.push({ 
+                     _id: `temp-${Date.now()}`,
+                     author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl }, 
+                     emoji: emoji 
+                  });
+               }
+               updatedPosts[postIndex] = { ...post, reactions: newReactions };
+            }
+            
+            // Update user-specific post list if it exists and matches author
+            if (userIdForPost && updatedUserPosts[userIdForPost]?.list) {
+               const userPostIndex = updatedUserPosts[userIdForPost].list.findIndex(p => p._id === postId);
+               if (userPostIndex !== -1) {
+                  const userPost = updatedUserPosts[userIdForPost].list[userPostIndex];
+                   const existingUserReactionIndex = userPost.reactions?.findIndex(
+                       r => r.author._id === currentUser._id && r.emoji === emoji
+                   );
+                   let newUserReactions = [...(userPost.reactions || [])];
+                   if (existingUserReactionIndex !== -1) {
+                      newUserReactions.splice(existingUserReactionIndex, 1);
+                   } else {
+                      newUserReactions.push({ 
+                         _id: `temp-${Date.now()}`,
+                         author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl }, 
+                         emoji: emoji 
+                      });
+                   }
+                   updatedUserPosts[userIdForPost].list[userPostIndex] = { ...userPost, reactions: newUserReactions };
+               }
+            }
+            
+            return { posts: updatedPosts, userPosts: updatedUserPosts };
+         });
+         
+         await apiService.post('/reactions', { targetType: 'Post', targetId: postId, emoji });
+         console.log(`✅ Reaction (${emoji}) successful for post ${postId}`);
+       } catch (error) {
+         console.error(`❌ React to Post Error (${postId}):`, error);
+         toast.error(error.message || 'Failed to react to post');
+         // TODO: Revert optimistic update
+       }
       },
 
       // --- Comment Actions ---
@@ -249,99 +310,112 @@ const useStore = create(
       },
 
       createComment: async (postId, commentData) => {
-        // Get currentUser from state immediately to use in optimistic update
-        const currentUser = get().currentUser;
-        if (!currentUser) {
-          toast.error("You must be logged in to comment.");
-          throw new Error("User not logged in");
-        }
-
+        console.log(`Attempting to create comment on post ${postId}:`, commentData);
         try {
-          // Make the API call
           const newComment = await apiService.post(`/posts/${postId}/comments`, commentData);
           toast.success('Comment added successfully!');
-
-          // Update state directly instead of refetching
+          console.log("✅ Comment created:", newComment);
           set((state) => {
-            const postComments = state.comments[postId] || { list: [], isLoading: false, error: null, totalPages: 1 };
+            const postComments = state.comments[postId] || { list: [], isLoading: false, error: null };
+            // Update main feed posts
+            const postIndex = state.posts.findIndex(p => p._id === postId);
+            const updatedPosts = [...state.posts];
+            let authorId = null;
+            if (postIndex !== -1) {
+                 authorId = updatedPosts[postIndex].author._id;
+                 updatedPosts[postIndex] = {
+                    ...updatedPosts[postIndex],
+                    commentCount: (updatedPosts[postIndex].commentCount || 0) + 1
+                 };
+            }
+            // Update user-specific posts (if authorId found and posts cached)
+            const updatedUserPosts = { ...state.userPosts };
+            if (authorId && updatedUserPosts[authorId]?.list) {
+                const userPostIndex = updatedUserPosts[authorId].list.findIndex(p => p._id === postId);
+                if (userPostIndex !== -1) {
+                    updatedUserPosts[authorId].list[userPostIndex] = {
+                       ...updatedUserPosts[authorId].list[userPostIndex],
+                       commentCount: (updatedUserPosts[authorId].list[userPostIndex].commentCount || 0) + 1
+                    };
+                }
+            }
+            // Return updated states
             return {
               comments: {
                 ...state.comments,
                 [postId]: {
                   ...postComments,
-                  // Prepend the new comment returned by the API
                   list: [newComment, ...(postComments.list || [])],
                 },
               },
+              posts: updatedPosts,
+              userPosts: updatedUserPosts,
             };
           });
-
-          // Also update the post's comment count in the main posts list
-          set(state => {
-            const postIndex = state.posts.findIndex(p => p._id === postId);
-            if (postIndex !== -1) {
-              const updatedPosts = [...state.posts];
-              updatedPosts[postIndex] = {
-                ...updatedPosts[postIndex],
-                // Ensure commentCount exists before incrementing
-                commentCount: (updatedPosts[postIndex].commentCount || 0) + 1
-              };
-              return { posts: updatedPosts };
-            }
-            return {}; // No change if post not found in the list
-          });
-
-          return newComment; // Return the new comment object
-
+          return newComment;
         } catch (error) {
-          console.error(`Create Comment Error (Post ${postId}):`, error);
-          const errorMessage = error?.message || 'Failed to add comment';
+          console.error(`❌ Create Comment Error (Post ${postId}):`, error);
+          const errorMessage = error.message || 'Failed to add comment';
           toast.error(errorMessage);
-          // Re-throw error for the form to potentially handle (e.g., keep submitting state)
           throw error;
         }
       },
 
       deleteComment: async (commentId) => {
-        // We need the postId to refetch, but the API endpoint only needs commentId.
-        // This implies components calling deleteComment need to know the postId,
-        // or we find the postId from the store (less ideal).
-        // Let's assume the component provides postId for now.
-        // Alternative: Store could potentially find the post containing the comment.
-        try {
-          await apiService.delete(`/comments/${commentId}`);
-          toast.success('Comment deleted successfully!');
-          // Problem: How to refetch? We need the postId.
-          // Solution 1: Pass postId to deleteComment
-          // Solution 2: Modify state locally (optimistic update or remove from list)
-          // Solution 3: Refetch *all* posts (inefficient)
-          // Let's go with Solution 2 for simplicity: remove locally
-          set((state) => {
-            const updatedComments = { ...state.comments };
-            let postIdToUpdate = null;
-            // Find which post had this comment
-            for (const postId in updatedComments) {
-              if (updatedComments[postId]?.list?.some(c => c._id === commentId)) {
-                postIdToUpdate = postId;
-                updatedComments[postId] = {
-                  ...updatedComments[postId],
-                  list: updatedComments[postId].list.filter(c => c._id !== commentId),
-                };
-                break;
+         console.log(`Attempting to delete comment ${commentId}...`);
+         try {
+           await apiService.delete(`/comments/${commentId}`);
+           toast.success('Comment deleted successfully!');
+           set((state) => {
+              let postIdToUpdate = null;
+              let authorId = null;
+              const updatedComments = { ...state.comments };
+              const updatedPosts = [...state.posts];
+              const updatedUserPosts = { ...state.userPosts };
+              
+              for (const postId in updatedComments) {
+                 const commentIndex = updatedComments[postId]?.list?.findIndex(c => c._id === commentId);
+                 if (commentIndex !== -1) {
+                    postIdToUpdate = postId;
+                    updatedComments[postId] = {
+                       ...updatedComments[postId],
+                       list: updatedComments[postId].list.filter(c => c._id !== commentId),
+                    };
+                    break;
+                 }
               }
-            }
-            // Also refetch posts to update commentCount on the post itself
-            if (postIdToUpdate) {
-              get().fetchPosts(); // Inefficient, but ensures comment count updates
-            }
-            return { comments: updatedComments };
-          });
-
-        } catch (error) {
-          console.error(`Delete Comment Error (Comment ${commentId}):`, error);
-          const errorMessage = error?.message || 'Failed to delete comment';
-          toast.error(errorMessage);
-        }
+              
+              if (postIdToUpdate) {
+                 // Update main post list count
+                 const postIndex = updatedPosts.findIndex(p => p._id === postIdToUpdate);
+                 if (postIndex !== -1) {
+                      authorId = updatedPosts[postIndex].author._id;
+                      updatedPosts[postIndex] = {
+                         ...updatedPosts[postIndex],
+                         commentCount: Math.max(0, (updatedPosts[postIndex].commentCount || 0) - 1)
+                      };
+                 }
+                 // Update user-specific post list count
+                 if (authorId && updatedUserPosts[authorId]?.list) {
+                     const userPostIndex = updatedUserPosts[authorId].list.findIndex(p => p._id === postIdToUpdate);
+                     if (userPostIndex !== -1) {
+                         updatedUserPosts[authorId].list[userPostIndex] = {
+                           ...updatedUserPosts[authorId].list[userPostIndex],
+                           commentCount: Math.max(0, (updatedUserPosts[authorId].list[userPostIndex].commentCount || 0) - 1)
+                         };
+                     }
+                 }
+              }
+              
+              return { comments: updatedComments, posts: updatedPosts, userPosts: updatedUserPosts };
+           });
+           console.log(`✅ Comment ${commentId} deleted.`);
+         } catch (error) {
+           console.error(`❌ Delete Comment Error (${commentId}):`, error);
+           const errorMessage = error.message || 'Failed to delete comment';
+           toast.error(errorMessage);
+           throw error;
+         }
       },
 
       reactToComment: async (commentId, reactionType) => {
@@ -454,22 +528,31 @@ const useStore = create(
         }
       },
 
-      sendFriendRequest: async (userId) => {
+      sendFriendRequest: async (targetUserId) => {
+        console.log(`Attempting send request to ${targetUserId}...`);
         try {
-          await apiService.post('/friends/requests', { userId });
+          const response = await apiService.post('/friends/requests', { userId: targetUserId });
           toast.success('Friend request sent!');
-          // Refetch outgoing requests to update UI
-          get().fetchFriendRequests();
-          // Refetch users search results if applicable (user might disappear from search)
-          // get().fetchUsers(get().users?.lastQuery); // Need to store last query
+          set(state => {
+            const newRequest = response.friendship;
+            if (!newRequest) return state;
+            const updatedOutgoing = [newRequest, ...state.friendRequests.outgoing];
+            const updatedUsersList = state.users.list.map(u => u._id === targetUserId ? { ...u, friendship: newRequest } : u );
+            const updatedUserProfiles = { ...state.userProfiles };
+            if (updatedUserProfiles[targetUserId]) {
+                updatedUserProfiles[targetUserId] = { ...updatedUserProfiles[targetUserId], data: { ...(updatedUserProfiles[targetUserId].data || {}), friendship: newRequest } };
+            }
+            return { friendRequests: { ...state.friendRequests, outgoing: updatedOutgoing }, users: { ...state.users, list: updatedUsersList }, userProfiles: updatedUserProfiles };
+          });
+          console.log(`✅ Request sent to ${targetUserId}`);
         } catch (error) {
-          console.error("Send Friend Request Error:", error);
-          const errorMessage = error?.message || 'Failed to send request';
-          toast.error(errorMessage);
+          console.error(`❌ Send Friend Request Error to ${targetUserId}:`, error);
+          toast.error(error.message || 'Failed to send request');
+          throw error;
         }
       },
 
-      acceptFriendRequest: (requestId) => {
+      acceptFriendRequest: async (requestId) => {
         // Mock action: Directly modify state
         set((state) => {
           const updatedIncoming = state.friendRequests.incoming.filter(
@@ -528,7 +611,7 @@ const useStore = create(
         // }
       },
 
-      cancelFriendRequest: (requestId) => {
+      cancelFriendRequest: async (requestId) => {
         // Mock action: Directly modify state
         set((state) => {
           const updatedOutgoing = state.friendRequests.outgoing.filter(
@@ -570,54 +653,99 @@ const useStore = create(
         }
       },
 
-      // --- User Actions ---
+      // --- NEW: User Profile Actions ---
 
+      /**
+       * Fetches a user's profile by ID, storing it in the userProfiles state.
+       * @param {string} userId 
+       */
       fetchUserProfile: async (userId) => {
-        // Set loading state for this specific profile
+        // Check if profile is already fetched or loading to prevent redundant calls
+        const existingProfileState = get().userProfiles[userId];
+        if (existingProfileState?.data || existingProfileState?.isLoading) {
+          // console.log(`Profile for ${userId} already fetched or loading.`);
+          return; // Avoid refetching if data exists or is loading
+        }
+        
         set((state) => ({
           userProfiles: {
             ...state.userProfiles,
-            [userId]: { ...state.userProfiles[userId], isLoading: true, error: null },
+            [userId]: { ...(state.userProfiles[userId] || {}), isLoading: true, error: null },
           },
         }));
+        console.log(`Attempting fetch profile for ${userId}...`);
         try {
-          const profileData = await apiService.get(`/users/${userId}`);
+          const response = await apiService.get(`/users/${userId}`);
           set((state) => ({
             userProfiles: {
               ...state.userProfiles,
-              [userId]: { data: profileData, isLoading: false, error: null },
+              [userId]: { data: response.user, isLoading: false, error: null },
             },
           }));
-          return profileData;
+          console.log(`✅ Profile fetched for ${userId}`);
+          return response.user;
         } catch (error) {
-          console.error(`Fetch User Profile Error (User ${userId}):`, error);
-          const errorMessage = error?.message || 'Failed to fetch profile';
+          console.error(`❌ Fetch User Profile Error (${userId}):`, error);
+          const errorMessage = error.message || 'Failed to fetch profile';
           set((state) => ({
             userProfiles: {
               ...state.userProfiles,
-              [userId]: { ...state.userProfiles[userId], isLoading: false, error: errorMessage },
+              [userId]: { ...(state.userProfiles[userId] || {}), isLoading: false, error: errorMessage },
             },
           }));
-          toast.error(errorMessage);
+          toast.error(`Failed to load profile for user ${userId}`);
           // Don't throw error here, let component handle display based on state
         }
       },
+      
+       /**
+       * Updates the current user's profile.
+       * @param {object} updatedData - Fields to update.
+       */
+      updateUserProfile: async (updatedData) => {
+        // No specific loading state needed, form handles it
+        console.log("Attempting update profile:", updatedData);
+        try {
+          const response = await apiService.put('/users/me', updatedData);
+          const updatedUser = response.user;
+          // Update currentUser state
+          set({ currentUser: updatedUser });
+          toast.success("Profile updated successfully!");
+          console.log("✅ Profile updated:", updatedUser);
+          return updatedUser;
+        } catch (error) {
+          console.error("❌ Update Profile Error:", error);
+          const errorMessage = error.message || 'Failed to update profile';
+          toast.error(errorMessage);
+          throw error; // Re-throw for form error handling
+        }
+      },
 
-    
+      // --- NEW: User Posts Actions ---
+
+      /**
+       * Fetches posts for a specific user.
+       * @param {string} userId
+       * @param {number} page
+       * @param {number} limit
+       */
       fetchUserPosts: async (userId, page = 1, limit = 10) => {
-        // Set loading state specifically for this user's posts
+        const existingPostsState = get().userPosts[userId];
+        // Avoid refetch if already loading (can add logic to check if data exists too)
+        if (existingPostsState?.isLoading) return;
+        
         set((state) => ({
           userPosts: {
             ...state.userPosts,
             [userId]: { ...(state.userPosts[userId] || {}), isLoading: true, error: null },
           },
         }));
+        console.log(`Attempting fetch posts for user ${userId}...`);
         try {
-          // Assuming endpoint like /users/:userId/posts
-          const response = await apiService.get(`/users/${userId}/posts`, {
+          // Assuming endpoint like /posts/user/:userId
+          const response = await apiService.get(`/posts/user/${userId}`, {
             params: { page, limit },
           });
-          // Assuming API returns { posts: [...], totalPages: X }
           set((state) => ({
             userPosts: {
               ...state.userPosts,
@@ -629,16 +757,17 @@ const useStore = create(
               },
             },
           }));
+           console.log(`✅ Posts fetched for user ${userId}:`, response.posts?.length || 0);
         } catch (error) {
-          console.error(`Fetch User Posts Error (User ${userId}):`, error);
-          const errorMessage = error?.message || 'Failed to fetch user posts';
+          console.error(`❌ Fetch User Posts Error (${userId}):`, error);
+          const errorMessage = error.message || 'Failed to fetch user posts';
           set((state) => ({
             userPosts: {
               ...state.userPosts,
               [userId]: { ...(state.userPosts[userId] || {}), isLoading: false, error: errorMessage },
             },
           }));
-          toast.error(errorMessage);
+          toast.error(`Failed to load posts for user ${userId}`);
         }
       },
 
@@ -652,11 +781,8 @@ const useStore = create(
     }),
     // Configuration object for the `persist` middleware
     {
-      name: 'codercomm-storage', // Name of the item in localStorage
-      // Only persist the currentUser
-      partialize: (state) => ({
-        currentUser: state.currentUser,
-      }),
+      name: 'codercomm-auth-storage', 
+      partialize: (state) => ({ currentUser: state.currentUser }),
     }
   )
 );
