@@ -171,22 +171,40 @@ const useStore = create(
         }
       },
 
+      /**
+       * Creates a new post.
+       * @param {object} postData - { content, image? }
+       */
       createPost: async (postData) => {
-        // Note: No loading state specific to *creating* a single post here yet
-        // Could add one if needed for better UI feedback
+        console.log("Attempting to create post:", postData);
         try {
           const newPost = await apiService.post('/posts', postData);
           toast.success('Post created successfully!');
-          // Simple strategy: refetch posts after creation
-          get().fetchPosts(); // Refetch the first page
+          console.log("✅ Post created:", newPost);
+          set((state) => {
+            const authorId = newPost.author._id;
+            const updatedUserPosts = { ...state.userPosts };
+            // Only update user-specific posts if they are already cached
+            if (updatedUserPosts[authorId]?.list) {
+              updatedUserPosts[authorId] = {
+                ...updatedUserPosts[authorId],
+                // Prepend to the specific user's post list
+                list: [newPost, ...updatedUserPosts[authorId].list],
+              };
+            } else {
+               // If not cached, initialize it for the current user
+               // This ensures the post appears immediately on the home page
+               if (authorId === state.currentUser?._id) {
+                   updatedUserPosts[authorId] = { list: [newPost], isLoading: false, error: null, totalPages: 1 };
+               }
+            }
+            return { userPosts: updatedUserPosts };
+          });
           return newPost;
         } catch (error) {
-          console.error("Create Post Error:", error);
-          const errorMessage = error?.message || 'Failed to create post';
-          toast.error(errorMessage);
-          // Optionally set a specific error state for creation
-          // set({ createPostError: errorMessage });
-          throw error; // Re-throw for form handling if needed
+          console.error("❌ Create Post Error:", error);
+          toast.error(error.message || 'Failed to create post');
+          throw error;
         }
       },
 
@@ -206,68 +224,47 @@ const useStore = create(
 
       reactToPost: async (postId, emoji) => {
         const currentUser = get().currentUser;
-        if (!currentUser) return; 
+        if (!currentUser) return;
         console.log(`Attempting reaction (${emoji}) on post ${postId}...`);
         try {
-          // Optimistic Update for main feed (posts) and user-specific feed (userPosts)
           set(state => {
-            const updatedPosts = [...state.posts];
             const updatedUserPosts = { ...state.userPosts };
             let userIdForPost = null;
+            let postUpdated = false;
 
-            // Update main post list
-            const postIndex = updatedPosts.findIndex(p => p._id === postId);
-            if (postIndex !== -1) {
-               const post = updatedPosts[postIndex];
-               userIdForPost = post.author._id; // Get author ID
-               const existingReactionIndex = post.reactions?.findIndex(
-                   r => r.author._id === currentUser._id && r.emoji === emoji
-               );
-               let newReactions = [...(post.reactions || [])];
-               if (existingReactionIndex !== -1) {
-                  newReactions.splice(existingReactionIndex, 1);
-               } else {
-                  newReactions.push({ 
-                     _id: `temp-${Date.now()}`,
-                     author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl }, 
-                     emoji: emoji 
-                  });
-               }
-               updatedPosts[postIndex] = { ...post, reactions: newReactions };
+            // Find the user whose post list contains this post
+            for (const userId in updatedUserPosts) {
+                 const userPostList = updatedUserPosts[userId]?.list;
+                 if (userPostList) {
+                     const postIndex = userPostList.findIndex(p => p._id === postId);
+                     if (postIndex !== -1) {
+                         userIdForPost = userId;
+                         const post = userPostList[postIndex];
+                         const existingReactionIndex = post.reactions?.findIndex(
+                             r => r.author._id === currentUser._id && r.emoji === emoji
+                         );
+                         let newReactions = [...(post.reactions || [])];
+                         if (existingReactionIndex !== -1) {
+                            newReactions.splice(existingReactionIndex, 1);
+                         } else {
+                            newReactions.push({ _id: `temp-${Date.now()}`, author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl }, emoji: emoji });
+                         }
+                         updatedUserPosts[userId].list[postIndex] = { ...post, reactions: newReactions };
+                         postUpdated = true;
+                         break; // Found and updated the post
+                     }
+                 }
             }
-            
-            // Update user-specific post list if it exists and matches author
-            if (userIdForPost && updatedUserPosts[userIdForPost]?.list) {
-               const userPostIndex = updatedUserPosts[userIdForPost].list.findIndex(p => p._id === postId);
-               if (userPostIndex !== -1) {
-                  const userPost = updatedUserPosts[userIdForPost].list[userPostIndex];
-                   const existingUserReactionIndex = userPost.reactions?.findIndex(
-                       r => r.author._id === currentUser._id && r.emoji === emoji
-                   );
-                   let newUserReactions = [...(userPost.reactions || [])];
-                   if (existingUserReactionIndex !== -1) {
-                      newUserReactions.splice(existingUserReactionIndex, 1);
-                   } else {
-                      newUserReactions.push({ 
-                         _id: `temp-${Date.now()}`,
-                         author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl }, 
-                         emoji: emoji 
-                      });
-                   }
-                   updatedUserPosts[userIdForPost].list[userPostIndex] = { ...userPost, reactions: newUserReactions };
-               }
-            }
-            
-            return { posts: updatedPosts, userPosts: updatedUserPosts };
-         });
-         
-         await apiService.post('/reactions', { targetType: 'Post', targetId: postId, emoji });
-         console.log(`✅ Reaction (${emoji}) successful for post ${postId}`);
-       } catch (error) {
-         console.error(`❌ React to Post Error (${postId}):`, error);
-         toast.error(error.message || 'Failed to react to post');
-         // TODO: Revert optimistic update
-       }
+            // Return state only if an update occurred
+            return postUpdated ? { userPosts: updatedUserPosts } : state;
+          });
+          await apiService.post('/reactions', { targetType: 'Post', targetId: postId, emoji });
+          console.log(`✅ Reaction (${emoji}) successful for post ${postId}`);
+        } catch (error) {
+          console.error(`❌ React to Post Error (${postId}):`, error);
+          toast.error(error.message || 'Failed to react to post');
+          // TODO: Revert optimistic update
+        }
       },
 
       // --- Comment Actions ---
@@ -317,46 +314,31 @@ const useStore = create(
           console.log("✅ Comment created:", newComment);
           set((state) => {
             const postComments = state.comments[postId] || { list: [], isLoading: false, error: null };
-            // Update main feed posts
-            const postIndex = state.posts.findIndex(p => p._id === postId);
-            const updatedPosts = [...state.posts];
             let authorId = null;
-            if (postIndex !== -1) {
-                 authorId = updatedPosts[postIndex].author._id;
-                 updatedPosts[postIndex] = {
-                    ...updatedPosts[postIndex],
-                    commentCount: (updatedPosts[postIndex].commentCount || 0) + 1
-                 };
-            }
-            // Update user-specific posts (if authorId found and posts cached)
             const updatedUserPosts = { ...state.userPosts };
-            if (authorId && updatedUserPosts[authorId]?.list) {
-                const userPostIndex = updatedUserPosts[authorId].list.findIndex(p => p._id === postId);
-                if (userPostIndex !== -1) {
-                    updatedUserPosts[authorId].list[userPostIndex] = {
-                       ...updatedUserPosts[authorId].list[userPostIndex],
-                       commentCount: (updatedUserPosts[authorId].list[userPostIndex].commentCount || 0) + 1
-                    };
-                }
-            }
-            // Return updated states
+            
+            // Find the post in userPosts cache to update count
+             for (const userId in updatedUserPosts) {
+                 const postIndex = updatedUserPosts[userId]?.list?.findIndex(p => p._id === postId);
+                 if (postIndex !== -1) {
+                     authorId = userId;
+                     updatedUserPosts[userId].list[postIndex] = {
+                        ...updatedUserPosts[userId].list[postIndex],
+                        commentCount: (updatedUserPosts[userId].list[postIndex].commentCount || 0) + 1
+                     };
+                     break;
+                 }
+             }
+
             return {
-              comments: {
-                ...state.comments,
-                [postId]: {
-                  ...postComments,
-                  list: [newComment, ...(postComments.list || [])],
-                },
-              },
-              posts: updatedPosts,
-              userPosts: updatedUserPosts,
+              comments: { ...state.comments, [postId]: { ...postComments, list: [newComment, ...(postComments.list || [])] } },
+              userPosts: updatedUserPosts, // Update user posts with new count
             };
           });
           return newComment;
         } catch (error) {
           console.error(`❌ Create Comment Error (Post ${postId}):`, error);
-          const errorMessage = error.message || 'Failed to add comment';
-          toast.error(errorMessage);
+          toast.error(error.message || 'Failed to add comment');
           throw error;
         }
       },

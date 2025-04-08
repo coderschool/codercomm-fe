@@ -3,16 +3,10 @@ import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, Heart, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { MessageSquare, Heart, MoreVertical, Loader2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { getInitials } from "@/utils/formatters";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAppStore } from '@/lib/store';
 import { cn } from "@/lib/utils";
 import CommentList from "@/features/comment/CommentList";
@@ -35,7 +29,6 @@ function PostList({ userId }) {
     currentUser: state.currentUser,
     fetchPosts: state.fetchPosts,
     fetchUserPosts: state.fetchUserPosts,
-    deletePost: state.deletePost,
     reactToPost: state.reactToPost,
   }));
 
@@ -43,7 +36,6 @@ function PostList({ userId }) {
     currentUser,
     fetchPosts,
     fetchUserPosts,
-    deletePost,
     reactToPost
   } = storeState;
 
@@ -57,7 +49,6 @@ function PostList({ userId }) {
     ? storeState.userPostsData?.error
     : storeState.mainFeedError;
 
-  const [deletingPostId, setDeletingPostId] = useState(null);
   const [expandedComments, setExpandedComments] = useState({});
 
   useEffect(() => {
@@ -72,20 +63,6 @@ function PostList({ userId }) {
 
   const handleReaction = async (postId, emoji) => {
     await reactToPost(postId, emoji);
-  };
-
-  const handleDeleteClick = async (postId) => {
-    if (deletingPostId) return;
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      setDeletingPostId(postId);
-      try {
-        await deletePost(postId);
-      } catch (error) {
-        console.error("Delete failed in component:", error);
-      } finally {
-        setDeletingPostId(null);
-      }
-    }
   };
 
   const toggleComments = (postId) => {
@@ -131,14 +108,13 @@ function PostList({ userId }) {
         const isLikedByCurrentUser = post.reactions?.some(
           (reaction) => reaction.author._id === currentUser?._id && reaction.emoji === 'like'
         );
-        const isCurrentlyDeleting = deletingPostId === post._id;
         const areCommentsExpanded = !!expandedComments[post._id];
         const likeCount = post.reactions?.filter(r => r.emoji === 'like').length || 0;
         const commentCount = post.commentCount ?? 0;
         const isPostAuthor = currentUser?._id === post.author._id;
 
         return (
-          <Card key={post._id} className={cn("overflow-hidden shadow-sm", isCurrentlyDeleting && "opacity-50 pointer-events-none")}>
+          <Card key={post._id} className={cn("overflow-hidden shadow-sm")}>
             <CardHeader className="p-0">
                <div className="flex items-center justify-between p-3 sm:p-4">
                   <div className="flex items-center gap-3">
@@ -157,26 +133,7 @@ function PostList({ userId }) {
                        </p>
                      </div>
                   </div>
-                  {isPostAuthor && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" disabled={isCurrentlyDeleting}>
-                          {isCurrentlyDeleting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <MoreVertical className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">Post options</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleDeleteClick(post._id)} className="text-destructive focus:text-destructive flex items-center gap-2 cursor-pointer text-sm p-2" disabled={isCurrentlyDeleting}>
-                          <Trash2 className="h-4 w-4" />
-                          <span>Delete Post</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  {isPostAuthor && <div className="w-8 h-8"></div>}
                </div>
             </CardHeader>
             <CardContent className="px-3 sm:px-4 pb-2 pt-0">

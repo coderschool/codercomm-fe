@@ -163,51 +163,39 @@ export function mockServer({ environment = 'development' } = {}) {
       // CREATE POST (as user1)
       this.post('/posts', (schema, request) => {
         const { content, image } = JSON.parse(request.requestBody);
-        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1 is creator
-        console.log(`🔶 Mock Create Post: User=${currentUser._id}`);
-        if (!content) {
-          return new Response(400, {}, { message: 'Post content is required' });
+        const currentUser = findUser('user1'); // Use helper
+        console.log(`🔶 Mock Create Post: User=${currentUser?._id}`);
+        
+        if (!currentUser) {
+           return new Response(401, {}, { message: 'Mock user not found' });
         }
+        if (!content || content.trim().length === 0) {
+          return new Response(400, {}, { message: 'Post content cannot be empty' });
+        }
+        
         const newPost = {
-          _id: `post-${Date.now()}`,
-          content,
-          image: image || null,
-          author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
+          _id: `post-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          content: content.trim(),
+          image: image || null, // Handle optional image
+          author: { // Embed author details
+             _id: currentUser._id, 
+             name: currentUser.name, 
+             avatarUrl: currentUser.avatarUrl 
+          },
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          // Add default reactions and commentCount for consistency
+          reactions: [],
+          commentCount: 0,
         };
+        
         currentPosts.unshift(newPost); // Add to beginning of the array
-        // Return the created post with added counts/reactions
-        return { 
-          ...newPost, 
-          commentCount: 0, 
-          reactions: [] 
-        }; 
+        console.log("  -> New post created:", newPost);
+        
+        // Return the newly created post object
+        return newPost; // Return the complete object
       });
       
-      // DELETE POST (Allows user1 to delete their own posts)
-      this.delete('/posts/:id', (schema, request) => {
-        const postId = request.params.id;
-        const currentUser = 'user1';
-        const postIndex = currentPosts.findIndex(p => p._id === postId);
-        console.log(`🔶 Mock Delete Post: ${postId}, User=${currentUser}`);
-        if (postIndex === -1) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        if (currentPosts[postIndex].author._id !== currentUser) {
-           return new Response(403, {}, { message: 'User not authorized to delete this post' });
-        }
-        currentPosts.splice(postIndex, 1);
-        // Also remove related comments and reactions
-        const commentsToRemove = currentComments.filter(c => c.post === postId).map(c => c._id);
-        currentComments = currentComments.filter(c => c.post !== postId);
-        currentReactions = currentReactions.filter(r => 
-          !(r.targetType === 'Post' && r.targetId === postId) &&
-          !(r.targetType === 'Comment' && commentsToRemove.includes(r.targetId))
-        );
-        return new Response(204); // No content
-      });
-
 
       // --- Comment Routes ---
       // GET COMMENTS FOR A POST (paginated)
@@ -259,35 +247,6 @@ export function mockServer({ environment = 'development' } = {}) {
         
         // Return the created comment object
         return newComment; 
-      });
-
-      // DELETE COMMENT (Allows user1 to delete their own comments)
-      this.delete('/comments/:commentId', (schema, request) => {
-        const { commentId } = request.params;
-        const currentUser = 'user1'; // Assume user1
-        console.log(`🔶 Mock Delete Comment: commentId=${commentId}, user=${currentUser}`);
-
-        const commentIndex = currentComments.findIndex(c => c._id === commentId);
-
-        if (commentIndex === -1) {
-          return new Response(404, {}, { message: 'Comment not found' });
-        }
-
-        const comment = currentComments[commentIndex];
-        if (comment.author._id !== currentUser) {
-          return new Response(403, {}, { message: 'User not authorized to delete this comment' });
-        }
-
-        // Remove the comment
-        currentComments.splice(commentIndex, 1);
-        
-        // Also remove related reactions
-        currentReactions = currentReactions.filter(r => 
-          !(r.targetType === 'Comment' && r.targetId === commentId)
-        );
-        
-        console.log(`  -> Comment ${commentId} removed.`);
-        return new Response(204); // No Content on successful deletion
       });
 
 
@@ -519,6 +478,7 @@ export function mockServer({ environment = 'development' } = {}) {
       
       // Reset passthrough
       this.passthrough(); // Allow unhandled requests to pass through (e.g., to Vite dev server)
+      this.passthrough(`${window.location.origin}/**`);
     }
   });
 }
