@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 // import useAuth from "@/hooks/useAuth"; // Removed
-import { useAppStore } from "@/lib/store"; // Added
+import { useAppStore } from "@/features/use-app-store"; // Added
 
 /**
  * Feed Component:
@@ -15,7 +15,7 @@ import { useAppStore } from "@/lib/store"; // Added
  */
 function Feed() {
   // Get user status, though PostList fetches data regardless
-  const currentUser = useAppStore((state) => state.currentUser);
+  // const currentUser = useAppStore((state) => state.currentUser);
 
   // Note: PostList now handles its own fetching, loading, and error states internally
   // when no 'posts' prop is passed. We just need to render it.
@@ -31,4 +31,4 @@ function Feed() {
   );
 }
 
-export default Feed; 
+export default Feed;

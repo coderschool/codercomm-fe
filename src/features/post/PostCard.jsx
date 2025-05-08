@@ -1,26 +1,18 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { Link as RouterLink } from "react-router-dom";
-import { formatTimeAgo } from "@/utils/formatTime";
+import { Link as RouterLink } from "react-router";
+import { formatTimeAgo } from "@/lib/formatTime";
 import { MoreVertical } from "lucide-react";
 
-import { 
-  Card, 
-  CardHeader, 
+import {
+  Card,
+  CardHeader,
   CardContent,
-  CardFooter
+  CardFooter,
 } from "@/components/ui/card";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback
-} from "@/components/ui/avatar";
-import {
-  Button
-} from "@/components/ui/button";
-import {
-  Separator
-} from "@/components/ui/separator";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
 import CommentForm from "@/features/comment/CommentForm";
@@ -40,7 +32,7 @@ function PostCard({ post }) {
           <AvatarFallback>{post?.author?.name?.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <RouterLink 
+          <RouterLink
             to={`/user/${post.author._id}`}
             className="font-semibold text-foreground hover:underline"
           >
@@ -61,18 +53,18 @@ function PostCard({ post }) {
 
         {post.image && (
           <div className="rounded-md overflow-hidden h-[300px]">
-            <img 
-              src={post.image} 
-              alt="post" 
-              className="w-full h-full object-cover" 
+            <img
+              src={post.image}
+              alt="post"
+              className="w-full h-full object-cover"
             />
           </div>
         )}
 
         <PostReaction post={post} />
-        
+
         <Separator />
-        
+
         <CommentList postId={post._id} />
         <CommentForm postId={post._id} />
       </CardContent>

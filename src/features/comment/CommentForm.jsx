@@ -1,26 +1,34 @@
 import React, { useState } from "react";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Components
-import { useAppStore } from "@/lib/store";
+import { useAppStore } from "@/features/use-app-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Send, Loader2 } from "lucide-react";
 
 // Utilities
-import { getInitials } from "@/utils/formatters";
+import { getInitials } from "@/lib/getInitials";
 
 /**
  * Yup validation schema for the comment form.
  */
-const commentSchema = yup.object({
-  content: yup.string().required("Comment cannot be empty").trim(),
-}).required();
+const commentSchema = yup
+  .object({
+    content: yup.string().required("Comment cannot be empty").trim(),
+  })
+  .required();
 
 /**
  * Comment form for creating a new comment on a post
@@ -29,10 +37,7 @@ const commentSchema = yup.object({
  */
 function CommentForm({ postId }) {
   // Select user and action from store
-  const { currentUser, createComment } = useAppStore((state) => ({
-    currentUser: state.currentUser,
-    createComment: state.createComment,
-  }));
+  const { currentUser, createComment } = useAppStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
@@ -58,13 +63,19 @@ function CommentForm({ postId }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-3 py-2">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex items-start gap-3 py-2"
+      >
         {/* Current User Avatar */}
         <Avatar className="h-8 w-8 border mt-1 flex-shrink-0">
-          <AvatarImage src={currentUser.avatarUrl || ''} alt={currentUser.name} />
+          <AvatarImage
+            src={currentUser.avatarUrl || ""}
+            alt={currentUser.name}
+          />
           <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
         </Avatar>
-        
+
         {/* Comment Input Field */}
         <FormField
           control={form.control}
@@ -80,9 +91,9 @@ function CommentForm({ postId }) {
                     {...field}
                     disabled={isSubmitting}
                   />
-                  <Button 
-                    type="submit" 
-                    size="icon" 
+                  <Button
+                    type="submit"
+                    size="icon"
                     variant="ghost"
                     disabled={isSubmitting || !form.formState.isValid}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-primary"

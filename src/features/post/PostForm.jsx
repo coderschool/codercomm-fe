@@ -4,37 +4,45 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Components
-import { useAppStore } from '@/lib/store';
+import { useAppStore } from "@/features/use-app-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Image, Send, Loader2 } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 // Utilities
-import { getInitials } from "@/utils/formatters";
+import { getInitials } from "@/lib/getInitials";
 
 /**
  * Yup validation schema for the new post form.
  */
-const postSchema = yup.object({
-  // Require content, allow optional image later
-  content: yup.string().required("Post content cannot be empty.").trim(),
-  // image: yup.string().url("Invalid image URL"), // Add later if implementing image uploads
-}).required();
+const postSchema = yup
+  .object({
+    // Require content, allow optional image later
+    content: yup.string().required("Post content cannot be empty.").trim(),
+    // image: yup.string().url("Invalid image URL"), // Add later if implementing image uploads
+  })
+  .required();
 
 /**
  * Form component for creating a new post.
  * Uses React Hook Form, Yup for validation, and useAppStore for submission.
  */
 function PostForm() {
-  const { user } = useAppStore((state) => ({ user: state.currentUser }));
+  const { user } = useAppStore();
 
   // Get the createPost action from the Zustand store
-  const createPost = useAppStore((state) => state.createPost);
+  const { createPost } = useAppStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize React Hook Form
@@ -65,7 +73,7 @@ function PostForm() {
   };
 
   // Get user's first name for placeholder
-  const firstName = user?.name?.split(' ')[0] || 'User';
+  const firstName = user?.name?.split(" ")[0] || "User";
 
   return (
     <Card className="mb-6 shadow-sm">
@@ -76,12 +84,12 @@ function PostForm() {
               {user && (
                 <Link to={`/user/${user._id}`} className="flex-shrink-0 mt-1">
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={user.avatarUrl || ''} alt={user.name} />
+                    <AvatarImage src={user.avatarUrl || ""} alt={user.name} />
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                 </Link>
               )}
-              
+
               <div className="flex-1">
                 {/* Content Textarea Field */}
                 <FormField
@@ -104,20 +112,20 @@ function PostForm() {
               </div>
             </div>
           </CardContent>
-          
+
           <CardFooter className="flex justify-between border-t px-4 py-3">
             {/* Add Image Button (Placeholder) */}
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               className="text-muted-foreground hover:text-primary p-2"
               onClick={() => toast.info("Image upload coming soon!")}
             >
               <Image className="h-5 w-5 mr-2" />
               <span className="text-xs">Add Image</span>
             </Button>
-            
+
             {/* Submit Button */}
             <Button
               type="submit"
@@ -126,9 +134,13 @@ function PostForm() {
               className="px-4"
             >
               {isSubmitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...
+                </>
               ) : (
-                  <><Send className="h-4 w-4 mr-2" /> Post</>
+                <>
+                  <Send className="h-4 w-4 mr-2" /> Post
+                </>
               )}
             </Button>
           </CardFooter>

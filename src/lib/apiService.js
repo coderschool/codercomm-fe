@@ -1,10 +1,11 @@
 import axios from "axios";
+import { API_URL } from "./envConfig";
 
 // Determine the base URL for API requests.
 // If VITE_API_URL is set in your environment (e.g., in a .env file),
 // use that. Otherwise, assume we're using the MirageJS mock server,
 // which requires the '/api' prefix based on its configuration in server.js.
-const baseURL = import.meta.env.VITE_API_URL || '/api'; 
+const baseURL = API_URL || "/api";
 
 console.log(`✅ API Base URL: ${baseURL}`); // Log the base URL being used
 
@@ -21,8 +22,8 @@ apiService.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
     if (token && !config.headers.Authorization) {
-        // Set Authorization header only if it doesn't exist already
-        config.headers.Authorization = `Bearer ${token}`;
+      // Set Authorization header only if it doesn't exist already
+      config.headers.Authorization = `Bearer ${token}`;
     }
     // Optional: Log request details for debugging
     // console.log("Starting Request:", {
@@ -60,14 +61,14 @@ apiService.interceptors.response.use(
   (error) => {
     // Handle errors (non-2xx status codes)
     console.error("❌ API Response Error:", error.response || error.message);
-    
+
     // Try to extract a meaningful error message from the response
     // This depends on how your backend (or mock server) structures error responses
-    const message = 
-      error.response?.data?.message ||       // Check direct message property first (common practice)
+    const message =
+      error.response?.data?.message || // Check direct message property first (common practice)
       error.response?.data?.errors?.message || // Check nested structure
-      error.message ||                     // Use the generic Axios error message
-      "An unexpected API error occurred";  // Fallback message
+      error.message || // Use the generic Axios error message
+      "An unexpected API error occurred"; // Fallback message
 
     // Reject the promise with a standardized error object including the message
     // Components catching this can rely on error.message

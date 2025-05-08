@@ -1,484 +1,688 @@
-import { createServer, Response } from 'miragejs';
-import { users, posts, comments, friendships, reactions } from './data';
+// src/mockApi/server.js
+import { http, HttpResponse } from "msw";
+import { setupWorker } from "msw/browser";
+import { users, posts, comments, friendships, reactions } from "./data";
 
 /**
- * Configures and starts the MirageJS mock server.
- * Again, learners: Treat this as a black box! Just ensure it's created correctly.
+ * Configures and starts the MSW API server.
  * It defines API endpoints (like /api/auth/login, /api/posts, etc.)
  * and determines what data to return when the frontend requests it.
  */
-export function mockServer({ environment = 'development' } = {}) {
-  // Ensure data arrays are mutable for in-memory updates
-  let currentPosts = [...posts];
-  let currentComments = [...comments];
-  let currentReactions = [...reactions];
-  let currentFriendships = [...friendships];
-  let currentUsers = [...users]; // Added for potential registration simulation
 
-  // Helper to find user object by ID
-  const findUser = (userId) => currentUsers.find(u => u._id === userId);
+// Initialize data storage with localStorage as persistent database
+let db = {
+  users: [...users],
+  posts: [...posts],
+  comments: [...comments],
+  friendships: [...friendships],
+  reactions: [...reactions],
+};
 
-  // Helper function to populate sender/receiver objects in a friendship/request
-  const populateFriendshipUsers = (friendship) => {
-    if (!friendship) return null;
-    const sender = findUser(friendship.from); 
-    const receiver = findUser(friendship.to);
-    // Return a new object with sender/receiver fields, keeping original props
-    return {
-      ...friendship,
-      sender: sender ? { _id: sender._id, name: sender.name, avatarUrl: sender.avatarUrl } : null,
-      receiver: receiver ? { _id: receiver._id, name: receiver.name, avatarUrl: receiver.avatarUrl } : null,
-    };
-  };
-
-  return createServer({
-    environment,
-
-    routes() {
-      // Namespace for all API routes
-      this.namespace = 'api';
-      // Delay all responses by 300ms to simulate network latency
-      this.timing = 300;
-
-      // --- Authentication Routes ---
-      // LOGIN: Always logs in as 'user1' if email matches. Ignores password for simplicity.
-      this.post('/auth/login', (schema, request) => {
-        const { email /*, password */ } = JSON.parse(request.requestBody);
-        // Use currentUsers for consistency, although it's static here
-        const user = currentUsers.find(u => u.email === email); 
-
-        if (user && user._id === "user1") { // Simplify: only allow login as user1 for demo
-          console.log(`🔶 Mock Login Success: ${email}`);
-          // Simulate fetching full user data (with counts) on login
-          const userPosts = currentPosts.filter(post => post.author._id === "user1");
-          const userFriends = currentFriendships.filter(
-            fs => (fs.from === "user1" || fs.to === "user1") && fs.status === 'accepted'
-          );
-          const fullUser = {
-             ...user, 
-             postCount: userPosts.length,
-             friendCount: userFriends.length
-          };
-          return {
-            user: fullUser, // Return full user object
-            accessToken: `mock-token-for-${user._id}-${Date.now()}` // Generate a fake token
-          };
-        } else {
-          console.log(`🔶 Mock Login Failed: ${email}`);
-          return new Response(401, {}, { message: 'Invalid credentials or user not allowed in mock' });
-        }
-      });
-      
-
-      // --- User Routes ---
-      // GET CURRENT USER: Returns details for 'user1'
-      this.get('/users/me', () => {
-        console.log("🔶 Mock Get Current User (user1)");
-        const user = currentUsers.find(u => u._id === "user1");
-        if (!user) return new Response(404, {}, { message: 'User not found' });
-        return {
-          ...user, // Return a copy
-        };
-      });
-
-      // GET USER BY ID: Returns details for a specific user
-      this.get('/users/:id', (schema, request) => {
-        const id = request.params.id;
-        console.log(`🔶 Mock Get User: ${id}`);
-        const user = currentUsers.find(u => u._id === id);
-        if (!user) return new Response(404, {}, { message: 'User not found' });
-        // Add friend counts (mock)
-        user.friendCount = currentFriendships.filter(f => (f.from === id || f.to === id) && f.status === 'accepted').length;
-        user.postCount = currentPosts.filter(p => p.author._id === id).length;
-        return { user };
-      });
-
-      this.get('/users', (schema, request) => {
-        const { name = '' } = request.queryParams;
-        console.log(`🔶 Mock Get Users List: name='${name}'`);
-        let filteredUsers = name 
-          ? currentUsers.filter(u => u.name.toLowerCase().includes(name.toLowerCase()))
-          : currentUsers;
-        
-        // Add friendship status relative to user1 (mock logged-in user)
-        const currentUser = 'user1'; // Assume user1 is logged in
-        filteredUsers = filteredUsers.map(user => {
-          const rawFriendship = currentFriendships.find(f => 
-            ((f.from === currentUser && f.to === user._id) || (f.from === user._id && f.to === currentUser))
-          );
-          // Populate the friendship object using the helper
-          const populatedFriendship = populateFriendshipUsers(rawFriendship);
-          return { ...user, friendship: populatedFriendship }; // Use populated object
-        });
-
-        // Return ALL filtered users
-        return { users: filteredUsers, totalPages: 1, count: filteredUsers.length }; 
-      });
-      
-
-      // --- Post Routes ---
-      // GET FEED POSTS (for user1, includes friends posts, paginated)
-      this.get('/posts', (schema, request) => {
-        console.log(`🔶 Mock Get All Posts`);
-        const currentUser = 'user1'; // Assume user1 is logged in
-        const friends = currentFriendships
-            .filter(f => f.status === 'accepted' && (f.from === currentUser || f.to === currentUser))
-            .map(f => (f.from === currentUser ? f.to : f.from));
-        const allowedAuthors = [currentUser, ...friends];
-        
-        let filteredPosts = currentPosts.filter(p => allowedAuthors.includes(p.author._id));
-        
-        // Add comment count and reactions (mock)
-        filteredPosts = filteredPosts.map(post => ({
-          ...post,
-          commentCount: currentComments.filter(c => c.post === post._id).length,
-          reactions: currentReactions.filter(r => r.targetType === 'Post' && r.targetId === post._id)
-        }));
-        
-        filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        // Return ALL posts
-        return { posts: filteredPosts, totalPages: 1, count: filteredPosts.length };
-      });
-
-      // GET POSTS BY USER ID (paginated)
-      this.get('/posts/user/:userId', (schema, request) => {
-        const userId = request.params.userId;
-        console.log(`🔶 Mock Get Posts for User: ${userId}`);
-        let userPosts = currentPosts.filter(p => p.author._id === userId);
-        
-        // Add counts/reactions
-        userPosts = userPosts.map(post => ({
-          ...post,
-          commentCount: currentComments.filter(c => c.post === post._id).length,
-          reactions: currentReactions.filter(r => r.targetType === 'Post' && r.targetId === post._id)
-        }));
-        
-        userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        // Return ALL user posts
-        return { posts: userPosts, totalPages: 1, count: userPosts.length }; 
-      });
-
-      // CREATE POST (as user1)
-      this.post('/posts', (schema, request) => {
-        const { content, image } = JSON.parse(request.requestBody);
-        const currentUser = findUser('user1'); // Use helper
-        console.log(`🔶 Mock Create Post: User=${currentUser?._id}`);
-        
-        if (!currentUser) {
-           return new Response(401, {}, { message: 'Mock user not found' });
-        }
-        if (!content || content.trim().length === 0) {
-          return new Response(400, {}, { message: 'Post content cannot be empty' });
-        }
-        
-        const newPost = {
-          _id: `post-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          content: content.trim(),
-          image: image || null, // Handle optional image
-          author: { // Embed author details
-             _id: currentUser._id, 
-             name: currentUser.name, 
-             avatarUrl: currentUser.avatarUrl 
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          // Add default reactions and commentCount for consistency
-          reactions: [],
-          commentCount: 0,
-        };
-        
-        currentPosts.unshift(newPost); // Add to beginning of the array
-        console.log("  -> New post created:", newPost);
-        
-        // Return the newly created post object
-        return newPost; // Return the complete object
-      });
-      
-
-      // --- Comment Routes ---
-      // GET COMMENTS FOR A POST (paginated)
-      this.get('/posts/:postId/comments', (schema, request) => {
-        const postId = request.params.postId;
-        console.log(`🔶 Mock Get Comments for Post: ${postId}`);
-        let postComments = currentComments.filter(c => c.post === postId);
-        
-        // Add reactions
-        postComments = postComments.map(comment => ({
-           ...comment,
-           reactions: currentReactions.filter(r => r.targetType === 'Comment' && r.targetId === comment._id)
-        }));
-        
-        postComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Older first
-        
-        // Return ALL comments
-        return { comments: postComments, totalPages: 1, count: postComments.length }; 
-      });
-
-      // ADD COMMENT (as user1) to a specific post
-      this.post('/posts/:postId/comments', (schema, request) => {
-        const postId = request.params.postId; // Get postId from URL
-        const { content } = JSON.parse(request.requestBody); // Get content from body
-        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1 is creator
-        console.log(`🔶 Mock Create Comment: User=${currentUser._id}, Post=${postId}`);
-        
-        if (!content) {
-          return new Response(400, {}, { message: 'Comment content cannot be empty' });
-        }
-        
-        const postExists = currentPosts.some(p => p._id === postId);
-        if (!postExists) {
-          return new Response(404, {}, { message: 'Post not found' });
-        }
-        
-        const newComment = {
-          _id: `comment-${Date.now()}-${Math.random().toString(16).slice(2)}`, // More unique ID
-          content,
-          post: postId,
-          author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          reactions: [] // Start with empty reactions
-        };
-        
-        currentComments.push(newComment); // Add to the global list
-        console.log("  -> New comment added:", newComment);
-        
-        // Return the created comment object
-        return newComment; 
-      });
-
-
-      // --- Reaction Routes ---
-      // ADD/UPDATE/REMOVE REACTION (as user1)
-      this.post('/reactions', (schema, request) => {
-        const { targetType, targetId, emoji } = JSON.parse(request.requestBody);
-        const currentUser = currentUsers.find(u => u._id === 'user1'); // Assume user1
-        console.log(`🔶 Mock Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`);
-        
-        if (!['Post', 'Comment'].includes(targetType) || !targetId || !emoji) {
-           return new Response(400, {}, { message: 'Invalid reaction request' });
-        }
-        
-        // Find existing reaction by this user for this target
-        const existingIndex = currentReactions.findIndex(r => 
-            r.targetType === targetType && 
-            r.targetId === targetId && 
-            r.author._id === currentUser._id &&
-            r.emoji === emoji // Match emoji for toggling specific reaction type
-        );
-
-        if (existingIndex > -1) {
-          // User is removing their reaction (e.g., unliking)
-          currentReactions.splice(existingIndex, 1);
-          console.log(` -> Reaction removed`);
-        } else {
-          // Add new reaction
-          const newReaction = {
-             _id: `reaction-${Date.now()}`,
-             targetType,
-             targetId,
-             emoji,
-             author: { _id: currentUser._id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
-             createdAt: new Date().toISOString(),
-          };
-          currentReactions.push(newReaction);
-          console.log(` -> Reaction added`);
-        }
-        
-        // Return all reactions for the target (or could return success status)
-        const updatedReactions = currentReactions.filter(r => r.targetType === targetType && r.targetId === targetId);
-        return updatedReactions; 
-      });
-
-
-      // --- Friendship Routes (User1's perspective) ---
-      // GET FRIENDS LIST (accepted friends of user1, paginated)
-      this.get('/friends', (schema, request) => {
-        const { name = '' } = request.queryParams;
-        console.log(`🔶 Mock Get Friends (for user1): name='${name}'`);
-        const currentUser = 'user1';
-        const friendIds = currentFriendships
-            .filter(f => f.status === 'accepted' && (f.from === currentUser || f.to === currentUser))
-            .map(f => (f.from === currentUser ? f.to : f.from));
-            
-        let friendUsers = currentUsers.filter(u => friendIds.includes(u._id));
-        
-        if (name) {
-            friendUsers = friendUsers.filter(u => u.name.toLowerCase().includes(name.toLowerCase()));
-        }
-        
-        // Return ALL friends
-        return { users: friendUsers, totalPages: 1, count: friendUsers.length }; 
-      });
-
-      // GET ALL FRIEND REQUESTS (combined incoming/outgoing for user1)
-      this.get('/friends/requests', (schema, request) => {
-        console.log(`🔶 Mock Get All Requests (for user1)`);
-        const currentUser = 'user1';
-
-        // Incoming Requests Logic
-        let incomingRaw = currentFriendships.filter(
-          fs => fs.to === currentUser && fs.status === "pending"
-        );
-        // Use helper to populate sender/receiver
-        const incomingRequests = incomingRaw.map(populateFriendshipUsers);
-
-        // Outgoing Requests Logic
-        let outgoingRaw = currentFriendships.filter(
-          fs => fs.from === currentUser && fs.status === "pending"
-        );
-        // Use helper to populate sender/receiver
-        const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
-
-        // Return combined object with populated users
-        return { 
-          incoming: incomingRequests, 
-          outgoing: outgoingRequests 
-        };
-      });
-
-      // GET INCOMING FRIEND REQUESTS (requests sent TO user1)
-      // Note: This route might become redundant if the combined one is always used.
-      this.get('/friends/requests/incoming', (schema, request) => {
-        const { name = '' } = request.queryParams; 
-        console.log(`🔶 Mock Get Incoming Requests (for user1): name='${name}'`);
-
-        let incomingRequests = currentFriendships.filter(
-          fs => fs.to === "user1" && fs.status === "pending"
-        );
-        
-        // Populate requester info
-        incomingRequests = incomingRequests.map(req => ({
-          ...req,
-          requester: currentUsers.find(u => u._id === req.from)
-        }));
-        
-        if (name) {
-           incomingRequests = incomingRequests.filter(req => req.requester?.name.toLowerCase().includes(name.toLowerCase()));
-        }
-        
-        // Return ALL requests
-        return { requests: incomingRequests, totalPages: 1, count: incomingRequests.length };
-      });
-
-      // GET OUTGOING FRIEND REQUESTS (requests sent BY user1)
-      this.get('/friends/requests/outgoing', (schema, request) => {
-        const { name = '' } = request.queryParams;
-        console.log(`🔶 Mock Get Outgoing Requests (for user1): name='${name}'`);
-        let outgoingRequests = currentFriendships.filter(
-          fs => fs.from === "user1" && fs.status === "pending"
-        );
-        
-        // Populate recipient info
-        outgoingRequests = outgoingRequests.map(req => ({
-          ...req,
-          recipient: currentUsers.find(u => u._id === req.to)
-        }));
-
-         if (name) {
-           outgoingRequests = outgoingRequests.filter(req => req.recipient?.name.toLowerCase().includes(name.toLowerCase()));
-        }
-        
-        // Return ALL requests
-        return { requests: outgoingRequests, totalPages: 1, count: outgoingRequests.length };
-      });
-
-      // --- Friendship Action Routes (Simplified Success Responses) ---
-
-      // SEND FRIEND REQUEST (from user1 to targetUserId)
-      this.post('/friends/requests', (schema, request) => {
-        const { to: targetUserId } = JSON.parse(request.requestBody);
-        console.log(`🔶 Mock Send Friend Request: user1 -> ${targetUserId}`);
-        
-        if (targetUserId === "user1") { // Cannot friend yourself
-             return new Response(400, {}, { message: "You cannot send a friend request to yourself." });
-        }
-        
-        const existing = currentFriendships.find(fs => (fs.from === "user1" && fs.to === targetUserId) || (fs.to === "user1" && fs.from === targetUserId));
-        if (!existing) {
-            const newFriendshipRaw = {
-                _id: `friendship-${Date.now()}`,
-                from: "user1",
-                to: targetUserId,
-                status: "pending",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            currentFriendships.push(newFriendshipRaw);
-            // Return the populated new friendship object
-            return { friendship: populateFriendshipUsers(newFriendshipRaw) };
-        } else if (existing.status === 'pending') {
-             return new Response(400, {}, { message: "Friend request already pending." });
-        } else if (existing.status === 'accepted') {
-             return new Response(400, {}, { message: "You are already friends with this user." });
-        } else {
-             return new Response(400, {}, { message: "Cannot send friend request." });
-        }
-      });
-
-      // ACCEPT/DECLINE FRIEND REQUEST (action on request where user1 is the recipient)
-      // PUT /friends/requests/:requesterId?action=accept or action=decline
-      this.put('/friends/requests/:requesterId', (schema, request) => {
-        const { requesterId } = request.params;
-        const { action } = request.queryParams; // 'accept' or 'decline'
-        console.log(`🔶 Mock Action on Incoming Request: requester=${requesterId}, action=${action}`);
-        const requestIndex = currentFriendships.findIndex(fs => fs.from === requesterId && fs.to === "user1" && fs.status === 'pending');
-
-        if (requestIndex > -1) {
-            if (action === 'accept') {
-                currentFriendships[requestIndex].status = 'accepted';
-                currentFriendships[requestIndex].updatedAt = new Date().toISOString();
-                // Return the updated friendship record, populated
-                return { friendship: populateFriendshipUsers(currentFriendships[requestIndex]) }; 
-            } else if (action === 'decline') {
-                const declinedRequest = currentFriendships.splice(requestIndex, 1)[0]; 
-                // Return the ID or maybe the populated object that was declined/removed
-                return { declinedFriendshipId: declinedRequest._id }; 
-            } else {
-                 return new Response(400, {}, { message: "Invalid action." });
-            }
-        } else {
-            return new Response(404, {}, { message: "Incoming friend request not found or already handled." });
-        }
-      });
-
-      // CANCEL FRIEND REQUEST (action on request sent BY user1)
-      // DELETE /friends/requests/:recipientId
-      this.delete('/friends/requests/:recipientId', (schema, request) => {
-        const { recipientId } = request.params;
-        console.log(`🔶 Mock Cancel Outgoing Request: user1 -> ${recipientId}`);
-        const requestIndex = currentFriendships.findIndex(fs => fs.from === "user1" && fs.to === recipientId && fs.status === 'pending');
-
-        if (requestIndex > -1) {
-            currentFriendships.splice(requestIndex, 1); // Remove the pending request
-            return new Response(204); // No Content is appropriate for successful delete
-        } else {
-            return new Response(404, {}, { message: "Outgoing friend request not found." });
-        }
-      });
-      
-      // UNFRIEND USER
-      // DELETE /friends/:friendId
-      this.delete('/friends/:friendId', (schema, request) => {
-        const { friendId } = request.params;
-         console.log(`🔶 Mock Unfriend: user1 <-> ${friendId}`);
-        const friendshipIndex = currentFriendships.findIndex(
-            fs => ((fs.from === "user1" && fs.to === friendId) || (fs.to === "user1" && fs.from === friendId)) && fs.status === 'accepted'
-        );
-
-        if (friendshipIndex > -1) {
-            currentFriendships.splice(friendshipIndex, 1); // Remove the friendship
-            return new Response(204); // No Content
-        } else {
-            return new Response(404, {}, { message: "Friendship not found." });
-        }
-      });
-      
-      // Reset passthrough
-      this.passthrough(); // Allow unhandled requests to pass through (e.g., to Vite dev server)
-      this.passthrough(`${window.location.origin}/**`);
+// Load data from localStorage if available
+const loadFromStorage = () => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const storedData = localStorage.getItem("appData");
+      if (storedData) {
+        db = JSON.parse(storedData);
+        console.log("📊 Data loaded from storage");
+      }
+    } catch (error) {
+      console.error("❌ Error loading data from storage:", error);
+      resetToDefaultData();
     }
-  });
-}
+  }
+};
+
+// Save current data to localStorage
+const saveToStorage = () => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      localStorage.setItem("appData", JSON.stringify(db));
+    } catch (error) {
+      console.error("❌ Error saving data to storage:", error);
+    }
+  }
+};
+
+// Reset to initial data
+const resetToDefaultData = () => {
+  db = {
+    users: [...users],
+    posts: [...posts],
+    comments: [...comments],
+    friendships: [...friendships],
+    reactions: [...reactions],
+  };
+  saveToStorage();
+  console.log("🔄 Data reset to defaults");
+};
+
+// Load data when the module initializes
+loadFromStorage();
+
+// Helper to find user object by ID
+const findUser = (userId) => db.users.find((u) => u._id === userId);
+
+// Helper function to populate sender/receiver objects in a friendship/request
+const populateFriendshipUsers = (friendship) => {
+  if (!friendship) return null;
+  const sender = findUser(friendship.from);
+  const receiver = findUser(friendship.to);
+  // Return a new object with sender/receiver fields, keeping original props
+  return {
+    ...friendship,
+    sender: sender
+      ? { _id: sender._id, name: sender.name, avatarUrl: sender.avatarUrl }
+      : null,
+    receiver: receiver
+      ? {
+          _id: receiver._id,
+          name: receiver.name,
+          avatarUrl: receiver.avatarUrl,
+        }
+      : null,
+  };
+};
+
+// Define all API handlers
+const handlers = [
+  // --- Authentication Routes ---
+  http.post("/api/auth/login", async ({ request }) => {
+    const { email } = await request.json();
+    const user = db.users.find((u) => u.email === email);
+
+    if (user && user._id === "user1") {
+      console.log(`🔑 Login Success: ${email}`);
+      // Get full user data with counts
+      const userPosts = db.posts.filter((post) => post.author._id === "user1");
+      const userFriends = db.friendships.filter(
+        (fs) =>
+          (fs.from === "user1" || fs.to === "user1") && fs.status === "accepted"
+      );
+      const fullUser = {
+        ...user,
+        postCount: userPosts.length,
+        friendCount: userFriends.length,
+      };
+
+      return HttpResponse.json(
+        {
+          user: fullUser,
+          accessToken: `token-for-${user._id}-${Date.now()}`,
+        },
+        { status: 200, delay: 300 }
+      );
+    } else {
+      console.log(`❌ Login Failed: ${email}`);
+      return HttpResponse.json(
+        { message: "Invalid credentials" },
+        { status: 401, delay: 300 }
+      );
+    }
+  }),
+
+  // --- User Routes ---
+  http.get("/api/users/me", () => {
+    console.log("👤 Get Current User (user1)");
+    const user = findUser("user1");
+
+    if (!user) {
+      return HttpResponse.json(
+        { message: "User not found" },
+        { status: 404, delay: 300 }
+      );
+    }
+
+    return HttpResponse.json({ ...user }, { status: 200, delay: 300 });
+  }),
+
+  http.get("/api/users/:id", ({ params }) => {
+    const id = params.id;
+    console.log(`👤 Get User: ${id}`);
+
+    const user = findUser(id);
+    if (!user) {
+      return HttpResponse.json(
+        { message: "User not found" },
+        { status: 404, delay: 300 }
+      );
+    }
+
+    // Add friend counts
+    const userData = { ...user };
+    userData.friendCount = db.friendships.filter(
+      (f) => (f.from === id || f.to === id) && f.status === "accepted"
+    ).length;
+    userData.postCount = db.posts.filter((p) => p.author._id === id).length;
+
+    return HttpResponse.json({ user: userData }, { status: 200, delay: 300 });
+  }),
+
+  http.get("/api/users", ({ request }) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name") || "";
+
+    console.log(`👥 Get Users List: name='${name}'`);
+
+    let filteredUsers = name
+      ? db.users.filter((u) =>
+          u.name.toLowerCase().includes(name.toLowerCase())
+        )
+      : db.users;
+
+    // Add friendship status relative to user1 (logged-in user)
+    const currentUser = "user1";
+    filteredUsers = filteredUsers.map((user) => {
+      const rawFriendship = db.friendships.find(
+        (f) =>
+          (f.from === currentUser && f.to === user._id) ||
+          (f.from === user._id && f.to === currentUser)
+      );
+      // Populate the friendship object using the helper
+      const populatedFriendship = populateFriendshipUsers(rawFriendship);
+      return { ...user, friendship: populatedFriendship }; // Use populated object
+    });
+
+    return HttpResponse.json(
+      { users: filteredUsers, totalPages: 1, count: filteredUsers.length },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  // --- Post Routes ---
+  http.get("/api/posts", () => {
+    console.log(`📝 Get All Posts`);
+
+    const currentUser = "user1"; // Logged in user
+    const friends = db.friendships
+      .filter(
+        (f) =>
+          f.status === "accepted" &&
+          (f.from === currentUser || f.to === currentUser)
+      )
+      .map((f) => (f.from === currentUser ? f.to : f.from));
+    const allowedAuthors = [currentUser, ...friends];
+
+    let filteredPosts = db.posts.filter((p) =>
+      allowedAuthors.includes(p.author._id)
+    );
+
+    // Add comment count and reactions
+    filteredPosts = filteredPosts.map((post) => ({
+      ...post,
+      commentCount: db.comments.filter((c) => c.post === post._id).length,
+      reactions: db.reactions.filter(
+        (r) => r.targetType === "Post" && r.targetId === post._id
+      ),
+    }));
+
+    filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return HttpResponse.json(
+      { posts: filteredPosts, totalPages: 1, count: filteredPosts.length },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.get("/api/posts/user/:userId", ({ params }) => {
+    const userId = params.userId;
+    console.log(`📝 Get Posts for User: ${userId}`);
+
+    let userPosts = db.posts.filter((p) => p.author._id === userId);
+
+    // Add counts/reactions
+    userPosts = userPosts.map((post) => ({
+      ...post,
+      commentCount: db.comments.filter((c) => c.post === post._id).length,
+      reactions: db.reactions.filter(
+        (r) => r.targetType === "Post" && r.targetId === post._id
+      ),
+    }));
+
+    userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return HttpResponse.json(
+      { posts: userPosts, totalPages: 1, count: userPosts.length },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.post("/api/posts", async ({ request }) => {
+    const { content, image } = await request.json();
+    const currentUser = findUser("user1");
+    console.log(`📝 Create Post: User=${currentUser?._id}`);
+
+    if (!currentUser) {
+      return HttpResponse.json(
+        { message: "User not found" },
+        { status: 401, delay: 300 }
+      );
+    }
+
+    if (!content || content.trim().length === 0) {
+      return HttpResponse.json(
+        { message: "Post content cannot be empty" },
+        { status: 400, delay: 300 }
+      );
+    }
+
+    const newPost = {
+      _id: `post-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      content: content.trim(),
+      image: image || null, // Handle optional image
+      author: {
+        // Embed author details
+        _id: currentUser._id,
+        name: currentUser.name,
+        avatarUrl: currentUser.avatarUrl,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      // Add default reactions and commentCount for consistency
+      reactions: [],
+      commentCount: 0,
+    };
+
+    db.posts.unshift(newPost); // Add to beginning of the array
+    saveToStorage(); // Save changes to storage
+    console.log("  -> New post created:", newPost._id);
+
+    return HttpResponse.json(newPost, { status: 200, delay: 300 });
+  }),
+
+  // --- Comment Routes ---
+  http.get("/api/posts/:postId/comments", ({ params }) => {
+    const postId = params.postId;
+    console.log(`💬 Get Comments for Post: ${postId}`);
+
+    let postComments = db.comments.filter((c) => c.post === postId);
+
+    // Add reactions
+    postComments = postComments.map((comment) => ({
+      ...comment,
+      reactions: db.reactions.filter(
+        (r) => r.targetType === "Comment" && r.targetId === comment._id
+      ),
+    }));
+
+    postComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Older first
+
+    return HttpResponse.json(
+      { comments: postComments, totalPages: 1, count: postComments.length },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.post("/api/posts/:postId/comments", async ({ request, params }) => {
+    const postId = params.postId;
+    const { content } = await request.json();
+    const currentUser = findUser("user1");
+    console.log(`💬 Create Comment: User=${currentUser._id}, Post=${postId}`);
+
+    if (!content) {
+      return HttpResponse.json(
+        { message: "Comment content cannot be empty" },
+        { status: 400, delay: 300 }
+      );
+    }
+
+    const postExists = db.posts.some((p) => p._id === postId);
+    if (!postExists) {
+      return HttpResponse.json(
+        { message: "Post not found" },
+        { status: 404, delay: 300 }
+      );
+    }
+
+    const newComment = {
+      _id: `comment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      content,
+      post: postId,
+      author: {
+        _id: currentUser._id,
+        name: currentUser.name,
+        avatarUrl: currentUser.avatarUrl,
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      reactions: [], // Start with empty reactions
+    };
+
+    db.comments.push(newComment); // Add to the comments collection
+    saveToStorage(); // Save changes to storage
+    console.log("  -> New comment added:", newComment._id);
+
+    return HttpResponse.json(newComment, { status: 200, delay: 300 });
+  }),
+
+  // --- Reaction Routes ---
+  http.post("/api/reactions", async ({ request }) => {
+    const { targetType, targetId, emoji } = await request.json();
+    const currentUser = findUser("user1");
+    console.log(
+      `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
+    );
+
+    if (!["Post", "Comment"].includes(targetType) || !targetId || !emoji) {
+      return HttpResponse.json(
+        { message: "Invalid reaction request" },
+        { status: 400, delay: 300 }
+      );
+    }
+
+    // Find existing reaction by this user for this target
+    const existingIndex = db.reactions.findIndex(
+      (r) =>
+        r.targetType === targetType &&
+        r.targetId === targetId &&
+        r.author._id === currentUser._id &&
+        r.emoji === emoji // Match emoji for toggling specific reaction type
+    );
+
+    if (existingIndex > -1) {
+      // User is removing their reaction (e.g., unliking)
+      db.reactions.splice(existingIndex, 1);
+      saveToStorage(); // Save changes to storage
+      console.log(` -> Reaction removed`);
+    } else {
+      // Add new reaction
+      const newReaction = {
+        _id: `reaction-${Date.now()}`,
+        targetType,
+        targetId,
+        emoji,
+        author: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatarUrl: currentUser.avatarUrl,
+        },
+        createdAt: new Date().toISOString(),
+      };
+      db.reactions.push(newReaction);
+      saveToStorage(); // Save changes to storage
+      console.log(` -> Reaction added`);
+    }
+
+    // Return all reactions for the target
+    const updatedReactions = db.reactions.filter(
+      (r) => r.targetType === targetType && r.targetId === targetId
+    );
+
+    return HttpResponse.json(updatedReactions, { status: 200, delay: 300 });
+  }),
+
+  // --- Friendship Routes (User1's perspective) ---
+  http.get("/api/friends", ({ request }) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name") || "";
+    console.log(`👫 Get Friends: name='${name}'`);
+
+    const currentUser = "user1";
+    const friendIds = db.friendships
+      .filter(
+        (f) =>
+          f.status === "accepted" &&
+          (f.from === currentUser || f.to === currentUser)
+      )
+      .map((f) => (f.from === currentUser ? f.to : f.from));
+
+    let friendUsers = db.users.filter((u) => friendIds.includes(u._id));
+
+    if (name) {
+      friendUsers = friendUsers.filter((u) =>
+        u.name.toLowerCase().includes(name.toLowerCase())
+      );
+    }
+
+    return HttpResponse.json(
+      { users: friendUsers, totalPages: 1, count: friendUsers.length },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.get("/api/friends/requests", () => {
+    console.log(`🔔 Get All Requests`);
+    const currentUser = "user1";
+
+    // Incoming Requests Logic
+    let incomingRaw = db.friendships.filter(
+      (fs) => fs.to === currentUser && fs.status === "pending"
+    );
+    // Use helper to populate sender/receiver
+    const incomingRequests = incomingRaw.map(populateFriendshipUsers);
+
+    // Outgoing Requests Logic
+    let outgoingRaw = db.friendships.filter(
+      (fs) => fs.from === currentUser && fs.status === "pending"
+    );
+    // Use helper to populate sender/receiver
+    const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
+
+    return HttpResponse.json(
+      { incoming: incomingRequests, outgoing: outgoingRequests },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.get("/api/friends/requests/incoming", ({ request }) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name") || "";
+    console.log(`📩 Get Incoming Requests: name='${name}'`);
+
+    let incomingRequests = db.friendships.filter(
+      (fs) => fs.to === "user1" && fs.status === "pending"
+    );
+
+    // Populate requester info
+    incomingRequests = incomingRequests.map((req) => ({
+      ...req,
+      requester: db.users.find((u) => u._id === req.from),
+    }));
+
+    if (name) {
+      incomingRequests = incomingRequests.filter((req) =>
+        req.requester?.name.toLowerCase().includes(name.toLowerCase())
+      );
+    }
+
+    return HttpResponse.json(
+      {
+        requests: incomingRequests,
+        totalPages: 1,
+        count: incomingRequests.length,
+      },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  http.get("/api/friends/requests/outgoing", ({ request }) => {
+    const url = new URL(request.url);
+    const name = url.searchParams.get("name") || "";
+    console.log(`📤 Get Outgoing Requests: name='${name}'`);
+
+    let outgoingRequests = db.friendships.filter(
+      (fs) => fs.from === "user1" && fs.status === "pending"
+    );
+
+    // Populate recipient info
+    outgoingRequests = outgoingRequests.map((req) => ({
+      ...req,
+      recipient: db.users.find((u) => u._id === req.to),
+    }));
+
+    if (name) {
+      outgoingRequests = outgoingRequests.filter((req) =>
+        req.recipient?.name.toLowerCase().includes(name.toLowerCase())
+      );
+    }
+
+    return HttpResponse.json(
+      {
+        requests: outgoingRequests,
+        totalPages: 1,
+        count: outgoingRequests.length,
+      },
+      { status: 200, delay: 300 }
+    );
+  }),
+
+  // --- Friendship Action Routes ---
+  http.post("/api/friends/requests", async ({ request }) => {
+    const { to: targetUserId } = await request.json();
+    console.log(`✉️ Send Friend Request: user1 -> ${targetUserId}`);
+
+    if (targetUserId === "user1") {
+      // Cannot friend yourself
+      return HttpResponse.json(
+        { message: "You cannot send a friend request to yourself." },
+        { status: 400, delay: 300 }
+      );
+    }
+
+    const existing = db.friendships.find(
+      (fs) =>
+        (fs.from === "user1" && fs.to === targetUserId) ||
+        (fs.to === "user1" && fs.from === targetUserId)
+    );
+
+    if (!existing) {
+      const newFriendshipRaw = {
+        _id: `friendship-${Date.now()}`,
+        from: "user1",
+        to: targetUserId,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      db.friendships.push(newFriendshipRaw);
+      saveToStorage(); // Save changes to storage
+      // Return the populated new friendship object
+      return HttpResponse.json(
+        { friendship: populateFriendshipUsers(newFriendshipRaw) },
+        { status: 200, delay: 300 }
+      );
+    } else if (existing.status === "pending") {
+      return HttpResponse.json(
+        { message: "Friend request already pending." },
+        { status: 400, delay: 300 }
+      );
+    } else if (existing.status === "accepted") {
+      return HttpResponse.json(
+        { message: "You are already friends with this user." },
+        { status: 400, delay: 300 }
+      );
+    } else {
+      return HttpResponse.json(
+        { message: "Cannot send friend request." },
+        { status: 400, delay: 300 }
+      );
+    }
+  }),
+
+  http.put("/api/friends/requests/:requesterId", ({ params, request }) => {
+    const { requesterId } = params;
+    const url = new URL(request.url);
+    const action = url.searchParams.get("action"); // 'accept' or 'decline'
+
+    console.log(
+      `🤝 Action on Request: requester=${requesterId}, action=${action}`
+    );
+
+    const requestIndex = db.friendships.findIndex(
+      (fs) =>
+        fs.from === requesterId && fs.to === "user1" && fs.status === "pending"
+    );
+
+    if (requestIndex > -1) {
+      if (action === "accept") {
+        db.friendships[requestIndex].status = "accepted";
+        db.friendships[requestIndex].updatedAt = new Date().toISOString();
+        saveToStorage(); // Save changes to storage
+        // Return the updated friendship record, populated
+        return HttpResponse.json(
+          {
+            friendship: populateFriendshipUsers(db.friendships[requestIndex]),
+          },
+          { status: 200, delay: 300 }
+        );
+      } else if (action === "decline") {
+        const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
+        saveToStorage(); // Save changes to storage
+        // Return the ID of the declined/removed friendship
+        return HttpResponse.json(
+          { declinedFriendshipId: declinedRequest._id },
+          { status: 200, delay: 300 }
+        );
+      } else {
+        return HttpResponse.json(
+          { message: "Invalid action." },
+          { status: 400, delay: 300 }
+        );
+      }
+    } else {
+      return HttpResponse.json(
+        { message: "Incoming friend request not found or already handled." },
+        { status: 404, delay: 300 }
+      );
+    }
+  }),
+
+  http.delete("/api/friends/requests/:recipientId", ({ params }) => {
+    const { recipientId } = params;
+    console.log(`❌ Cancel Outgoing Request: user1 -> ${recipientId}`);
+
+    const requestIndex = db.friendships.findIndex(
+      (fs) =>
+        fs.from === "user1" && fs.to === recipientId && fs.status === "pending"
+    );
+
+    if (requestIndex > -1) {
+      db.friendships.splice(requestIndex, 1); // Remove the pending request
+      saveToStorage(); // Save changes to storage
+      return new HttpResponse(null, { status: 204, delay: 300 }); // No Content
+    } else {
+      return HttpResponse.json(
+        { message: "Outgoing friend request not found." },
+        { status: 404, delay: 300 }
+      );
+    }
+  }),
+
+  http.delete("/api/friends/:friendId", ({ params }) => {
+    const { friendId } = params;
+    console.log(`👋 Unfriend: user1 <-> ${friendId}`);
+
+    const friendshipIndex = db.friendships.findIndex(
+      (fs) =>
+        ((fs.from === "user1" && fs.to === friendId) ||
+          (fs.to === "user1" && fs.from === friendId)) &&
+        fs.status === "accepted"
+    );
+
+    if (friendshipIndex > -1) {
+      db.friendships.splice(friendshipIndex, 1); // Remove the friendship
+      saveToStorage(); // Save changes to storage
+      return new HttpResponse(null, { status: 204, delay: 300 }); // No Content
+    } else {
+      return HttpResponse.json(
+        { message: "Friendship not found." },
+        { status: 404, delay: 300 }
+      );
+    }
+  }),
+
+  // Reset data route (for development)
+  http.post("/api/reset", () => {
+    resetToDefaultData();
+    return HttpResponse.json(
+      { message: "Data reset to defaults" },
+      { status: 200, delay: 300 }
+    );
+  }),
+];
+
+// Create and return the MSW browser server
+const browserServer = setupWorker(...handlers);
+
+export { browserServer };

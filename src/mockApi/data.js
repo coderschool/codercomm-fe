@@ -1,10 +1,12 @@
 // src/mockApi/data.js
 
 // --- Helper to generate dates relative to now ---
-const daysAgo = (days) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-const hoursAgo = (hours) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60 * 1000).toISOString();
-
+const daysAgo = (days) =>
+  new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+const hoursAgo = (hours) =>
+  new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+const minutesAgo = (minutes) =>
+  new Date(Date.now() - minutes * 60 * 1000).toISOString();
 
 // --- Sample Users ---
 export const users = [
@@ -26,7 +28,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(365) // 1 year ago
+    createdAt: daysAgo(365), // 1 year ago
   },
   {
     _id: "user2",
@@ -44,7 +46,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(340)
+    createdAt: daysAgo(340),
   },
   {
     _id: "user3",
@@ -62,7 +64,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(300)
+    createdAt: daysAgo(300),
   },
   {
     _id: "user4",
@@ -80,7 +82,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(270)
+    createdAt: daysAgo(270),
   },
   {
     _id: "user5",
@@ -89,7 +91,7 @@ export const users = [
     email: "cloudguru@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud",
     coverUrl: "https://picsum.photos/id/1039/800/200",
-    aboutMe: "If it works on your machine, I\'ll make it work in production",
+    aboutMe: "If it works on your machine, I'll make it work in production",
     city: "Can Tho",
     country: "Vietnam",
     company: "Cloud Crusaders",
@@ -98,8 +100,8 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(240)
-  }
+    createdAt: daysAgo(240),
+  },
 ];
 
 // --- Sample Posts ---
@@ -107,76 +109,83 @@ export const users = [
 export const posts = [
   {
     _id: "post1",
-    content: "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
+    content:
+      "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
     image: "https://picsum.photos/id/237/800/400",
-    author: { // Embedded author info for convenience
+    author: {
+      // Embedded author info for convenience
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
     createdAt: daysAgo(3),
-    updatedAt: daysAgo(3)
+    updatedAt: daysAgo(3),
   },
   {
     _id: "post2",
-    content: "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
+    content:
+      "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
     image: "https://picsum.photos/id/292/800/400",
     author: {
       _id: "user2", // Friend of user1
       name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+      avatarUrl: "https://i.pravatar.cc/150?u=tran",
     },
     createdAt: daysAgo(4),
-    updatedAt: daysAgo(4)
+    updatedAt: daysAgo(4),
   },
   {
     _id: "post3",
-    content: "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
+    content:
+      "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
     image: "https://picsum.photos/id/42/800/400",
     author: {
       _id: "user3", // Friend of user1
       name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
     },
     createdAt: daysAgo(7),
-    updatedAt: daysAgo(7)
+    updatedAt: daysAgo(7),
   },
   {
     _id: "post4",
-    content: "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can\'t imagine coding without them! 🥢",
+    content:
+      "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can\\'t imagine coding without them! 🥢",
     image: "https://picsum.photos/id/24/800/400",
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
     createdAt: daysAgo(14),
-    updatedAt: daysAgo(14)
+    updatedAt: daysAgo(14),
   },
   {
     _id: "post5",
-    content: "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother\'s Nokia! 📱",
+    content:
+      "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
     image: "https://picsum.photos/id/28/800/400",
     author: {
       _id: "user2", // Friend of user1
       name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+      avatarUrl: "https://i.pravatar.cc/150?u=tran",
     },
     createdAt: daysAgo(21),
-    updatedAt: daysAgo(21)
+    updatedAt: daysAgo(21),
   },
   {
     _id: "post6",
-    content: "Optimized our database queries and now the app loads faster than you can say \'một, hai, ba, yo!\' ⚡",
+    content:
+      "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
     image: "https://picsum.photos/id/4/800/400",
     author: {
       _id: "user3", // Friend of user1
       name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
     },
     createdAt: daysAgo(30),
-    updatedAt: daysAgo(30)
-  }
+    updatedAt: daysAgo(30),
+  },
 ];
 
 // --- Sample Comments ---
@@ -186,13 +195,14 @@ export const comments = [
     _id: "comment1",
     content: "Siêu đỉnh! Can you share your code on GitHub?",
     post: "post1", // Reference to post ID
-    author: { // Embedded author info
+    author: {
+      // Embedded author info
       _id: "user2",
       name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+      avatarUrl: "https://i.pravatar.cc/150?u=tran",
     },
     createdAt: hoursAgo(70), // Approx 3 days ago + 2 hours
-    updatedAt: hoursAgo(70)
+    updatedAt: hoursAgo(70),
   },
   {
     _id: "comment2",
@@ -201,59 +211,63 @@ export const comments = [
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
     },
     createdAt: hoursAgo(68), // Approx 3 days ago + 4 hours
-    updatedAt: hoursAgo(68)
+    updatedAt: hoursAgo(68),
   },
   {
     _id: "comment3",
-    content: "The UI is cleaner than my browser history after a job interview! 😂",
+    content:
+      "The UI is cleaner than my browser history after a job interview! 😂",
     post: "post2",
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
     createdAt: hoursAgo(93), // Approx 4 days ago + 3 hours
-    updatedAt: hoursAgo(93)
+    updatedAt: hoursAgo(93),
   },
   {
     _id: "comment4",
-    content: "useEffect(() => { setPho(\'delicious\') }, [hunger]); Best hook ever!", // Updated comment
+    content:
+      "useEffect(() => { setPho('delicious') }, [hunger]); Best hook ever!", // Updated comment
     post: "post4",
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
     },
     createdAt: hoursAgo(331), // Approx 14 days ago + 5 hours
-    updatedAt: hoursAgo(331)
+    updatedAt: hoursAgo(331),
   },
   {
     _id: "comment5",
-    content: "Are you using Tailwind for this? The responsive design is on point! 👌",
+    content:
+      "Are you using Tailwind for this? The responsive design is on point! 👌",
     post: "post5",
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
     createdAt: hoursAgo(500), // Approx 21 days ago + 4 hours
-    updatedAt: hoursAgo(500)
+    updatedAt: hoursAgo(500),
   },
   {
     _id: "comment6",
-    content: "Share your database optimization tricks! I need to speed up my queries too.",
+    content:
+      "Share your database optimization tricks! I need to speed up my queries too.",
     post: "post6",
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
     createdAt: hoursAgo(716), // Approx 30 days ago + 4 hours
-    updatedAt: hoursAgo(716)
-  }
+    updatedAt: hoursAgo(716),
+  },
 ];
 
 // --- Sample Reactions ---
@@ -261,14 +275,15 @@ export const reactions = [
   {
     _id: "reaction1",
     targetType: "Post", // Can be "Post" or "Comment"
-    targetId: "post1",  // ID of the post or comment
-    emoji: "like",      // Type of reaction (like, love, etc.)
-    author: { // Embedded author info
+    targetId: "post1", // ID of the post or comment
+    emoji: "like", // Type of reaction (like, love, etc.)
+    author: {
+      // Embedded author info
       _id: "user2",
       name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+      avatarUrl: "https://i.pravatar.cc/150?u=tran",
     },
-    createdAt: hoursAgo(71) // Approx 3 days ago + 1 hour
+    createdAt: hoursAgo(71), // Approx 3 days ago + 1 hour
   },
   {
     _id: "reaction2",
@@ -278,9 +293,9 @@ export const reactions = [
     author: {
       _id: "user3",
       name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh"
+      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
     },
-    createdAt: hoursAgo(69) // Approx 3 days ago + 3 hours
+    createdAt: hoursAgo(69), // Approx 3 days ago + 3 hours
   },
   {
     _id: "reaction3",
@@ -290,9 +305,9 @@ export const reactions = [
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
-    createdAt: hoursAgo(94) // Approx 4 days ago + 2 hours
+    createdAt: hoursAgo(94), // Approx 4 days ago + 2 hours
   },
   {
     _id: "reaction4",
@@ -302,9 +317,9 @@ export const reactions = [
     author: {
       _id: "user1",
       name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen"
+      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
     },
-    createdAt: hoursAgo(69.5) // Approx 3 days ago + 2.5 hours
+    createdAt: hoursAgo(69.5), // Approx 3 days ago + 2.5 hours
   },
   {
     _id: "reaction5",
@@ -314,46 +329,50 @@ export const reactions = [
     author: {
       _id: "user2",
       name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran"
+      avatarUrl: "https://i.pravatar.cc/150?u=tran",
     },
-    createdAt: hoursAgo(92.5) // Approx 4 days ago + 3.5 hours
-  }
+    createdAt: hoursAgo(92.5), // Approx 4 days ago + 3.5 hours
+  },
 ];
 
 // --- Sample Friendships ---
 // Focus on user1's perspective
 export const friendships = [
-  { // User1 and User2 are friends
+  {
+    // User1 and User2 are friends
     _id: "friendship1",
     from: "user1", // User who initiated (or could be the other way)
     to: "user2",
     status: "accepted", // 'pending', 'accepted', 'declined', 'blocked'
     createdAt: daysAgo(90),
-    updatedAt: daysAgo(89) // Accepted 1 day later
+    updatedAt: daysAgo(89), // Accepted 1 day later
   },
-  { // User1 and User3 are friends
+  {
+    // User1 and User3 are friends
     _id: "friendship2",
     from: "user3", // User3 sent request to User1
     to: "user1",
     status: "accepted",
     createdAt: daysAgo(85),
-    updatedAt: daysAgo(84) // Accepted 1 day later
+    updatedAt: daysAgo(84), // Accepted 1 day later
   },
-  { // User1 sent a request to User5 (pending)
+  {
+    // User1 sent a request to User5 (pending)
     _id: "friendship3",
     from: "user1",
     to: "user5",
     status: "pending",
     createdAt: daysAgo(10),
-    updatedAt: daysAgo(10)
+    updatedAt: daysAgo(10),
   },
-  { // User4 sent a request to User1 (pending)
+  {
+    // User4 sent a request to User1 (pending)
     _id: "friendship4",
     from: "user4",
     to: "user1",
     status: "pending",
     createdAt: daysAgo(15),
-    updatedAt: daysAgo(15)
+    updatedAt: daysAgo(15),
   },
   // --- Adding more pending requests for testing various scenarios ---
   {
@@ -362,7 +381,7 @@ export const friendships = [
     to: "user1",
     status: "pending",
     createdAt: hoursAgo(2),
-    updatedAt: hoursAgo(2)
+    updatedAt: hoursAgo(2),
   },
   {
     _id: "friendship6",
@@ -370,7 +389,7 @@ export const friendships = [
     to: "user1",
     status: "pending",
     createdAt: daysAgo(2),
-    updatedAt: daysAgo(2)
+    updatedAt: daysAgo(2),
   },
   {
     _id: "friendship7",
@@ -378,7 +397,7 @@ export const friendships = [
     to: "user4",
     status: "pending",
     createdAt: daysAgo(5),
-    updatedAt: daysAgo(5)
+    updatedAt: daysAgo(5),
   },
   {
     _id: "friendship8",
@@ -386,6 +405,6 @@ export const friendships = [
     to: "user1",
     status: "pending",
     createdAt: daysAgo(30), // 1 month ago
-    updatedAt: daysAgo(30)
-  }
+    updatedAt: daysAgo(30),
+  },
 ];

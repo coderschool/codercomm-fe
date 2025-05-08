@@ -1,8 +1,15 @@
 import React, { useState } from "react";
-import PropTypes from 'prop-types';
-import { useAppStore } from "@/lib/store";
+import PropTypes from "prop-types";
+import { useAppStore } from "@/features/use-app-store";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserPlus, UserMinus, UserCheck, UserX, XCircle } from "lucide-react";
+import {
+  Loader2,
+  UserPlus,
+  UserMinus,
+  UserCheck,
+  UserX,
+  XCircle,
+} from "lucide-react";
 
 /**
  * Renders the appropriate friend action button based on the relationship context.
@@ -19,13 +26,7 @@ function ActionButton({ targetUserId, requestId, friendshipId, context }) {
     rejectFriendRequest,
     cancelFriendRequest,
     removeFriend,
-  } = useAppStore((state) => ({
-    sendFriendRequest: state.sendFriendRequest,
-    acceptFriendRequest: state.acceptFriendRequest,
-    rejectFriendRequest: state.rejectFriendRequest,
-    cancelFriendRequest: state.cancelFriendRequest,
-    removeFriend: state.removeFriend,
-  }));
+  } = useAppStore();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -80,53 +81,82 @@ function ActionButton({ targetUserId, requestId, friendshipId, context }) {
     }
   };
 
-  if (context === 'search') {
+  if (context === "search") {
     return (
       <Button size="sm" onClick={handleSendRequest} disabled={isLoading}>
-        {isLoading ?
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
-            <UserPlus className="mr-2 h-4 w-4" />}
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <UserPlus className="mr-2 h-4 w-4" />
+        )}
         Add Friend
       </Button>
     );
   }
 
-  if (context === 'friend') {
+  if (context === "friend") {
     return (
-      <Button size="sm" variant="outline" onClick={handleRemoveFriend} disabled={isLoading}>
-         {isLoading ?
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
-            <UserMinus className="mr-2 h-4 w-4" />}
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleRemoveFriend}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <UserMinus className="mr-2 h-4 w-4" />
+        )}
         Unfriend
       </Button>
     );
   }
 
-  if (context === 'incoming_request') {
+  if (context === "incoming_request") {
     return (
       <div className="flex flex-col sm:flex-row gap-2">
-        <Button size="sm" onClick={handleAcceptRequest} disabled={isLoading || !requestId}>
-          {isLoading ?
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
-              <UserCheck className="mr-2 h-4 w-4" />}
+        <Button
+          size="sm"
+          onClick={handleAcceptRequest}
+          disabled={isLoading || !requestId}
+        >
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <UserCheck className="mr-2 h-4 w-4" />
+          )}
           Accept
         </Button>
-        <Button size="sm" variant="outline" onClick={handleRejectRequest} disabled={isLoading || !requestId}>
-          {isLoading ?
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
-              <UserX className="mr-2 h-4 w-4" />}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleRejectRequest}
+          disabled={isLoading || !requestId}
+        >
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <UserX className="mr-2 h-4 w-4" />
+          )}
           Decline
         </Button>
       </div>
     );
   }
 
-  if (context === 'outgoing_request') {
+  if (context === "outgoing_request") {
     return (
-      <Button size="sm" variant="outline" onClick={handleCancelRequest} disabled={isLoading || !requestId}>
-         {isLoading ?
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
-            <XCircle className="mr-2 h-4 w-4" />}
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleCancelRequest}
+        disabled={isLoading || !requestId}
+      >
+        {isLoading ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <XCircle className="mr-2 h-4 w-4" />
+        )}
         Cancel Request
       </Button>
     );
@@ -139,7 +169,12 @@ ActionButton.propTypes = {
   targetUserId: PropTypes.string.isRequired,
   requestId: PropTypes.string,
   friendshipId: PropTypes.string,
-  context: PropTypes.oneOf(['search', 'friend', 'incoming_request', 'outgoing_request']).isRequired,
+  context: PropTypes.oneOf([
+    "search",
+    "friend",
+    "incoming_request",
+    "outgoing_request",
+  ]).isRequired,
 };
 
 export default ActionButton;
