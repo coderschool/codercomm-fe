@@ -30,7 +30,7 @@ function Router() {
         {/* Core authenticated routes */}
         <Route index element={<HomePage />} />
         <Route path="account" element={<AccountPage />} />
-        <Route path="user/:userId" element={<UserProfilePage />} />
+        <Route path="users/:userId" element={<UserProfilePage />} />
         <Route path="friends" element={<FriendsPage />} />
         <Route path="requests" element={<FriendRequestsPage />} />
       </Route>

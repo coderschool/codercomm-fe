@@ -1,0 +1,30 @@
+import { MOCK_JWT_SECRET } from "@/lib/config";
+import { jwtVerify } from "jose";
+import { HttpResponse } from "msw";
+
+export const generateApiResponse = ({
+  status,
+  data,
+  errors,
+  message,
+  success,
+}) => {
+  const response = {};
+
+  if (success) response.success = success;
+  if (data) response.data = data;
+  if (errors) response.errors = errors;
+  if (message) response.message = message;
+  return HttpResponse.json(response, { status });
+};
+
+export const extractJWT = async (accessToken) => {
+  if (!accessToken) return null;
+
+  try {
+    const { payload } = await jwtVerify(accessToken, MOCK_JWT_SECRET);
+    return payload;
+  } catch {
+    return null;
+  }
+};

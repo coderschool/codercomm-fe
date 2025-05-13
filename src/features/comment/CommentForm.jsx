@@ -5,7 +5,6 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
 // Hooks & Components
-import { useAppStore } from "@/features/use-app-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,8 @@ import { Send, Loader2 } from "lucide-react";
 
 // Utilities
 import { getInitials } from "@/lib/getInitials";
+import { useAuth } from "../auth/authSlice";
+import { useAppStore } from "../use-app-store";
 
 /**
  * Yup validation schema for the comment form.
@@ -37,7 +38,8 @@ const commentSchema = yup
  */
 function CommentForm({ postId }) {
   // Select user and action from store
-  const { currentUser, createComment } = useAppStore();
+  const { currentUser } = useAuth();
+  const { createComment } = useAppStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({

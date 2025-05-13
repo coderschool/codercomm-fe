@@ -1,6 +1,4 @@
 import React from "react";
-// import useAuth from "@/hooks/useAuth"; // Removed
-import { useAppStore } from "@/features/use-app-store"; // Added
 import {
   Card,
   CardHeader,
@@ -11,13 +9,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/getInitials";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/features/auth/authSlice";
 
 /**
  * Account Settings Page (Read-Only)
  * Displays basic user info. Editing functionality is planned for the future.
  */
 function AccountPage() {
-  const { currentUser } = useAppStore();
+  const { currentUser } = useAuth();
 
   // Display loading state if currentUser isn't available yet
   if (!currentUser) {

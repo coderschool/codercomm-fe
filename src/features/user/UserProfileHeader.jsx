@@ -1,7 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types"; // Import PropTypes
 import { Link, useNavigate } from "react-router"; // Added Link
-import { useAppStore } from "@/features/use-app-store";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"; // Import DropdownMenu components
+import { useAuth } from "../auth/authSlice";
 
 /**
  * Displays profile header for a given user.
@@ -29,7 +29,7 @@ import {
  */
 function UserProfileHeader({ user }) {
   const navigate = useNavigate();
-  const { currentUser } = useAppStore();
+  const { currentUser } = useAuth();
 
   if (!user || !currentUser) {
     // Should ideally show a skeleton loader here

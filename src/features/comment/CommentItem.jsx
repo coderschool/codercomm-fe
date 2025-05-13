@@ -12,14 +12,15 @@ import { cn } from "@/lib/mergeClassName";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
+import { useAuth } from "../auth/authSlice";
 
 /**
  * Displays a single comment item with author, content, timestamp, and actions.
  */
 function CommentItem({ comment }) {
   // Select user and actions from store
-  const { currentUser, reactToComment } = useAppStore();
-
+  const { currentUser } = useAuth();
+  const { reactToComment } = useAppStore();
   const [isReacting, setIsReacting] = React.useState(false);
 
   // Handler for liking/unliking a comment

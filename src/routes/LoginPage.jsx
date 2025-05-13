@@ -23,9 +23,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
-import { useAppStore } from "@/features/use-app-store";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/features/auth/authSlice";
 
 /**
  * LoginPage - User login page component
@@ -47,8 +47,8 @@ const defaultValues = {
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const location = useLocation();
-  const { login } = useAppStore();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({

@@ -1,13 +1,11 @@
 import axios from "axios";
-import { API_URL } from "./envConfig";
+import { API_URL } from "./config";
 
 // Determine the base URL for API requests.
 // If VITE_API_URL is set in your environment (e.g., in a .env file),
-// use that. Otherwise, assume we're using the MirageJS mock server,
+// use that. Otherwise, assume we're using the MSW mock server
 // which requires the '/api' prefix based on its configuration in server.js.
 const baseURL = API_URL || "/api";
-
-console.log(`✅ API Base URL: ${baseURL}`); // Log the base URL being used
 
 // Create Axios Instance
 const apiService = axios.create({ baseURL });
@@ -50,13 +48,11 @@ apiService.interceptors.request.use(
 apiService.interceptors.response.use(
   (response) => {
     // Optional: Log successful response details
-    // console.log("✅ Response Received:", {
-    //   status: response.status,
-    //   url: response.config.url,
-    //   data: response.data, // The actual data from the server
-    // });
+    // console.log("✅ Response Received:", response);
+    // console.log("✅ Response Data:", response.data);
+
     // For successful responses (2xx status code), just return the data part
-    return response.data; // Return response.data directly
+    return response.data;
   },
   (error) => {
     // Handle errors (non-2xx status codes)
@@ -69,6 +65,10 @@ apiService.interceptors.response.use(
       error.response?.data?.errors?.message || // Check nested structure
       error.message || // Use the generic Axios error message
       "An unexpected API error occurred"; // Fallback message
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem("accessToken");
+    }
 
     // Reject the promise with a standardized error object including the message
     // Components catching this can rely on error.message

@@ -1,76 +1,29 @@
 import React, { useEffect } from "react";
 import { useParams } from "react-router";
-import { useAppStore } from "@/features/use-app-store";
-import UserProfileHeader from "@/features/user/UserProfileHeader"; // Use the updated header
 import PostList from "@/features/post/PostList"; // Use the updated list
-import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+
+import { usePost } from "@/features/post/postSlice";
 
 function UserProfilePage() {
   const { userId } = useParams(); // Get userId from route params
-
-  // Select state and actions from Zustand store
-  const { userProfiles, fetchUserProfile } = useAppStore();
+  const { fetchUserPosts } = usePost();
 
   // Fetch profile when userId changes
   useEffect(() => {
-    if (userId) {
-      fetchUserProfile(userId);
-    }
-  }, [userId, fetchUserProfile]);
-
-  const profile = userProfiles[userId]?.data;
-  const isLoadingProfile = userProfiles[userId]?.isLoading ?? true; // Assume loading initially if no state
-  const profileError = userProfiles[userId]?.error;
-
-  // --- Render Logic ---
-
-  if (isLoadingProfile) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (profileError) {
-    return (
-      <Alert variant="destructive" className="mt-4 max-w-xl mx-auto">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Profile</AlertTitle>
-        <AlertDescription>
-          {profileError ||
-            "Could not load user profile. Please try again later."}
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  // Handle case where loading finished but no profile data was found (404)
-  if (!profile) {
-    return (
-      <Alert variant="secondary" className="mt-4 max-w-xl mx-auto">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>User Not Found</AlertTitle>
-        <AlertDescription>
-          The user profile you are looking for does not exist.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+    fetchUserPosts(userId);
+  }, [userId, fetchUserPosts]);
 
   // If profile loaded successfully, render header and post list
   return (
     <div className="space-y-6">
       {/* Pass the fetched profile data to the header */}
-      <UserProfileHeader user={profile} />
+      {/* <UserProfileHeader user={profile} /> */}
 
       {/* Add a divider or heading for posts */}
       <div className="container mx-auto px-4">
         {/* Center the PostList similar to the Feed */}
         <div className="max-w-xl mx-auto">
-          <PostList userId={userId} />
+          <PostList />
         </div>
       </div>
     </div>

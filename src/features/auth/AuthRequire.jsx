@@ -1,9 +1,8 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router";
-import PropTypes from "prop-types";
-// import useAuth from "@/hooks/useAuth"; // Removed
-import { useAppStore } from "@/features/use-app-store"; // Added
+
 import LoadingCircle from "@/components/LoadingCircle";
+import { useAuth } from "./authSlice";
 /**
  * Route Guard: AuthRequire
  * - Renders children (e.g., Home page) only if the user IS authenticated.
@@ -12,11 +11,11 @@ import LoadingCircle from "@/components/LoadingCircle";
  */
 function AuthRequire({ children }) {
   // Get auth state from Zustand store
-  const { isLoadingAuth, currentUser } = useAppStore();
+  const { isLoading, currentUser } = useAuth();
   const location = useLocation(); // Get current location object
 
   // Show loading screen while the initial auth check is in progress
-  if (isLoadingAuth) {
+  if (isLoading) {
     return <LoadingCircle />;
   }
 
@@ -32,9 +31,5 @@ function AuthRequire({ children }) {
   // If loading is finished and authenticated, render the intended protected page
   return children;
 }
-
-AuthRequire.propTypes = {
-  children: PropTypes.node.isRequired,
-};
 
 export default AuthRequire;

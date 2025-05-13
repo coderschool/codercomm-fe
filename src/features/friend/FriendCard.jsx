@@ -3,8 +3,6 @@ import PropTypes from "prop-types";
 import { Link } from "react-router";
 import { formatDistanceToNow } from "date-fns";
 
-// import useAuth from "@/hooks/useAuth"; // Removed
-import { useAppStore } from "@/features/use-app-store"; // Added
 import ActionButton from "./ActionButton";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,13 +10,14 @@ import { Clock } from "lucide-react";
 
 import { getInitials } from "@/lib/getInitials";
 import { cn } from "@/lib/mergeClassName";
+import { useAuth } from "../auth/authSlice";
 
 /**
  * Displays a user card for a friend or a friend request.
  * Determines context and user info based on provided 'friendship' or 'request' prop.
  */
 function FriendCard({ friendship, request }) {
-  const { currentUser } = useAppStore();
+  const { currentUser } = useAuth();
 
   if (!currentUser) return null;
 

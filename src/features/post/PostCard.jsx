@@ -4,12 +4,7 @@ import { Link as RouterLink } from "react-router";
 import { formatTimeAgo } from "@/lib/formatTime";
 import { MoreVertical } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +28,7 @@ function PostCard({ post }) {
         </Avatar>
         <div className="flex-1">
           <RouterLink
-            to={`/user/${post.author._id}`}
+            to={`/users/${post.author._id}`}
             className="font-semibold text-foreground hover:underline"
           >
             {post?.author?.name}
@@ -65,7 +60,7 @@ function PostCard({ post }) {
 
         <Separator />
 
-        <CommentList postId={post._id} />
+        {/* <CommentList postId={post._id} /> */}
         <CommentForm postId={post._id} />
       </CardContent>
     </Card>

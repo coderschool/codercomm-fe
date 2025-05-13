@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
-// Hooks & Components
-import { useAppStore } from "@/features/use-app-store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -20,12 +18,10 @@ import { Image, Send, Loader2 } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-// Utilities
 import { getInitials } from "@/lib/getInitials";
+import { useAuth } from "../auth/authSlice";
+import { usePost } from "./postSlice";
 
-/**
- * Yup validation schema for the new post form.
- */
 const postSchema = yup
   .object({
     // Require content, allow optional image later
@@ -34,18 +30,10 @@ const postSchema = yup
   })
   .required();
 
-/**
- * Form component for creating a new post.
- * Uses React Hook Form, Yup for validation, and useAppStore for submission.
- */
 function PostForm() {
-  const { user } = useAppStore();
+  const { currentUser } = useAuth();
+  const { createPost } = usePost();
 
-  // Get the createPost action from the Zustand store
-  const { createPost } = useAppStore();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Initialize React Hook Form
   const form = useForm({
     resolver: yupResolver(postSchema),
     defaultValues: {
@@ -54,50 +42,53 @@ function PostForm() {
     },
   });
 
-  // Form submission handler
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = form;
+
   const onSubmit = async (data) => {
     console.log("Submitting post:", data);
-    setIsSubmitting(true);
     try {
-      // Call the Zustand store action
       await createPost(data);
-      // Reset the form only after successful submission
       form.reset();
     } catch (error) {
-      // Error is logged and toasted within the store action
       console.error("Error submitting post form:", error);
-      // No need to toast again here unless more specific message needed
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  // Get user's first name for placeholder
-  const firstName = user?.name?.split(" ")[0] || "User";
+  const firstName = currentUser?.name?.split(" ")[0] || "User";
 
   return (
     <Card className="mb-6 shadow-sm">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="pt-6">
             <div className="flex gap-3">
-              {user && (
-                <Link to={`/user/${user._id}`} className="flex-shrink-0 mt-1">
+              {currentUser && (
+                <Link
+                  to={`/user/${currentUser._id}`}
+                  className="flex-shrink-0 mt-1"
+                >
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={user.avatarUrl || ""} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    <AvatarImage
+                      src={currentUser.avatarUrl || ""}
+                      alt={currentUser.name}
+                    />
+                    <AvatarFallback>
+                      {getInitials(currentUser.name)}
+                    </AvatarFallback>
                   </Avatar>
                 </Link>
               )}
 
               <div className="flex-1">
-                {/* Content Textarea Field */}
                 <FormField
-                  control={form.control}
+                  control={control}
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      {/* <FormLabel className="sr-only">Post Content</FormLabel> */}
                       <FormControl>
                         <Textarea
                           placeholder={`What's on your mind, ${firstName}?`}
@@ -114,7 +105,6 @@ function PostForm() {
           </CardContent>
 
           <CardFooter className="flex justify-between border-t px-4 py-3">
-            {/* Add Image Button (Placeholder) */}
             <Button
               type="button"
               variant="ghost"
@@ -126,7 +116,6 @@ function PostForm() {
               <span className="text-xs">Add Image</span>
             </Button>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               disabled={isSubmitting}

@@ -1,12 +1,25 @@
 // src/mockApi/server.js
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { setupWorker } from "msw/browser";
-import { users, posts, comments, friendships, reactions } from "./data";
+import {
+  users,
+  posts,
+  comments,
+  friendships,
+  reactions,
+  USER_IDS,
+} from "./data";
+import { SignJWT } from "jose";
+import { MOCK_JWT_SECRET } from "@/lib/config";
+import { v4 as uuidv4 } from "uuid";
+import { extractJWT, generateApiResponse } from "./utils";
+import { withAuth } from "./middleware";
 
 /**
  * Configures and starts the MSW API server.
  * It defines API endpoints (like /api/auth/login, /api/posts, etc.)
  * and determines what data to return when the frontend requests it.
+ * Feel free to uncomment console.log statements to see the inner workings of the server.
  */
 
 // Initialize data storage with localStorage as persistent database
@@ -18,48 +31,16 @@ let db = {
   reactions: [...reactions],
 };
 
-// Load data from localStorage if available
-const loadFromStorage = () => {
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      const storedData = localStorage.getItem("appData");
-      if (storedData) {
-        db = JSON.parse(storedData);
-        console.log("📊 Data loaded from storage");
-      }
-    } catch (error) {
-      console.error("❌ Error loading data from storage:", error);
-      resetToDefaultData();
-    }
-  }
-};
-
 // Save current data to localStorage
 const saveToStorage = () => {
   if (typeof window !== "undefined" && window.localStorage) {
     try {
-      localStorage.setItem("appData", JSON.stringify(db));
+      localStorage.setItem("codercomm-server-data", JSON.stringify(db));
     } catch (error) {
       console.error("❌ Error saving data to storage:", error);
     }
   }
 };
-
-// Reset to initial data
-const resetToDefaultData = () => {
-  db = {
-    users: [...users],
-    posts: [...posts],
-    comments: [...comments],
-    friendships: [...friendships],
-    reactions: [...reactions],
-  };
-  saveToStorage();
-  console.log("🔄 Data reset to defaults");
-};
-
-// Load data when the module initializes
-loadFromStorage();
 
 // Helper to find user object by ID
 const findUser = (userId) => db.users.find((u) => u._id === userId);
@@ -87,602 +68,863 @@ const populateFriendshipUsers = (friendship) => {
 
 // Define all API handlers
 const handlers = [
+  // --- Global delay to HTTP response ---
+  http.all("*", async () => {
+    await delay(250); // 250ms
+  }),
   // --- Authentication Routes ---
   http.post("/api/auth/login", async ({ request }) => {
-    const { email } = await request.json();
-    const user = db.users.find((u) => u.email === email);
+    try {
+      const { email, password } = await request.json();
+      // console.log(`🔑 Login Attempt: ${email} with password: ${password}`);
+      const user = db.users.find((u) => u.email === email);
 
-    if (user && user._id === "user1") {
-      console.log(`🔑 Login Success: ${email}`);
+      if (!user) {
+        return generateApiResponse({
+          success: false,
+          errors: ["User not found"],
+          message: "User not found",
+          status: 404,
+        });
+      }
+
+      if (user.password !== password) {
+        return generateApiResponse({
+          success: false,
+          errors: ["Invalid credentials"],
+          message: "Invalid credentials",
+          status: 401,
+        });
+      }
+
+      // console.log(`🔑 Login Success: ${email}`);
+
       // Get full user data with counts
-      const userPosts = db.posts.filter((post) => post.author._id === "user1");
+      const userPosts = db.posts.filter((post) => post.author._id === user._id);
       const userFriends = db.friendships.filter(
         (fs) =>
-          (fs.from === "user1" || fs.to === "user1") && fs.status === "accepted"
+          (fs.from === user._id || fs.to === user._id) &&
+          fs.status === "accepted"
       );
+
+      const { password: userPassword, ...userData } = user; // Remove password from user data
       const fullUser = {
-        ...user,
+        ...userData,
         postCount: userPosts.length,
         friendCount: userFriends.length,
       };
 
-      return HttpResponse.json(
-        {
+      const accessToken = await new SignJWT({ _id: user._id })
+        .setProtectedHeader({ alg: "HS256" })
+        .setIssuedAt(new Date())
+        .setExpirationTime("1d")
+        .sign(MOCK_JWT_SECRET);
+
+      return generateApiResponse({
+        success: true,
+        data: {
           user: fullUser,
-          accessToken: `token-for-${user._id}-${Date.now()}`,
+          accessToken,
         },
-        { status: 200, delay: 300 }
-      );
-    } else {
-      console.log(`❌ Login Failed: ${email}`);
-      return HttpResponse.json(
-        { message: "Invalid credentials" },
-        { status: 401, delay: 300 }
-      );
+        message: "Login successfully",
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error logging in:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to login",
+        status: error.status || 500,
+      });
     }
-  }),
-
-  // --- User Routes ---
-  http.get("/api/users/me", () => {
-    console.log("👤 Get Current User (user1)");
-    const user = findUser("user1");
-
-    if (!user) {
-      return HttpResponse.json(
-        { message: "User not found" },
-        { status: 404, delay: 300 }
-      );
-    }
-
-    return HttpResponse.json({ ...user }, { status: 200, delay: 300 });
-  }),
-
-  http.get("/api/users/:id", ({ params }) => {
-    const id = params.id;
-    console.log(`👤 Get User: ${id}`);
-
-    const user = findUser(id);
-    if (!user) {
-      return HttpResponse.json(
-        { message: "User not found" },
-        { status: 404, delay: 300 }
-      );
-    }
-
-    // Add friend counts
-    const userData = { ...user };
-    userData.friendCount = db.friendships.filter(
-      (f) => (f.from === id || f.to === id) && f.status === "accepted"
-    ).length;
-    userData.postCount = db.posts.filter((p) => p.author._id === id).length;
-
-    return HttpResponse.json({ user: userData }, { status: 200, delay: 300 });
-  }),
-
-  http.get("/api/users", ({ request }) => {
-    const url = new URL(request.url);
-    const name = url.searchParams.get("name") || "";
-
-    console.log(`👥 Get Users List: name='${name}'`);
-
-    let filteredUsers = name
-      ? db.users.filter((u) =>
-          u.name.toLowerCase().includes(name.toLowerCase())
-        )
-      : db.users;
-
-    // Add friendship status relative to user1 (logged-in user)
-    const currentUser = "user1";
-    filteredUsers = filteredUsers.map((user) => {
-      const rawFriendship = db.friendships.find(
-        (f) =>
-          (f.from === currentUser && f.to === user._id) ||
-          (f.from === user._id && f.to === currentUser)
-      );
-      // Populate the friendship object using the helper
-      const populatedFriendship = populateFriendshipUsers(rawFriendship);
-      return { ...user, friendship: populatedFriendship }; // Use populated object
-    });
-
-    return HttpResponse.json(
-      { users: filteredUsers, totalPages: 1, count: filteredUsers.length },
-      { status: 200, delay: 300 }
-    );
   }),
 
   // --- Post Routes ---
-  http.get("/api/posts", () => {
-    console.log(`📝 Get All Posts`);
+  http.get(
+    "/api/posts",
+    withAuth(async ({ request }) => {
+      try {
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUserId = payload._id;
+        const friends = db.friendships
+          .filter(
+            (f) =>
+              f.status === "accepted" &&
+              (f.from === currentUserId || f.to === currentUserId)
+          )
+          .map((f) => (f.from === currentUserId ? f.to : f.from));
+        const allowedAuthors = [currentUserId, ...friends];
 
-    const currentUser = "user1"; // Logged in user
-    const friends = db.friendships
-      .filter(
-        (f) =>
-          f.status === "accepted" &&
-          (f.from === currentUser || f.to === currentUser)
-      )
-      .map((f) => (f.from === currentUser ? f.to : f.from));
-    const allowedAuthors = [currentUser, ...friends];
+        let filteredPosts = db.posts.filter((p) =>
+          allowedAuthors.includes(p.author._id)
+        );
 
-    let filteredPosts = db.posts.filter((p) =>
-      allowedAuthors.includes(p.author._id)
-    );
+        // Add comment count and reactions
+        filteredPosts = filteredPosts.map((post) => ({
+          ...post,
+          commentCount: db.comments.filter((c) => c.post === post._id).length,
+          reactions: db.reactions.filter(
+            (r) => r.targetType === "Post" && r.targetId === post._id
+          ),
+        }));
 
-    // Add comment count and reactions
-    filteredPosts = filteredPosts.map((post) => ({
-      ...post,
-      commentCount: db.comments.filter((c) => c.post === post._id).length,
-      reactions: db.reactions.filter(
-        (r) => r.targetType === "Post" && r.targetId === post._id
-      ),
-    }));
+        filteredPosts.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
 
-    filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return generateApiResponse({
+          success: true,
+          data: {
+            posts: filteredPosts,
+            totalPages: 1,
+            count: filteredPosts.length,
+          },
+          status: 200,
+        });
+      } catch (error) {
+        console.error("❌ Error getting posts:", error);
+        return generateApiResponse({
+          success: false,
+          errors: [error],
+          message: error.message || "Failed to get posts",
+          status: error.status || 500,
+        });
+      }
+    })
+  ),
 
-    return HttpResponse.json(
-      { posts: filteredPosts, totalPages: 1, count: filteredPosts.length },
-      { status: 200, delay: 300 }
-    );
-  }),
+  http.get(
+    "/api/posts/user/:userId",
+    withAuth(({ params, request }) => {
+      try {
+        const userId = params.userId;
+        console.log(`📝 Get Posts for User: ${userId}`);
 
-  http.get("/api/posts/user/:userId", ({ params }) => {
-    const userId = params.userId;
-    console.log(`📝 Get Posts for User: ${userId}`);
+        let userPosts = db.posts.filter((p) => p.author._id === userId);
 
-    let userPosts = db.posts.filter((p) => p.author._id === userId);
+        // Add counts/reactions
+        userPosts = userPosts.map((post) => ({
+          ...post,
+          commentCount: db.comments.filter((c) => c.post === post._id).length,
+          reactions: db.reactions.filter(
+            (r) => r.targetType === "Post" && r.targetId === post._id
+          ),
+        }));
 
-    // Add counts/reactions
-    userPosts = userPosts.map((post) => ({
-      ...post,
-      commentCount: db.comments.filter((c) => c.post === post._id).length,
-      reactions: db.reactions.filter(
-        (r) => r.targetType === "Post" && r.targetId === post._id
-      ),
-    }));
+        userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return generateApiResponse({
+          success: true,
+          data: { posts: userPosts, totalPages: 1, count: userPosts.length },
+          status: 200,
+        });
+      } catch (error) {
+        console.error(
+          `❌ Error getting posts for user ${params.userId}:`,
+          error
+        );
+        return generateApiResponse({
+          success: false,
+          errors: [error],
+          message: error.message || "Failed to get user posts",
+          status: error.status || 500,
+        });
+      }
+    })
+  ),
 
-    return HttpResponse.json(
-      { posts: userPosts, totalPages: 1, count: userPosts.length },
-      { status: 200, delay: 300 }
-    );
-  }),
+  http.post(
+    "/api/posts",
+    withAuth(async ({ request }) => {
+      try {
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const { content, image } = await request.json();
+        const payload = await extractJWT(accessToken);
+        const currentUser = findUser(payload._id);
 
-  http.post("/api/posts", async ({ request }) => {
-    const { content, image } = await request.json();
-    const currentUser = findUser("user1");
-    console.log(`📝 Create Post: User=${currentUser?._id}`);
+        if (!currentUser) {
+          return generateApiResponse({
+            success: false,
+            errors: ["User not found"],
+            message: "User not found",
+            status: 401,
+          });
+        }
 
-    if (!currentUser) {
-      return HttpResponse.json(
-        { message: "User not found" },
-        { status: 401, delay: 300 }
-      );
-    }
+        if (!content || content.trim().length === 0) {
+          return generateApiResponse({
+            success: false,
+            errors: ["Post content cannot be empty"],
+            message: "Post content cannot be empty",
+            status: 400,
+          });
+        }
 
-    if (!content || content.trim().length === 0) {
-      return HttpResponse.json(
-        { message: "Post content cannot be empty" },
-        { status: 400, delay: 300 }
-      );
-    }
+        const newPost = {
+          _id: uuidv4(),
+          content: content.trim(),
+          image: image || null, // Handle optional image
+          author: {
+            // Embed author details
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatarUrl: currentUser.avatarUrl,
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          // Add default reactions and commentCount for consistency
+          reactions: [],
+          commentCount: 0,
+        };
 
-    const newPost = {
-      _id: `post-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      content: content.trim(),
-      image: image || null, // Handle optional image
-      author: {
-        // Embed author details
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatarUrl: currentUser.avatarUrl,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      // Add default reactions and commentCount for consistency
-      reactions: [],
-      commentCount: 0,
-    };
+        db.posts.unshift(newPost); // Add to beginning of the array
+        saveToStorage(); // Save changes to storage
+        // console.log("  -> New post created:", newPost._id);
 
-    db.posts.unshift(newPost); // Add to beginning of the array
-    saveToStorage(); // Save changes to storage
-    console.log("  -> New post created:", newPost._id);
-
-    return HttpResponse.json(newPost, { status: 200, delay: 300 });
-  }),
+        return generateApiResponse({
+          success: true,
+          data: { post: newPost },
+          message: "Post created successfully",
+          status: 200,
+        });
+      } catch (error) {
+        console.error("❌ Error creating post:", error);
+        return generateApiResponse({
+          success: false,
+          errors: [error],
+          message: error.message || "Failed to create post",
+          status: error.status || 500,
+        });
+      }
+    })
+  ),
 
   // --- Comment Routes ---
   http.get("/api/posts/:postId/comments", ({ params }) => {
-    const postId = params.postId;
-    console.log(`💬 Get Comments for Post: ${postId}`);
+    try {
+      const postId = params.postId;
+      // console.log(`💬 Get Comments for Post: ${postId}`);
 
-    let postComments = db.comments.filter((c) => c.post === postId);
+      let postComments = db.comments.filter((c) => c.post === postId);
 
-    // Add reactions
-    postComments = postComments.map((comment) => ({
-      ...comment,
-      reactions: db.reactions.filter(
-        (r) => r.targetType === "Comment" && r.targetId === comment._id
-      ),
-    }));
+      // Add reactions
+      postComments = postComments.map((comment) => ({
+        ...comment,
+        reactions: db.reactions.filter(
+          (r) => r.targetType === "Comment" && r.targetId === comment._id
+        ),
+      }));
 
-    postComments.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Older first
+      postComments.sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      ); // Older first
 
-    return HttpResponse.json(
-      { comments: postComments, totalPages: 1, count: postComments.length },
-      { status: 200, delay: 300 }
-    );
+      return generateApiResponse({
+        success: true,
+        data: {
+          comments: postComments,
+          totalPages: 1,
+          count: postComments.length,
+        },
+        status: 200,
+      });
+    } catch (error) {
+      console.error(
+        `❌ Error getting comments for post ${params.postId}:`,
+        error
+      );
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to get comments",
+        status: error.status || 500,
+      });
+    }
   }),
 
   http.post("/api/posts/:postId/comments", async ({ request, params }) => {
-    const postId = params.postId;
-    const { content } = await request.json();
-    const currentUser = findUser("user1");
-    console.log(`💬 Create Comment: User=${currentUser._id}, Post=${postId}`);
+    try {
+      const postId = params.postId;
+      const { content } = await request.json();
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUser = findUser(payload._id);
+      // console.log(`💬 Create Comment: User=${currentUser._id}, Post=${postId}`);
 
-    if (!content) {
-      return HttpResponse.json(
-        { message: "Comment content cannot be empty" },
-        { status: 400, delay: 300 }
-      );
-    }
+      if (!content) {
+        return generateApiResponse({
+          success: false,
+          errors: ["Comment content cannot be empty"],
+          message: "Comment content cannot be empty",
+          status: 400,
+        });
+      }
 
-    const postExists = db.posts.some((p) => p._id === postId);
-    if (!postExists) {
-      return HttpResponse.json(
-        { message: "Post not found" },
-        { status: 404, delay: 300 }
-      );
-    }
+      const postExists = db.posts.some((p) => p._id === postId);
+      if (!postExists) {
+        return generateApiResponse({
+          success: false,
+          errors: ["Post not found"],
+          message: "Post not found",
+          status: 404,
+        });
+      }
 
-    const newComment = {
-      _id: `comment-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      content,
-      post: postId,
-      author: {
-        _id: currentUser._id,
-        name: currentUser.name,
-        avatarUrl: currentUser.avatarUrl,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      reactions: [], // Start with empty reactions
-    };
-
-    db.comments.push(newComment); // Add to the comments collection
-    saveToStorage(); // Save changes to storage
-    console.log("  -> New comment added:", newComment._id);
-
-    return HttpResponse.json(newComment, { status: 200, delay: 300 });
-  }),
-
-  // --- Reaction Routes ---
-  http.post("/api/reactions", async ({ request }) => {
-    const { targetType, targetId, emoji } = await request.json();
-    const currentUser = findUser("user1");
-    console.log(
-      `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
-    );
-
-    if (!["Post", "Comment"].includes(targetType) || !targetId || !emoji) {
-      return HttpResponse.json(
-        { message: "Invalid reaction request" },
-        { status: 400, delay: 300 }
-      );
-    }
-
-    // Find existing reaction by this user for this target
-    const existingIndex = db.reactions.findIndex(
-      (r) =>
-        r.targetType === targetType &&
-        r.targetId === targetId &&
-        r.author._id === currentUser._id &&
-        r.emoji === emoji // Match emoji for toggling specific reaction type
-    );
-
-    if (existingIndex > -1) {
-      // User is removing their reaction (e.g., unliking)
-      db.reactions.splice(existingIndex, 1);
-      saveToStorage(); // Save changes to storage
-      console.log(` -> Reaction removed`);
-    } else {
-      // Add new reaction
-      const newReaction = {
-        _id: `reaction-${Date.now()}`,
-        targetType,
-        targetId,
-        emoji,
+      const newComment = {
+        _id: uuidv4(),
+        content,
+        post: postId,
         author: {
           _id: currentUser._id,
           name: currentUser.name,
           avatarUrl: currentUser.avatarUrl,
         },
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        reactions: [], // Start with empty reactions
       };
-      db.reactions.push(newReaction);
+
+      db.comments.push(newComment); // Add to the comments collection
       saveToStorage(); // Save changes to storage
-      console.log(` -> Reaction added`);
+      // console.log("  -> New comment added:", newComment._id);
+
+      return generateApiResponse({
+        success: true,
+        data: newComment,
+        message: "Comment added successfully",
+        status: 200,
+      });
+    } catch (error) {
+      console.error(
+        `❌ Error creating comment for post ${params.postId}:`,
+        error
+      );
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to create comment",
+        status: error.status || 500,
+      });
     }
+  }),
 
-    // Return all reactions for the target
-    const updatedReactions = db.reactions.filter(
-      (r) => r.targetType === targetType && r.targetId === targetId
-    );
+  // --- Reaction Routes ---
+  http.post("/api/reactions", async ({ request }) => {
+    try {
+      const { targetType, targetId, emoji } = await request.json();
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUser = findUser(payload._id);
+      // console.log(
+      //   `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
+      // );
 
-    return HttpResponse.json(updatedReactions, { status: 200, delay: 300 });
+      if (!["Post", "Comment"].includes(targetType) || !targetId || !emoji) {
+        return generateApiResponse({
+          success: false,
+          errors: ["Invalid reaction request"],
+          message: "Invalid reaction request",
+          status: 400,
+        });
+      }
+
+      // Find existing reaction by this user for this target
+      const existingIndex = db.reactions.findIndex(
+        (r) =>
+          r.targetType === targetType &&
+          r.targetId === targetId &&
+          r.author._id === currentUser._id &&
+          r.emoji === emoji // Match emoji for toggling specific reaction type
+      );
+
+      if (existingIndex > -1) {
+        // User is removing their reaction (e.g., unliking)
+        db.reactions.splice(existingIndex, 1);
+        saveToStorage(); // Save changes to storage
+        // console.log(` -> Reaction removed`);
+      } else {
+        // Add new reaction
+        const newReaction = {
+          _id: uuidv4(),
+          targetType,
+          targetId,
+          emoji,
+          author: {
+            _id: currentUser._id,
+            name: currentUser.name,
+            avatarUrl: currentUser.avatarUrl,
+          },
+          createdAt: new Date().toISOString(),
+        };
+        db.reactions.push(newReaction);
+        saveToStorage(); // Save changes to storage
+        // console.log(` -> Reaction added`);
+      }
+
+      // Return all reactions for the target
+      const updatedReactions = db.reactions.filter(
+        (r) => r.targetType === targetType && r.targetId === targetId
+      );
+
+      return generateApiResponse({
+        success: true,
+        data: updatedReactions,
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error handling reaction:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to handle reaction",
+        status: error.status || 500,
+      });
+    }
   }),
 
   // --- Friendship Routes (User1's perspective) ---
-  http.get("/api/friends", ({ request }) => {
-    const url = new URL(request.url);
-    const name = url.searchParams.get("name") || "";
-    console.log(`👫 Get Friends: name='${name}'`);
+  http.get("/api/friends", async ({ request }) => {
+    try {
+      const url = new URL(request.url);
+      const name = url.searchParams.get("name") || "";
+      // console.log(`👫 Get Friends: name='${name}'`);
 
-    const currentUser = "user1";
-    const friendIds = db.friendships
-      .filter(
-        (f) =>
-          f.status === "accepted" &&
-          (f.from === currentUser || f.to === currentUser)
-      )
-      .map((f) => (f.from === currentUser ? f.to : f.from));
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-    let friendUsers = db.users.filter((u) => friendIds.includes(u._id));
+      const friendIds = db.friendships
+        .filter(
+          (f) =>
+            f.status === "accepted" &&
+            (f.from === currentUserId || f.to === currentUserId)
+        )
+        .map((f) => (f.from === currentUserId ? f.to : f.from));
 
-    if (name) {
-      friendUsers = friendUsers.filter((u) =>
-        u.name.toLowerCase().includes(name.toLowerCase())
-      );
+      let friendUsers = db.users.filter((u) => friendIds.includes(u._id));
+
+      if (name) {
+        friendUsers = friendUsers.filter((u) =>
+          u.name.toLowerCase().includes(name.toLowerCase())
+        );
+      }
+
+      return generateApiResponse({
+        success: true,
+        data: { users: friendUsers, totalPages: 1, count: friendUsers.length },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error getting friends:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to get friends",
+        status: error.status || 500,
+      });
     }
-
-    return HttpResponse.json(
-      { users: friendUsers, totalPages: 1, count: friendUsers.length },
-      { status: 200, delay: 300 }
-    );
   }),
 
-  http.get("/api/friends/requests", () => {
-    console.log(`🔔 Get All Requests`);
-    const currentUser = "user1";
+  http.get("/api/friends/requests", async ({ request }) => {
+    try {
+      // console.log(`🔔 Get All Requests`);
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-    // Incoming Requests Logic
-    let incomingRaw = db.friendships.filter(
-      (fs) => fs.to === currentUser && fs.status === "pending"
-    );
-    // Use helper to populate sender/receiver
-    const incomingRequests = incomingRaw.map(populateFriendshipUsers);
+      // Incoming Requests Logic
+      let incomingRaw = db.friendships.filter(
+        (fs) => fs.to === currentUserId && fs.status === "pending"
+      );
+      // Use helper to populate sender/receiver
+      const incomingRequests = incomingRaw.map(populateFriendshipUsers);
 
-    // Outgoing Requests Logic
-    let outgoingRaw = db.friendships.filter(
-      (fs) => fs.from === currentUser && fs.status === "pending"
-    );
-    // Use helper to populate sender/receiver
-    const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
+      // Outgoing Requests Logic
+      let outgoingRaw = db.friendships.filter(
+        (fs) => fs.from === currentUserId && fs.status === "pending"
+      );
+      // Use helper to populate sender/receiver
+      const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
 
-    return HttpResponse.json(
-      { incoming: incomingRequests, outgoing: outgoingRequests },
-      { status: 200, delay: 300 }
-    );
+      return generateApiResponse({
+        success: true,
+        data: { incoming: incomingRequests, outgoing: outgoingRequests },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error getting friend requests:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to get friend requests",
+        status: error.status || 500,
+      });
+    }
   }),
 
-  http.get("/api/friends/requests/incoming", ({ request }) => {
-    const url = new URL(request.url);
-    const name = url.searchParams.get("name") || "";
-    console.log(`📩 Get Incoming Requests: name='${name}'`);
+  http.get("/api/friends/requests/incoming", async ({ request }) => {
+    try {
+      const url = new URL(request.url);
+      const name = url.searchParams.get("name") || "";
+      // console.log(`📩 Get Incoming Requests: name='${name}'`);
 
-    let incomingRequests = db.friendships.filter(
-      (fs) => fs.to === "user1" && fs.status === "pending"
-    );
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-    // Populate requester info
-    incomingRequests = incomingRequests.map((req) => ({
-      ...req,
-      requester: db.users.find((u) => u._id === req.from),
-    }));
-
-    if (name) {
-      incomingRequests = incomingRequests.filter((req) =>
-        req.requester?.name.toLowerCase().includes(name.toLowerCase())
+      let incomingRequests = db.friendships.filter(
+        (fs) => fs.to === currentUserId && fs.status === "pending"
       );
-    }
 
-    return HttpResponse.json(
-      {
-        requests: incomingRequests,
-        totalPages: 1,
-        count: incomingRequests.length,
-      },
-      { status: 200, delay: 300 }
-    );
+      // Populate requester info
+      incomingRequests = incomingRequests.map((req) => ({
+        ...req,
+        requester: db.users.find((u) => u._id === req.from),
+      }));
+
+      if (name) {
+        incomingRequests = incomingRequests.filter((req) =>
+          req.requester?.name.toLowerCase().includes(name.toLowerCase())
+        );
+      }
+
+      return generateApiResponse({
+        success: true,
+        data: {
+          requests: incomingRequests,
+          totalPages: 1,
+          count: incomingRequests.length,
+        },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error getting incoming friend requests:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to get incoming friend requests",
+        status: error.status || 500,
+      });
+    }
   }),
 
-  http.get("/api/friends/requests/outgoing", ({ request }) => {
-    const url = new URL(request.url);
-    const name = url.searchParams.get("name") || "";
-    console.log(`📤 Get Outgoing Requests: name='${name}'`);
+  http.get("/api/friends/requests/outgoing", async ({ request }) => {
+    try {
+      const url = new URL(request.url);
+      const name = url.searchParams.get("name") || "";
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
+      // console.log(`📤 Get Outgoing Requests: name='${name}'`);
 
-    let outgoingRequests = db.friendships.filter(
-      (fs) => fs.from === "user1" && fs.status === "pending"
-    );
-
-    // Populate recipient info
-    outgoingRequests = outgoingRequests.map((req) => ({
-      ...req,
-      recipient: db.users.find((u) => u._id === req.to),
-    }));
-
-    if (name) {
-      outgoingRequests = outgoingRequests.filter((req) =>
-        req.recipient?.name.toLowerCase().includes(name.toLowerCase())
+      let outgoingRequests = db.friendships.filter(
+        (fs) => fs.from === currentUserId && fs.status === "pending"
       );
-    }
 
-    return HttpResponse.json(
-      {
-        requests: outgoingRequests,
-        totalPages: 1,
-        count: outgoingRequests.length,
-      },
-      { status: 200, delay: 300 }
-    );
+      // Populate recipient info
+      outgoingRequests = outgoingRequests.map((req) => ({
+        ...req,
+        recipient: db.users.find((u) => u._id === req.to),
+      }));
+
+      if (name) {
+        outgoingRequests = outgoingRequests.filter((req) =>
+          req.recipient?.name.toLowerCase().includes(name.toLowerCase())
+        );
+      }
+
+      return generateApiResponse({
+        success: true,
+        data: {
+          requests: outgoingRequests,
+          totalPages: 1,
+          count: outgoingRequests.length,
+        },
+        status: 200,
+      });
+    } catch (error) {
+      console.error("❌ Error getting outgoing friend requests:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to get outgoing friend requests",
+        status: error.status || 500,
+      });
+    }
   }),
 
   // --- Friendship Action Routes ---
   http.post("/api/friends/requests", async ({ request }) => {
-    const { to: targetUserId } = await request.json();
-    console.log(`✉️ Send Friend Request: user1 -> ${targetUserId}`);
+    try {
+      const { to: targetUserId } = await request.json();
+      // console.log(`✉️ Send Friend Request: user1 -> ${targetUserId}`);
 
-    if (targetUserId === "user1") {
-      // Cannot friend yourself
-      return HttpResponse.json(
-        { message: "You cannot send a friend request to yourself." },
-        { status: 400, delay: 300 }
-      );
-    }
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-    const existing = db.friendships.find(
-      (fs) =>
-        (fs.from === "user1" && fs.to === targetUserId) ||
-        (fs.to === "user1" && fs.from === targetUserId)
-    );
-
-    if (!existing) {
-      const newFriendshipRaw = {
-        _id: `friendship-${Date.now()}`,
-        from: "user1",
-        to: targetUserId,
-        status: "pending",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      db.friendships.push(newFriendshipRaw);
-      saveToStorage(); // Save changes to storage
-      // Return the populated new friendship object
-      return HttpResponse.json(
-        { friendship: populateFriendshipUsers(newFriendshipRaw) },
-        { status: 200, delay: 300 }
-      );
-    } else if (existing.status === "pending") {
-      return HttpResponse.json(
-        { message: "Friend request already pending." },
-        { status: 400, delay: 300 }
-      );
-    } else if (existing.status === "accepted") {
-      return HttpResponse.json(
-        { message: "You are already friends with this user." },
-        { status: 400, delay: 300 }
-      );
-    } else {
-      return HttpResponse.json(
-        { message: "Cannot send friend request." },
-        { status: 400, delay: 300 }
-      );
-    }
-  }),
-
-  http.put("/api/friends/requests/:requesterId", ({ params, request }) => {
-    const { requesterId } = params;
-    const url = new URL(request.url);
-    const action = url.searchParams.get("action"); // 'accept' or 'decline'
-
-    console.log(
-      `🤝 Action on Request: requester=${requesterId}, action=${action}`
-    );
-
-    const requestIndex = db.friendships.findIndex(
-      (fs) =>
-        fs.from === requesterId && fs.to === "user1" && fs.status === "pending"
-    );
-
-    if (requestIndex > -1) {
-      if (action === "accept") {
-        db.friendships[requestIndex].status = "accepted";
-        db.friendships[requestIndex].updatedAt = new Date().toISOString();
-        saveToStorage(); // Save changes to storage
-        // Return the updated friendship record, populated
-        return HttpResponse.json(
-          {
-            friendship: populateFriendshipUsers(db.friendships[requestIndex]),
-          },
-          { status: 200, delay: 300 }
-        );
-      } else if (action === "decline") {
-        const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
-        saveToStorage(); // Save changes to storage
-        // Return the ID of the declined/removed friendship
-        return HttpResponse.json(
-          { declinedFriendshipId: declinedRequest._id },
-          { status: 200, delay: 300 }
-        );
-      } else {
-        return HttpResponse.json(
-          { message: "Invalid action." },
-          { status: 400, delay: 300 }
-        );
+      if (targetUserId === currentUserId) {
+        // Cannot friend yourself
+        return generateApiResponse({
+          success: false,
+          errors: ["You cannot send a friend request to yourself."],
+          message: "You cannot send a friend request to yourself.",
+          status: 400,
+        });
       }
-    } else {
-      return HttpResponse.json(
-        { message: "Incoming friend request not found or already handled." },
-        { status: 404, delay: 300 }
+
+      const existing = db.friendships.find(
+        (fs) =>
+          (fs.from === currentUserId && fs.to === targetUserId) ||
+          (fs.to === currentUserId && fs.from === targetUserId)
       );
+
+      if (!existing) {
+        const newFriendshipRaw = {
+          _id: uuidv4(),
+          from: currentUserId,
+          to: targetUserId,
+          status: "pending",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        db.friendships.push(newFriendshipRaw);
+        saveToStorage(); // Save changes to storage
+        // Return the populated new friendship object
+        return generateApiResponse({
+          success: true,
+          data: { friendship: populateFriendshipUsers(newFriendshipRaw) },
+          message: "Friend request sent successfully",
+          status: 200,
+        });
+      }
+
+      if (existing.status === "pending") {
+        return generateApiResponse({
+          success: false,
+          errors: ["Friend request already pending."],
+          message: "Friend request already pending.",
+          status: 400,
+        });
+      }
+
+      if (existing.status === "accepted") {
+        return generateApiResponse({
+          success: false,
+          errors: ["You are already friends with this user."],
+          message: "You are already friends with this user.",
+          status: 400,
+        });
+      }
+
+      return generateApiResponse({
+        success: false,
+        errors: ["Cannot send friend request."],
+        message: "Cannot send friend request.",
+        status: 400,
+      });
+    } catch (error) {
+      console.error("❌ Error sending friend request:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to send friend request",
+        status: error.status || 500,
+      });
     }
   }),
 
-  http.delete("/api/friends/requests/:recipientId", ({ params }) => {
-    const { recipientId } = params;
-    console.log(`❌ Cancel Outgoing Request: user1 -> ${recipientId}`);
+  http.put(
+    "/api/friends/requests/:requesterId",
+    async ({ params, request }) => {
+      try {
+        const { requesterId } = params;
+        const url = new URL(request.url);
+        const action = url.searchParams.get("action"); // 'accept' or 'decline'
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUserId = payload._id;
 
-    const requestIndex = db.friendships.findIndex(
-      (fs) =>
-        fs.from === "user1" && fs.to === recipientId && fs.status === "pending"
-    );
+        // console.log(
+        //   `👫 Action on Request: requester=${requesterId}, action=${action}`
+        // );
 
-    if (requestIndex > -1) {
-      db.friendships.splice(requestIndex, 1); // Remove the pending request
-      saveToStorage(); // Save changes to storage
-      return new HttpResponse(null, { status: 204, delay: 300 }); // No Content
-    } else {
-      return HttpResponse.json(
-        { message: "Outgoing friend request not found." },
-        { status: 404, delay: 300 }
-      );
+        const requestIndex = db.friendships.findIndex(
+          (fs) =>
+            fs.from === requesterId &&
+            fs.to === currentUserId &&
+            fs.status === "pending"
+        );
+
+        if (requestIndex === -1) {
+          return generateApiResponse({
+            success: false,
+            errors: ["Incoming friend request not found or already handled."],
+            message: "Incoming friend request not found or already handled.",
+            status: 404,
+          });
+        }
+
+        if (action === "accept") {
+          db.friendships[requestIndex].status = "accepted";
+          db.friendships[requestIndex].updatedAt = new Date().toISOString();
+          saveToStorage(); // Save changes to storage
+          // Return the updated friendship record, populated
+          return generateApiResponse({
+            success: true,
+            data: {
+              friendship: populateFriendshipUsers(db.friendships[requestIndex]),
+            },
+            message: "Friend request accepted",
+            status: 200,
+          });
+        }
+
+        if (action === "decline") {
+          const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
+          saveToStorage(); // Save changes to storage
+          // Return the ID of the declined/removed friendship
+          return generateApiResponse({
+            success: true,
+            data: { declinedFriendshipId: declinedRequest._id },
+            message: "Friend request declined",
+            status: 200,
+          });
+        }
+
+        return generateApiResponse({
+          success: false,
+          errors: ["Invalid action."],
+          message: "Invalid action.",
+          status: 400,
+        });
+      } catch (error) {
+        console.error("❌ Error handling friend request action:", error);
+        return generateApiResponse({
+          success: false,
+          errors: [error],
+          message: error.message || "Failed to handle friend request action",
+          status: error.status || 500,
+        });
+      }
     }
-  }),
+  ),
 
-  http.delete("/api/friends/:friendId", ({ params }) => {
-    const { friendId } = params;
-    console.log(`👋 Unfriend: user1 <-> ${friendId}`);
+  http.delete(
+    "/api/friends/requests/:recipientId",
+    async ({ params, request }) => {
+      try {
+        const { recipientId } = params;
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUserId = payload._id;
+        // console.log(`❌ Cancel Outgoing Request: user1 -> ${recipientId}`);
 
-    const friendshipIndex = db.friendships.findIndex(
-      (fs) =>
-        ((fs.from === "user1" && fs.to === friendId) ||
-          (fs.to === "user1" && fs.from === friendId)) &&
-        fs.status === "accepted"
-    );
+        const requestIndex = db.friendships.findIndex(
+          (fs) =>
+            fs.from === currentUserId &&
+            fs.to === recipientId &&
+            fs.status === "pending"
+        );
 
-    if (friendshipIndex > -1) {
+        if (requestIndex === -1) {
+          return generateApiResponse({
+            success: false,
+            errors: ["Outgoing friend request not found."],
+            message: "Outgoing friend request not found.",
+            status: 404,
+          });
+        }
+
+        db.friendships.splice(requestIndex, 1); // Remove the pending request
+        saveToStorage(); // Save changes to storage
+
+        return generateApiResponse({
+          success: true,
+          message: "Friend request cancelled",
+          status: 204,
+        });
+      } catch (error) {
+        console.error("❌ Error cancelling friend request:", error);
+        return generateApiResponse({
+          success: false,
+          errors: [error],
+          message: error.message || "Failed to cancel friend request",
+          status: error.status || 500,
+        });
+      }
+    }
+  ),
+
+  http.delete("/api/friends/:friendId", async ({ params, request }) => {
+    try {
+      const { friendId } = params;
+      // console.log(`👋 Unfriend: user1 <-> ${friendId}`);
+
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
+
+      const friendshipIndex = db.friendships.findIndex(
+        (fs) =>
+          ((fs.from === currentUserId && fs.to === friendId) ||
+            (fs.to === currentUserId && fs.from === friendId)) &&
+          fs.status === "accepted"
+      );
+
+      if (friendshipIndex === -1) {
+        return generateApiResponse({
+          success: false,
+          errors: ["Friendship not found."],
+          message: "Friendship not found.",
+          status: 404,
+        });
+      }
+
       db.friendships.splice(friendshipIndex, 1); // Remove the friendship
       saveToStorage(); // Save changes to storage
-      return new HttpResponse(null, { status: 204, delay: 300 }); // No Content
-    } else {
-      return HttpResponse.json(
-        { message: "Friendship not found." },
-        { status: 404, delay: 300 }
-      );
-    }
-  }),
 
-  // Reset data route (for development)
-  http.post("/api/reset", () => {
-    resetToDefaultData();
-    return HttpResponse.json(
-      { message: "Data reset to defaults" },
-      { status: 200, delay: 300 }
-    );
+      return generateApiResponse({
+        success: true,
+        message: "Friend removed successfully",
+        status: 204,
+      });
+    } catch (error) {
+      console.error("❌ Error removing friend:", error);
+      return generateApiResponse({
+        success: false,
+        errors: [error],
+        message: error.message || "Failed to remove friend",
+        status: error.status || 500,
+      });
+    }
   }),
 ];
 
 // Create and return the MSW browser server
 const browserServer = setupWorker(...handlers);
+
+// Initialize database on first visit
+const initializeDatabase = () => {
+  const storedData = localStorage.getItem("codercomm-server-data");
+  if (!storedData) {
+    console.log("📊 No data found: Initializing database in localStorage");
+    saveToStorage();
+  } else {
+    const storedData = localStorage.getItem("codercomm-server-data");
+    if (storedData) {
+      db = JSON.parse(storedData);
+      console.log("📊 Data loaded from storage");
+    }
+  }
+};
+
+// Call initialization when browser server starts
+browserServer.start = async (options) => {
+  await setupWorker(...handlers).start(options);
+  initializeDatabase();
+};
 
 export { browserServer };

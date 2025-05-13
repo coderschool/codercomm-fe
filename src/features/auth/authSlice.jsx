@@ -1,73 +1,74 @@
 import apiService from "@/lib/apiService";
-import { isValidToken, setSession } from "@/lib/jwt";
 import { toast } from "sonner";
+import { create } from "zustand";
+// import { useShallow } from "zustand/shallow";
+import { devtools, persist } from "zustand/middleware";
 
-export const authSlice = (set, get) => ({
-  // Authentication State
-  currentUser: null, // Holds the logged-in user object (null if not logged in)
-  isLoadingAuth: false, // Loading state specifically for auth operations
-  authError: null, // Errors specifically from auth operations
+const initialState = {
+  currentUser: null,
+  isLoading: false,
+  error: null,
+};
 
-  // Auth Actions
-  initializeAuth: async () => {
-    // This action runs when the app starts
-    set({ isLoadingAuth: true, authError: null });
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (accessToken && isValidToken(accessToken)) {
-        setSession(accessToken);
-        const user = await apiService.get("/users/me");
-        set({
-          currentUser: user,
-          isLoadingAuth: false,
-        });
-        console.log("Auth Initialized: User Logged In", user);
-        return true;
-      } else {
-        setSession(null);
-        set({
-          currentUser: null,
-          isLoadingAuth: false,
-        });
-        console.log("Auth Initialized: No User Logged In");
-        return false;
+export const useAuth = create(
+  devtools(
+    persist(
+      (set, get) => ({
+        ...initialState,
+
+        // actions
+        login: async ({ email, password }) => {
+          set({ isLoading: true, error: null });
+          try {
+            const response = await apiService.post("/auth/login", {
+              email,
+              password,
+            });
+            const { user, accessToken } = response.data;
+            localStorage.setItem("accessToken", accessToken);
+            set({
+              currentUser: user,
+              isLoading: false,
+            });
+            toast.success("Login successful");
+            return user;
+          } catch (error) {
+            console.error("Login Error:", error);
+            const errorMessage = error?.message || "Login failed";
+            set({ isLoading: false, error: errorMessage });
+            toast.error("Login failed");
+            throw error;
+          }
+        },
+
+        logout: () => {
+          localStorage.removeItem("accessToken");
+          set(initialState);
+          toast.success("Logged out successfully");
+        },
+      }),
+      // persist current user info in local storage
+      {
+        name: "codercomm-current-user",
+        partialize: (state) => ({ currentUser: state.currentUser }),
       }
-    } catch (error) {
-      console.error("Auth Initialization Error:", error);
-      setSession(null);
-      set({
-        currentUser: null,
-        isLoadingAuth: false,
-        authError: error.message || "Failed to initialize authentication",
-      });
-      return false;
-    }
-  },
+    )
+  )
+);
 
-  login: async (credentials) => {
-    set({ isLoadingAuth: true, authError: null });
-    try {
-      const response = await apiService.post("/auth/login", credentials);
-      const { user, accessToken } = response;
-      setSession(accessToken);
-      set({
-        currentUser: user,
-        isLoadingAuth: false,
-      });
-      toast.success("Login successful");
-      return user;
-    } catch (error) {
-      console.error("Login Error:", error);
-      const errorMessage = error?.message || "Login failed";
-      set({ isLoadingAuth: false, authError: errorMessage });
-      toast.error(errorMessage);
-      throw error;
-    }
-  },
+/*
+ * Advanced selector usage with useShallow:
+ * This prevents unnecessary re-renders by ensuring the selectors.
+ *
+ * See: https://github.com/pmndrs/zustand#selecting-multiple-state-slices
+ * Docs: https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#requiring-stable-selector-outputs
+ */
 
-  logout: () => {
-    setSession(null);
-    set({ currentUser: null, authError: null });
-    toast.success("Logged out successfully");
-  },
-});
+// export const useAuthStore = () =>
+//   useAuth(
+//     useShallow((state) => ({
+//       currentUser: state.currentUser,
+//       isLoading: state.isLoading,
+//       error: state.error,
+//     }))
+//   );

@@ -29,10 +29,7 @@ function CommentList({ postId }) {
   const isInitialLoad = commentsData === undefined && !error; // Check if state exists yet
 
   return (
-    <div className="mt-4 pt-4 border-t border-border/50">
-      {/* Form to add a new comment */}
-      <CommentForm postId={postId} />
-
+    <div className="mt-4 pt-4">
       {/* Loading State */}
       {(isLoading || isInitialLoad) && commentsList.length === 0 && (
         <div className="flex justify-center py-4">
