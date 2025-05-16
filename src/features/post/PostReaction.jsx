@@ -1,29 +1,76 @@
 import React from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { usePosts } from "./postSlice";
+import { useAuth } from "../auth/authSlice";
+import { cn } from "@/lib/mergeClassName";
+import { REACTION_EMOJIS } from "@/lib/config";
+import {
+  TooltipProvider,
+  TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
-function PostReaction({ post }) {
+function PostReactions({ postId, postReactions = [] }) {
+  const { reactToPost } = usePosts();
+  const { currentUser } = useAuth();
+
+  const reactions = Object.groupBy(postReactions, ({ emoji }) => emoji);
+
+  const myReaction = postReactions.find(
+    (r) => r.author._id === currentUser._id
+  );
+
   return (
-    <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center gap-1 text-primary"
-      >
-        <ThumbsUp className="h-4 w-4" />
-        <span className="font-semibold">{post?.reactions?.like}</span>
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex items-center gap-1 text-destructive"
-      >
-        <ThumbsDown className="h-4 w-4" />
-        <span className="font-semibold">{post?.reactions?.dislike}</span>
-      </Button>
+    <div className="flex items-center">
+      {REACTION_EMOJIS.map((reaction) => {
+        const reactionCount = reactions[reaction.emoji]?.length || 0;
+        return (
+          <TooltipProvider key={reaction.emoji}>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="icon"
+                  key={reaction.emoji}
+                  size="sm"
+                  className={cn(
+                    `flex items-center gap-1 border border-transparent group`,
+                    reaction.textColor,
+                    myReaction?.emoji === reaction.emoji && reaction.borderColor
+                  )}
+                  onClick={() => reactToPost(postId, reaction.emoji)}
+                >
+                  <reaction.icon
+                    className={`${reaction.textColor} group-hover:scale-125`}
+                  />
+                  <span className="font-semibold group-hover:scale-125">
+                    {reactionCount}
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              {reactionCount > 0 && (
+                <TooltipContent>
+                  <div className="flex flex-col items-start">
+                    {reactions[reaction.emoji].slice(0, 3).map((r) => (
+                      <span key={r._id} className="text-xs truncate">
+                        {r.author.name}
+                      </span>
+                    ))}
+                    {reactionCount > 3 && (
+                      <span className="text-xs truncate">
+                        + {reactionCount - 3} more
+                      </span>
+                    )}
+                  </div>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        );
+      })}
     </div>
   );
 }
 
-export default PostReaction;
+export default PostReactions;

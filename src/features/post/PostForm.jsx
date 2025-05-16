@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 import { getInitials } from "@/lib/getInitials";
 import { useAuth } from "../auth/authSlice";
-import { usePost } from "./postSlice";
+import { usePosts } from "./postSlice";
 
 const postSchema = yup
   .object({
@@ -32,7 +32,7 @@ const postSchema = yup
 
 function PostForm() {
   const { currentUser } = useAuth();
-  const { createPost } = usePost();
+  const { createPost } = usePosts();
 
   const form = useForm({
     resolver: yupResolver(postSchema),

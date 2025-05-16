@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { commentSlice } from "@/features/comment/commentSlice";
 import { friendSlice } from "@/features/friend/friendSlice";
 import { userSlice } from "@/features/user/userSlice";
 
@@ -12,7 +11,6 @@ import { userSlice } from "@/features/user/userSlice";
  */
 export const useAppStore = create(
   persist((set, get) => ({
-    ...commentSlice(set, get),
     ...friendSlice(set, get),
     ...userSlice(set, get),
 

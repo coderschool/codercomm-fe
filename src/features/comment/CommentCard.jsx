@@ -1,56 +1,55 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { formatTimeAgo } from "@/lib/formatTime";
-import CommentReaction from "./CommentReaction";
+import { Link } from "react-router";
+import { formatDistanceToNow } from "date-fns";
 
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
+import { getInitials } from "@/lib/getInitials";
+import { cn } from "@/lib/mergeClassName";
 
-/**
- * Comment card component that displays a single comment with author info
- * @param {Object} props - Component props
- * @param {Object} props.comment - Comment data
- */
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import CommentReactions from "./CommentReaction";
 function CommentCard({ comment }) {
+  const { _id, author, content, createdAt, updatedAt, reactions } = comment;
+
   return (
-    <div className="flex gap-2">
-      <Avatar className="h-8 w-8">
-        <AvatarImage
-          alt={comment.author?.name}
-          src={comment.author?.avatarUrl}
-        />
-        <AvatarFallback>{comment.author?.name?.charAt(0)}</AvatarFallback>
-      </Avatar>
+    <div className={cn("flex gap-2 py-1 group")}>
+      <Link to={`/user/${comment.author._id}`} className="flex-shrink-0 ">
+        <Avatar className="h-8 w-8 border">
+          <AvatarImage src={author.avatarUrl || ""} alt={author.name} />
+          <AvatarFallback>{getInitials(author.name)}</AvatarFallback>
+        </Avatar>
+      </Link>
 
-      <Card className="flex-1 p-3 bg-muted/30">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1">
-          <p className="font-semibold text-sm">{comment.author?.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatTimeAgo(comment.createdAt)}
-          </p>
+      <div className="-mt-0.5 grow flex flex-col bg-muted rounded-lg relative text-sm px-3 pt-2 pb-3">
+        <Link
+          to={`/users/${comment.author._id}`}
+          className="font-semibold hover:underline"
+        >
+          {author.name}
+        </Link>
+
+        {/* Comment Content */}
+        <span className="whitespace-pre-wrap">{content}</span>
+
+        <div className="flex items-center gap-1.5 mt-0.5 text-muted-foreground text-xs">
+          <CommentReactions commentId={_id} commentReactions={reactions} />
+
+          <span>•</span>
+
+          <span>
+            {formatDistanceToNow(new Date(createdAt), {
+              addSuffix: true,
+            })}
+          </span>
+
+          {/* Indicate if edited */}
+          {updatedAt && createdAt !== updatedAt && (
+            <span className="italic text-muted-foreground/70">(Edited)</span>
+          )}
         </div>
-
-        <p className="text-sm text-foreground/80">{comment.content}</p>
-
-        <div className="flex justify-end mt-2">
-          <CommentReaction comment={comment} />
-        </div>
-      </Card>
+      </div>
     </div>
   );
 }
-
-CommentCard.propTypes = {
-  comment: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    content: PropTypes.string.isRequired,
-    createdAt: PropTypes.string.isRequired,
-    author: PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      avatarUrl: PropTypes.string,
-    }).isRequired,
-  }).isRequired,
-};
 
 export default CommentCard;

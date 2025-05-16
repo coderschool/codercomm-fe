@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 
 import { Card, CardContent } from "@/components/ui/card";
 
-import { usePost } from "./postSlice";
+import { usePosts } from "./postSlice";
 import PostCard from "./PostCard";
 
 /**
@@ -12,7 +12,7 @@ import PostCard from "./PostCard";
  * Otherwise, fetches and displays the main feed posts.
  */
 function PostList() {
-  const { posts, isLoading } = usePost();
+  const { posts, isLoading } = usePosts();
 
   if (!isLoading && posts.length === 0) {
     return (

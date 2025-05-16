@@ -1,10 +1,14 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React, { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import { formatTimeAgo } from "@/lib/formatTime";
 import { MoreVertical } from "lucide-react";
 
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -12,29 +16,28 @@ import { Separator } from "@/components/ui/separator";
 import PostReaction from "./PostReaction";
 import CommentForm from "@/features/comment/CommentForm";
 import CommentList from "@/features/comment/CommentList";
+import { CommentStore } from "../comment/CommentStore";
 
-/**
- * Post card component that displays a single post with author info, content, and comments
- * @param {Object} props - Component props
- * @param {Object} props.post - Post data
- */
 function PostCard({ post }) {
+  const { author, _id, content, image, createdAt, reactions } = post;
+  const [showingComments, setShowingComments] = useState(false);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start space-y-0 gap-3 pb-3">
         <Avatar>
-          <AvatarImage src={post?.author?.avatarUrl} alt={post?.author?.name} />
-          <AvatarFallback>{post?.author?.name?.charAt(0)}</AvatarFallback>
+          <AvatarImage src={author.avatarUrl} alt={author.name} />
+          <AvatarFallback>{author.name?.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <RouterLink
-            to={`/users/${post.author._id}`}
+            to={`/users/${author._id}`}
             className="font-semibold text-foreground hover:underline"
           >
-            {post?.author?.name}
+            {author.name}
           </RouterLink>
           <p className="text-xs text-muted-foreground">
-            {formatTimeAgo(post.createdAt)}
+            {formatTimeAgo(createdAt)}
           </p>
         </div>
         <Button variant="ghost" size="icon" className="rounded-full">
@@ -44,41 +47,45 @@ function PostCard({ post }) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <p>{post.content}</p>
+        <p>{content}</p>
 
         {post.image && (
-          <div className="rounded-md overflow-hidden h-[300px]">
+          <div className="rounded-md overflow-hidden h-[400px]">
             <img
-              src={post.image}
+              src={image}
               alt="post"
               className="w-full h-full object-cover"
             />
           </div>
         )}
-
-        <PostReaction post={post} />
-
-        <Separator />
-
-        {/* <CommentList postId={post._id} /> */}
-        <CommentForm postId={post._id} />
       </CardContent>
+
+      <CardFooter className="flex flex-col">
+        <div className="flex items-center justify-between w-full">
+          <PostReaction postId={_id} postReactions={reactions} />
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground text-xs"
+            onClick={() => setShowingComments(!showingComments)}
+          >
+            {`${post.commentCount} comments`}
+          </Button>
+        </div>
+
+        {showingComments && (
+          <div className="w-full grow flex flex-col gap-6 mt-4">
+            <Separator />
+            <CommentStore postId={_id}>
+              <CommentList />
+              {/* <CommentForm postId={_id} /> */}
+            </CommentStore>
+          </div>
+        )}
+      </CardFooter>
     </Card>
   );
 }
-
-PostCard.propTypes = {
-  post: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    content: PropTypes.string.isRequired,
-    image: PropTypes.string,
-    createdAt: PropTypes.string.isRequired,
-    author: PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      avatarUrl: PropTypes.string,
-    }).isRequired,
-  }).isRequired,
-};
 
 export default PostCard;

@@ -1,14 +1,7 @@
 // src/mockApi/server.js
 import { delay, http, HttpResponse } from "msw";
 import { setupWorker } from "msw/browser";
-import {
-  users,
-  posts,
-  comments,
-  friendships,
-  reactions,
-  USER_IDS,
-} from "./data";
+import { users, posts, comments, friendships, reactions } from "./data";
 import { SignJWT } from "jose";
 import { MOCK_JWT_SECRET } from "@/lib/config";
 import { v4 as uuidv4 } from "uuid";
@@ -100,7 +93,7 @@ const handlers = [
       // console.log(`🔑 Login Success: ${email}`);
 
       // Get full user data with counts
-      const userPosts = db.posts.filter((post) => post.author._id === user._id);
+      const userPosts = db.posts.filter((post) => post.author === user._id);
       const userFriends = db.friendships.filter(
         (fs) =>
           (fs.from === user._id || fs.to === user._id) &&
@@ -151,24 +144,51 @@ const handlers = [
         const friends = db.friendships
           .filter(
             (f) =>
-              f.status === "accepted" &&
+              f.status === "ACCEPTED" &&
               (f.from === currentUserId || f.to === currentUserId)
           )
           .map((f) => (f.from === currentUserId ? f.to : f.from));
         const allowedAuthors = [currentUserId, ...friends];
 
         let filteredPosts = db.posts.filter((p) =>
-          allowedAuthors.includes(p.author._id)
+          allowedAuthors.includes(p.author)
         );
 
         // Add comment count and reactions
-        filteredPosts = filteredPosts.map((post) => ({
-          ...post,
-          commentCount: db.comments.filter((c) => c.post === post._id).length,
-          reactions: db.reactions.filter(
-            (r) => r.targetType === "Post" && r.targetId === post._id
-          ),
-        }));
+        filteredPosts = filteredPosts.map((post) => {
+          const author = db.users.find((u) => u._id === post.author);
+
+          const postWithAuthor = {
+            ...post,
+            author: {
+              _id: author._id,
+              name: author.name,
+              avatarUrl: author.avatarUrl,
+            },
+          };
+
+          const reactions = db.reactions.filter(
+            (r) => r.targetType === "POST" && r.targetId === post._id
+          );
+
+          const reactionsWithAuthor = reactions.map((r) => {
+            const author = db.users.find((u) => u._id === r.author);
+            return {
+              ...r,
+              author: {
+                _id: author._id,
+                name: author.name,
+                avatarUrl: author.avatarUrl,
+              },
+            };
+          });
+
+          return {
+            ...postWithAuthor,
+            commentCount: db.comments.filter((c) => c.post === post._id).length,
+            reactions: reactionsWithAuthor,
+          };
+        });
 
         filteredPosts.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -199,19 +219,44 @@ const handlers = [
     "/api/posts/user/:userId",
     withAuth(({ params, request }) => {
       try {
-        const userId = params.userId;
-        console.log(`📝 Get Posts for User: ${userId}`);
+        const { userId } = params;
 
-        let userPosts = db.posts.filter((p) => p.author._id === userId);
+        const userExists = db.users.findIndex((u) => u._id === userId) > -1;
+
+        if (!userExists) {
+          return generateApiResponse({
+            success: false,
+            errors: ["User not found"],
+            message: "User not found",
+            status: 404,
+          });
+        }
+
+        let userPosts = db.posts.filter((p) => p.author === userId);
 
         // Add counts/reactions
-        userPosts = userPosts.map((post) => ({
-          ...post,
-          commentCount: db.comments.filter((c) => c.post === post._id).length,
-          reactions: db.reactions.filter(
-            (r) => r.targetType === "Post" && r.targetId === post._id
-          ),
-        }));
+        userPosts = userPosts.map((post) => {
+          const author = db.users.find((u) => u._id === post.author);
+
+          const postWithAuthor = {
+            ...post,
+            author: {
+              _id: author._id,
+              name: author.name,
+              avatarUrl: author.avatarUrl,
+            },
+          };
+
+          const reactions = db.reactions.filter(
+            (r) => r.targetType === "POST" && r.targetId === post._id
+          );
+
+          return {
+            ...postWithAuthor,
+            commentCount: db.comments.filter((c) => c.post === post._id).length,
+            reactions,
+          };
+        });
 
         userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -265,27 +310,31 @@ const handlers = [
         const newPost = {
           _id: uuidv4(),
           content: content.trim(),
-          image: image || null, // Handle optional image
-          author: {
-            // Embed author details
-            _id: currentUser._id,
-            name: currentUser.name,
-            avatarUrl: currentUser.avatarUrl,
-          },
+          image: image || null,
+          author: currentUser._id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          // Add default reactions and commentCount for consistency
+
           reactions: [],
           commentCount: 0,
         };
 
-        db.posts.unshift(newPost); // Add to beginning of the array
-        saveToStorage(); // Save changes to storage
+        db.posts.unshift(newPost);
+        saveToStorage();
         // console.log("  -> New post created:", newPost._id);
 
         return generateApiResponse({
           success: true,
-          data: { post: newPost },
+          data: {
+            post: {
+              ...newPost,
+              author: {
+                _id: currentUser._id,
+                name: currentUser.name,
+                avatarUrl: currentUser.avatarUrl,
+              },
+            },
+          },
           message: "Post created successfully",
           status: 200,
         });
@@ -310,12 +359,34 @@ const handlers = [
       let postComments = db.comments.filter((c) => c.post === postId);
 
       // Add reactions
-      postComments = postComments.map((comment) => ({
-        ...comment,
-        reactions: db.reactions.filter(
-          (r) => r.targetType === "Comment" && r.targetId === comment._id
-        ),
-      }));
+      postComments = postComments.map((comment) => {
+        const author = db.users.find((u) => u._id === comment.author);
+        const reactions = db.reactions.filter(
+          (r) => r.targetType === "COMMENT" && r.targetId === comment._id
+        );
+
+        const reactionsWithAuthor = reactions.map((r) => {
+          const author = db.users.find((u) => u._id === r.author);
+          return {
+            ...r,
+            author: {
+              _id: author._id,
+              name: author.name,
+              avatarUrl: author.avatarUrl,
+            },
+          };
+        });
+
+        return {
+          ...comment,
+          author: {
+            _id: author._id,
+            name: author.name,
+            avatarUrl: author.avatarUrl,
+          },
+          reactions: reactionsWithAuthor,
+        };
+      });
 
       postComments.sort(
         (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
@@ -376,14 +447,10 @@ const handlers = [
         _id: uuidv4(),
         content,
         post: postId,
-        author: {
-          _id: currentUser._id,
-          name: currentUser.name,
-          avatarUrl: currentUser.avatarUrl,
-        },
+        author: currentUser._id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        reactions: [], // Start with empty reactions
+        reactions: [],
       };
 
       db.comments.push(newComment); // Add to the comments collection
@@ -411,78 +478,91 @@ const handlers = [
   }),
 
   // --- Reaction Routes ---
-  http.post("/api/reactions", async ({ request }) => {
-    try {
-      const { targetType, targetId, emoji } = await request.json();
-      const accessToken = request.headers.get("Authorization").split(" ")[1];
-      const payload = await extractJWT(accessToken);
-      const currentUser = findUser(payload._id);
-      // console.log(
-      //   `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
-      // );
+  http.post(
+    "/api/reactions",
+    withAuth(async ({ request }) => {
+      try {
+        const { targetType, targetId, emoji } = await request.json();
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUser = findUser(payload._id);
+        // console.log(
+        //   `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
+        // );
 
-      if (!["Post", "Comment"].includes(targetType) || !targetId || !emoji) {
+        if (!["POST", "COMMENT"].includes(targetType) || !targetId || !emoji) {
+          return generateApiResponse({
+            success: false,
+            errors: ["Invalid reaction request"],
+            message: "Invalid reaction request",
+            status: 400,
+          });
+        }
+
+        // Find existing reaction by this user for this target
+        const existingReactionIndex = db.reactions.findIndex(
+          (r) =>
+            r.targetType === targetType &&
+            r.targetId === targetId &&
+            r.author === currentUser._id
+        );
+
+        // Upsert reaction
+
+        let updatedReaction;
+
+        if (existingReactionIndex > -1) {
+          const existingReaction = db.reactions[existingReactionIndex];
+
+          if (existingReaction.emoji === emoji) {
+            // User is removing their reaction (e.g., unliking)
+            db.reactions.splice(existingReactionIndex, 1);
+            updatedReaction = { ...existingReaction, emoji: null };
+          } else {
+            // User is changing their reaction (e.g., liking a different emoji)
+            db.reactions[existingReactionIndex].emoji = emoji;
+            updatedReaction = { ...existingReaction, emoji };
+          }
+        } else {
+          // Add new reaction
+          updatedReaction = {
+            _id: uuidv4(),
+            targetType,
+            targetId,
+            emoji,
+            author: currentUser._id,
+            createdAt: new Date().toISOString(),
+          };
+          db.reactions.push(updatedReaction);
+        }
+
+        saveToStorage();
+
+        return generateApiResponse({
+          success: true,
+          data: {
+            reaction: {
+              ...updatedReaction,
+              author: {
+                _id: currentUser._id,
+                name: currentUser.name,
+                avatarUrl: currentUser.avatarUrl,
+              },
+            },
+          },
+          status: 200,
+        });
+      } catch (error) {
+        console.error("❌ Error handling reaction:", error);
         return generateApiResponse({
           success: false,
-          errors: ["Invalid reaction request"],
-          message: "Invalid reaction request",
-          status: 400,
+          errors: [error],
+          message: error.message || "Failed to handle reaction",
+          status: error.status || 500,
         });
       }
-
-      // Find existing reaction by this user for this target
-      const existingIndex = db.reactions.findIndex(
-        (r) =>
-          r.targetType === targetType &&
-          r.targetId === targetId &&
-          r.author._id === currentUser._id &&
-          r.emoji === emoji // Match emoji for toggling specific reaction type
-      );
-
-      if (existingIndex > -1) {
-        // User is removing their reaction (e.g., unliking)
-        db.reactions.splice(existingIndex, 1);
-        saveToStorage(); // Save changes to storage
-        // console.log(` -> Reaction removed`);
-      } else {
-        // Add new reaction
-        const newReaction = {
-          _id: uuidv4(),
-          targetType,
-          targetId,
-          emoji,
-          author: {
-            _id: currentUser._id,
-            name: currentUser.name,
-            avatarUrl: currentUser.avatarUrl,
-          },
-          createdAt: new Date().toISOString(),
-        };
-        db.reactions.push(newReaction);
-        saveToStorage(); // Save changes to storage
-        // console.log(` -> Reaction added`);
-      }
-
-      // Return all reactions for the target
-      const updatedReactions = db.reactions.filter(
-        (r) => r.targetType === targetType && r.targetId === targetId
-      );
-
-      return generateApiResponse({
-        success: true,
-        data: updatedReactions,
-        status: 200,
-      });
-    } catch (error) {
-      console.error("❌ Error handling reaction:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to handle reaction",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
   // --- Friendship Routes (User1's perspective) ---
   http.get("/api/friends", async ({ request }) => {
@@ -498,7 +578,7 @@ const handlers = [
       const friendIds = db.friendships
         .filter(
           (f) =>
-            f.status === "accepted" &&
+            f.status === "ACCEPTED" &&
             (f.from === currentUserId || f.to === currentUserId)
         )
         .map((f) => (f.from === currentUserId ? f.to : f.from));
@@ -536,14 +616,14 @@ const handlers = [
 
       // Incoming Requests Logic
       let incomingRaw = db.friendships.filter(
-        (fs) => fs.to === currentUserId && fs.status === "pending"
+        (fs) => fs.to === currentUserId && fs.status === "PENDING"
       );
       // Use helper to populate sender/receiver
       const incomingRequests = incomingRaw.map(populateFriendshipUsers);
 
       // Outgoing Requests Logic
       let outgoingRaw = db.friendships.filter(
-        (fs) => fs.from === currentUserId && fs.status === "pending"
+        (fs) => fs.from === currentUserId && fs.status === "PENDING"
       );
       // Use helper to populate sender/receiver
       const outgoingRequests = outgoingRaw.map(populateFriendshipUsers);
@@ -575,7 +655,7 @@ const handlers = [
       const currentUserId = payload._id;
 
       let incomingRequests = db.friendships.filter(
-        (fs) => fs.to === currentUserId && fs.status === "pending"
+        (fs) => fs.to === currentUserId && fs.status === "PENDING"
       );
 
       // Populate requester info
@@ -620,7 +700,7 @@ const handlers = [
       // console.log(`📤 Get Outgoing Requests: name='${name}'`);
 
       let outgoingRequests = db.friendships.filter(
-        (fs) => fs.from === currentUserId && fs.status === "pending"
+        (fs) => fs.from === currentUserId && fs.status === "PENDING"
       );
 
       // Populate recipient info
@@ -686,7 +766,7 @@ const handlers = [
           _id: uuidv4(),
           from: currentUserId,
           to: targetUserId,
-          status: "pending",
+          status: "PENDING",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -701,7 +781,7 @@ const handlers = [
         });
       }
 
-      if (existing.status === "pending") {
+      if (existing.status === "PENDING") {
         return generateApiResponse({
           success: false,
           errors: ["Friend request already pending."],
@@ -710,7 +790,7 @@ const handlers = [
         });
       }
 
-      if (existing.status === "accepted") {
+      if (existing.status === "ACCEPTED") {
         return generateApiResponse({
           success: false,
           errors: ["You are already friends with this user."],
@@ -755,7 +835,7 @@ const handlers = [
           (fs) =>
             fs.from === requesterId &&
             fs.to === currentUserId &&
-            fs.status === "pending"
+            fs.status === "PENDING"
         );
 
         if (requestIndex === -1) {
@@ -767,8 +847,8 @@ const handlers = [
           });
         }
 
-        if (action === "accept") {
-          db.friendships[requestIndex].status = "accepted";
+        if (action === "ACCEPT") {
+          db.friendships[requestIndex].status = "ACCEPTED";
           db.friendships[requestIndex].updatedAt = new Date().toISOString();
           saveToStorage(); // Save changes to storage
           // Return the updated friendship record, populated
@@ -782,7 +862,7 @@ const handlers = [
           });
         }
 
-        if (action === "decline") {
+        if (action === "DECLINE") {
           const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
           saveToStorage(); // Save changes to storage
           // Return the ID of the declined/removed friendship
@@ -826,7 +906,7 @@ const handlers = [
           (fs) =>
             fs.from === currentUserId &&
             fs.to === recipientId &&
-            fs.status === "pending"
+            fs.status === "PENDING"
         );
 
         if (requestIndex === -1) {
@@ -871,7 +951,7 @@ const handlers = [
         (fs) =>
           ((fs.from === currentUserId && fs.to === friendId) ||
             (fs.to === currentUserId && fs.from === friendId)) &&
-          fs.status === "accepted"
+          fs.status === "ACCEPTED"
       );
 
       if (friendshipIndex === -1) {

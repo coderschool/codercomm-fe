@@ -20,7 +20,7 @@ import { Send, Loader2 } from "lucide-react";
 // Utilities
 import { getInitials } from "@/lib/getInitials";
 import { useAuth } from "../auth/authSlice";
-import { useAppStore } from "../use-app-store";
+import { useComments } from "./CommentStore";
 
 /**
  * Yup validation schema for the comment form.
@@ -39,7 +39,7 @@ const commentSchema = yup
 function CommentForm({ postId }) {
   // Select user and action from store
   const { currentUser } = useAuth();
-  const { createComment } = useAppStore();
+  // const { createComment } = useComments();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm({
@@ -51,7 +51,7 @@ function CommentForm({ postId }) {
     console.log("Submitting comment:", data);
     setIsSubmitting(true);
     try {
-      await createComment(postId, data); // Use store action
+      // await createComment(postId, data); // Use store action
       form.reset(); // Reset form on success
     } catch (error) {
       // Error is handled/toasted in the store action

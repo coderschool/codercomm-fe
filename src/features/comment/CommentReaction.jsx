@@ -1,40 +1,72 @@
 import React from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useReactComment } from "./commentHooks";
+import { useComments } from "./commentStore";
+import { REACTION_EMOJIS } from "@/lib/config";
+import { useAuth } from "../auth/authSlice";
+import { cn } from "@/lib/mergeClassName";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+function CommentReactions({ commentId, commentReactions = [] }) {
+  const { reactToComment } = useComments();
+  const { currentUser } = useAuth();
 
-function CommentReaction({ comment }) {
-  const reactCommentMutation = useReactComment();
+  const reactions = Object.groupBy(commentReactions, ({ emoji }) => emoji);
 
-  const handleClick = (emoji) => {
-    reactCommentMutation.mutate({ commentId: comment._id, emoji });
-  };
+  const myReaction = commentReactions.find(
+    (r) => r.author._id === currentUser._id
+  );
+
+  const myEmoji = REACTION_EMOJIS.find((r) => r.emoji === myReaction?.emoji);
 
   return (
-    <div className="flex items-center gap-1">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="flex items-center gap-1 text-primary h-7 px-2" 
-        onClick={() => handleClick("like")}
-        disabled={reactCommentMutation.isPending}
-      >
-        <ThumbsUp className="h-3 w-3" />
-        <span className="text-xs">{comment?.reactions?.like}</span>
-      </Button>
-
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="flex items-center gap-1 text-destructive h-7 px-2" 
-        onClick={() => handleClick("dislike")}
-        disabled={reactCommentMutation.isPending}
-      >
-        <ThumbsDown className="h-3 w-3" />
-        <span className="text-xs">{comment?.reactions?.dislike}</span>
-      </Button>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger className="text-muted-foreground hover:underline px-0.5">
+          {myEmoji ? (
+            <myEmoji.icon
+              size={14}
+              className={`${myEmoji.textColor}`}
+              onClick={() => reactToComment(commentId, myReaction.emoji)}
+            />
+          ) : (
+            <button
+              className="text-muted-foreground hover:underline"
+              type="button"
+              onClick={() => reactToComment(commentId, "LIKE")}
+            >
+              Like
+            </button>
+          )}
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="start">
+          <div className="flex items-center">
+            {REACTION_EMOJIS.map((reaction) => (
+              <Button
+                variant="icon"
+                key={reaction.emoji}
+                size="sm"
+                className={cn(
+                  `flex items-center gap-1 border border-transparent hover:scale-125`,
+                  reaction.textColor,
+                  myReaction?.emoji === reaction.emoji && reaction.borderColor
+                )}
+                onClick={() => reactToComment(commentId, reaction.emoji)}
+              >
+                <reaction.icon className={reaction.textColor} />
+                <span className="font-semibold">
+                  {reactions[reaction.emoji]?.length || 0}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
-export default CommentReaction;
+export default CommentReactions;

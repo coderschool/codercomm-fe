@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 
-// --- Helper to generate dates relative to now ---
 const daysAgo = (days) =>
   new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 const hoursAgo = (hours) =>
@@ -8,7 +7,6 @@ const hoursAgo = (hours) =>
 const minutesAgo = (minutes) =>
   new Date(Date.now() - minutes * 60 * 1000).toISOString();
 
-// Create consistent IDs for referencing
 export const USER_IDS = {
   user1: uuidv4(),
   user2: uuidv4(),
@@ -35,9 +33,6 @@ export const COMMENT_IDS = {
   comment6: uuidv4(),
 };
 
-// --- Sample Users ---
-// In real app, we would use a real database to store users
-// We will also never send the user's password (encrypted or otherwise) to the client.
 export const users = [
   {
     _id: USER_IDS.user1,
@@ -55,7 +50,7 @@ export const users = [
     instagramLink: "https://instagram.com",
     linkedinLink: "https://linkedin.com",
     twitterLink: "https://twitter.com",
-    createdAt: daysAgo(365), // 1 year ago
+    createdAt: daysAgo(365),
     password: "password",
   },
   {
@@ -136,20 +131,13 @@ export const users = [
   },
 ];
 
-// --- Sample Posts ---
-// Posts visible to user1 (authored by user1 or friends user2, user3)
 export const posts = [
   {
     _id: POST_IDS.post1,
     content:
       "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
     image: "https://picsum.photos/id/237/800/400",
-    author: {
-      // Embedded author info for convenience
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
+    author: USER_IDS.user1,
     createdAt: daysAgo(3),
     updatedAt: daysAgo(3),
   },
@@ -158,11 +146,7 @@ export const posts = [
     content:
       "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
     image: "https://picsum.photos/id/292/800/400",
-    author: {
-      _id: USER_IDS.user2, // Friend of user1
-      name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran",
-    },
+    author: USER_IDS.user2,
     createdAt: daysAgo(4),
     updatedAt: daysAgo(4),
   },
@@ -171,11 +155,7 @@ export const posts = [
     content:
       "Just deployed my Node.js API to the cloud. It's so fast, it delivered my phở before I ordered it! 🍜",
     image: "https://picsum.photos/id/42/800/400",
-    author: {
-      _id: USER_IDS.user3, // Friend of user1
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
-    },
+    author: USER_IDS.user3,
     createdAt: daysAgo(7),
     updatedAt: daysAgo(7),
   },
@@ -184,11 +164,7 @@ export const posts = [
     content:
       "Learning React Hooks is like learning to use đũa (chopsticks) - awkward at first, but then you can\\'t imagine coding without them! 🥢",
     image: "https://picsum.photos/id/24/800/400",
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
+    author: USER_IDS.user1,
     createdAt: daysAgo(14),
     updatedAt: daysAgo(14),
   },
@@ -197,11 +173,7 @@ export const posts = [
     content:
       "Designed a mobile-responsive website that looks good on everything from an iPhone 13 Pro Max to my grandmother's Nokia! 📱",
     image: "https://picsum.photos/id/28/800/400",
-    author: {
-      _id: USER_IDS.user2, // Friend of user1
-      name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran",
-    },
+    author: USER_IDS.user2,
     createdAt: daysAgo(21),
     updatedAt: daysAgo(21),
   },
@@ -210,233 +182,179 @@ export const posts = [
     content:
       "Optimized our database queries and now the app loads faster than you can say 'một, hai, ba, yo!' ⚡",
     image: "https://picsum.photos/id/4/800/400",
-    author: {
-      _id: USER_IDS.user3, // Friend of user1
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
-    },
+    author: USER_IDS.user3,
     createdAt: daysAgo(30),
     updatedAt: daysAgo(30),
   },
 ];
 
-// --- Sample Comments ---
-// Comments on posts visible to user1
 export const comments = [
   {
     _id: COMMENT_IDS.comment1,
     content: "Siêu đỉnh! Can you share your code on GitHub?",
-    post: POST_IDS.post1, // Reference to post ID
-    author: {
-      // Embedded author info
-      _id: USER_IDS.user2,
-      name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran",
-    },
-    createdAt: hoursAgo(70), // Approx 3 days ago + 2 hours
+    post: POST_IDS.post1,
+    author: USER_IDS.user2,
+    createdAt: hoursAgo(70),
     updatedAt: hoursAgo(70),
+    reactions: [],
   },
   {
     _id: COMMENT_IDS.comment2,
-    content: "Quá đẹp! Did you use Zustand for state management?", // Updated comment
+    content: "Quá đẹp! Did you use Zustand for state management?",
     post: POST_IDS.post1,
-    author: {
-      _id: USER_IDS.user3,
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
-    },
-    createdAt: hoursAgo(68), // Approx 3 days ago + 4 hours
+    author: USER_IDS.user3,
+    createdAt: hoursAgo(68),
     updatedAt: hoursAgo(68),
+    reactions: [],
   },
   {
     _id: COMMENT_IDS.comment3,
     content:
       "The UI is cleaner than my browser history after a job interview! 😂",
     post: POST_IDS.post2,
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
-    createdAt: hoursAgo(93), // Approx 4 days ago + 3 hours
+    author: USER_IDS.user1,
+    createdAt: hoursAgo(93),
     updatedAt: hoursAgo(93),
+    reactions: [],
   },
   {
     _id: COMMENT_IDS.comment4,
     content:
-      "useEffect(() => { setPho('delicious') }, [hunger]); Best hook ever!", // Updated comment
+      "useEffect(() => { setPho('delicious') }, [hunger]); Best hook ever!",
     post: POST_IDS.post4,
-    author: {
-      _id: USER_IDS.user3,
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
-    },
-    createdAt: hoursAgo(331), // Approx 14 days ago + 5 hours
+    author: USER_IDS.user3,
+    createdAt: hoursAgo(331),
     updatedAt: hoursAgo(331),
+    reactions: [],
   },
   {
     _id: COMMENT_IDS.comment5,
     content:
       "Are you using Tailwind for this? The responsive design is on point! 👌",
     post: POST_IDS.post5,
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
-    createdAt: hoursAgo(500), // Approx 21 days ago + 4 hours
+    author: USER_IDS.user1,
+    createdAt: hoursAgo(500),
     updatedAt: hoursAgo(500),
+    reactions: [],
   },
   {
     _id: COMMENT_IDS.comment6,
     content:
       "Share your database optimization tricks! I need to speed up my queries too.",
     post: POST_IDS.post6,
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
-    createdAt: hoursAgo(716), // Approx 30 days ago + 4 hours
+    author: USER_IDS.user1,
+    createdAt: hoursAgo(716),
     updatedAt: hoursAgo(716),
+    reactions: [],
   },
 ];
 
-// --- Sample Reactions ---
 export const reactions = [
   {
     _id: uuidv4(),
-    targetType: "Post", // Can be "Post" or "Comment"
-    targetId: POST_IDS.post1, // ID of the post or comment
-    emoji: "like", // Type of reaction (like, love, etc.)
-    author: {
-      // Embedded author info
-      _id: USER_IDS.user2,
-      name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran",
-    },
-    createdAt: hoursAgo(71), // Approx 3 days ago + 1 hour
-  },
-  {
-    _id: uuidv4(),
-    targetType: "Post",
+    targetType: "POST",
     targetId: POST_IDS.post1,
-    emoji: "like",
-    author: {
-      _id: USER_IDS.user3,
-      name: "Le Thanh Backend",
-      avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
-    },
-    createdAt: hoursAgo(69), // Approx 3 days ago + 3 hours
+    emoji: "LIKE",
+    author: USER_IDS.user2,
+    createdAt: hoursAgo(71),
   },
   {
     _id: uuidv4(),
-    targetType: "Post",
+    targetType: "POST",
+    targetId: POST_IDS.post1,
+    emoji: "LIKE",
+    author: USER_IDS.user3,
+    createdAt: hoursAgo(69),
+  },
+  {
+    _id: uuidv4(),
+    targetType: "POST",
     targetId: POST_IDS.post2,
-    emoji: "like",
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
-    createdAt: hoursAgo(94), // Approx 4 days ago + 2 hours
+    emoji: "LIKE",
+    author: USER_IDS.user1,
+    createdAt: hoursAgo(94),
   },
   {
     _id: uuidv4(),
-    targetType: "Comment",
+    targetType: "COMMENT",
     targetId: COMMENT_IDS.comment1,
-    emoji: "like",
-    author: {
-      _id: USER_IDS.user1,
-      name: "Nguyen Van React",
-      avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
-    },
-    createdAt: hoursAgo(69.5), // Approx 3 days ago + 2.5 hours
+    emoji: "LIKE",
+    author: USER_IDS.user1,
+    createdAt: hoursAgo(69.5),
   },
   {
     _id: uuidv4(),
-    targetType: "Comment",
+    targetType: "COMMENT",
     targetId: COMMENT_IDS.comment3,
-    emoji: "like",
-    author: {
-      _id: USER_IDS.user2,
-      name: "Tran Thi CSS",
-      avatarUrl: "https://i.pravatar.cc/150?u=tran",
-    },
-    createdAt: hoursAgo(92.5), // Approx 4 days ago + 3.5 hours
+    emoji: "LIKE",
+    author: USER_IDS.user2,
+    createdAt: hoursAgo(92.5),
   },
 ];
 
-// --- Sample Friendships ---
-// Focus on user1's perspective
 export const friendships = [
   {
-    // User1 and User2 are friends
     _id: uuidv4(),
-    from: USER_IDS.user1, // User who initiated (or could be the other way)
+    from: USER_IDS.user1,
     to: USER_IDS.user2,
-    status: "accepted", // 'pending', 'accepted', 'declined', 'blocked'
+    status: "ACCEPTED",
     createdAt: daysAgo(90),
-    updatedAt: daysAgo(89), // Accepted 1 day later
+    updatedAt: daysAgo(89),
   },
   {
-    // User1 and User3 are friends
     _id: uuidv4(),
-    from: USER_IDS.user3, // User3 sent request to User1
+    from: USER_IDS.user3,
     to: USER_IDS.user1,
-    status: "accepted",
+    status: "ACCEPTED",
     createdAt: daysAgo(85),
-    updatedAt: daysAgo(84), // Accepted 1 day later
+    updatedAt: daysAgo(84),
   },
   {
-    // User1 sent a request to User5 (pending)
     _id: uuidv4(),
     from: USER_IDS.user1,
     to: USER_IDS.user5,
-    status: "pending",
+    status: "PENDING",
     createdAt: daysAgo(10),
     updatedAt: daysAgo(10),
   },
   {
-    // User4 sent a request to User1 (pending)
     _id: uuidv4(),
     from: USER_IDS.user4,
     to: USER_IDS.user1,
-    status: "pending",
+    status: "PENDING",
     createdAt: daysAgo(15),
     updatedAt: daysAgo(15),
   },
-  // --- Adding more pending requests for testing various scenarios ---
   {
     _id: uuidv4(),
-    from: USER_IDS.user3, // User3 sent another (redundant?) request recently - mock data quirk
+    from: USER_IDS.user3,
     to: USER_IDS.user1,
-    status: "pending",
+    status: "PENDING",
     createdAt: hoursAgo(2),
     updatedAt: hoursAgo(2),
   },
   {
     _id: uuidv4(),
-    from: USER_IDS.user2, // User2 sent a request to User1 recently (even though they are friends) - mock data quirk
+    from: USER_IDS.user2,
     to: USER_IDS.user1,
-    status: "pending",
+    status: "PENDING",
     createdAt: daysAgo(2),
     updatedAt: daysAgo(2),
   },
   {
     _id: uuidv4(),
-    from: USER_IDS.user1, // User1 sent request to User4
+    from: USER_IDS.user1,
     to: USER_IDS.user4,
-    status: "pending",
+    status: "PENDING",
     createdAt: daysAgo(5),
     updatedAt: daysAgo(5),
   },
   {
     _id: uuidv4(),
-    from: USER_IDS.user5, // User5 sent request to User1
+    from: USER_IDS.user5,
     to: USER_IDS.user1,
-    status: "pending",
-    createdAt: minutesAgo(1), // 1 month ago
+    status: "PENDING",
+    createdAt: minutesAgo(1),
     updatedAt: minutesAgo(1),
   },
 ];

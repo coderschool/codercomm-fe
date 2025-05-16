@@ -28,3 +28,12 @@ export const extractJWT = async (accessToken) => {
     return null;
   }
 };
+
+export const countBy = (array, prop) => {
+  return array.reduce((acc, item) => {
+    const key = item[prop];
+    if (!acc[key]) acc[key] = 0;
+    acc[key]++;
+    return acc;
+  }, {});
+};

@@ -3,10 +3,11 @@ import React, { useEffect } from "react";
 import PostList from "@/features/post/PostList";
 import PostForm from "@/features/post/PostForm";
 
-import { usePost } from "@/features/post/postSlice";
+import { usePosts } from "@/features/post/postSlice";
+import { Card } from "@/components/ui/card";
 
 function HomePage() {
-  const { fetchPosts } = usePost();
+  const { fetchPosts } = usePosts();
 
   useEffect(() => {
     fetchPosts();
@@ -14,7 +15,7 @@ function HomePage() {
 
   return (
     <div className="container flex gap-4 py-6">
-      <div className="w-96 flex flex-col h-[400px] border"></div>
+      <Card className="w-96 flex flex-col h-[400px] border"></Card>
 
       {/* Center Post Form and List */}
       <div className="w-full flex flex-col gap-4">
@@ -27,6 +28,8 @@ function HomePage() {
           <PostList />
         </div>
       </div>
+
+      <Card className="w-96 flex flex-col h-[400px] border"></Card>
     </div>
   );
 }

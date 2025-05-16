@@ -2,11 +2,11 @@ import React, { useEffect } from "react";
 import { useParams } from "react-router";
 import PostList from "@/features/post/PostList"; // Use the updated list
 
-import { usePost } from "@/features/post/postSlice";
+import { usePosts } from "@/features/post/postSlice";
 
 function UserProfilePage() {
   const { userId } = useParams(); // Get userId from route params
-  const { fetchUserPosts } = usePost();
+  const { fetchUserPosts } = usePosts();
 
   // Fetch profile when userId changes
   useEffect(() => {
