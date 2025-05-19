@@ -1,16 +1,10 @@
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
+import React from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 
-import { usePosts } from "./postSlice";
+import { usePosts } from "./postStore";
 import PostCard from "./PostCard";
 
-/**
- * Displays a list of posts.
- * If `userId` prop is provided, fetches and displays posts for that user.
- * Otherwise, fetches and displays the main feed posts.
- */
 function PostList() {
   const { posts, isLoading } = usePosts();
 
@@ -34,9 +28,5 @@ function PostList() {
     </div>
   );
 }
-
-PostList.propTypes = {
-  userId: PropTypes.string,
-};
 
 export default PostList;

@@ -1,12 +1,14 @@
 // src/mockApi/server.js
-import { delay, http, HttpResponse } from "msw";
+import { delay, http } from "msw";
 import { setupWorker } from "msw/browser";
 import { users, posts, comments, friendships, reactions } from "./data";
 import { SignJWT } from "jose";
-import { MOCK_JWT_SECRET } from "@/lib/config";
+import { MOCK_JWT_SECRET } from "./config";
 import { v4 as uuidv4 } from "uuid";
-import { extractJWT, generateApiResponse } from "./utils";
-import { withAuth } from "./middleware";
+import { ApiError, extractJWT, generateApiResponse } from "./utils";
+import { withAuth, catchError } from "./middleware";
+import { authSchema } from "./schema/auth.schema";
+import { updateUserSchema } from "./schema/user.schema";
 
 /**
  * Configures and starts the MSW API server.
@@ -59,53 +61,30 @@ const populateFriendshipUsers = (friendship) => {
   };
 };
 
-// Define all API handlers
-const handlers = [
+// Define all API controllers
+const controllers = [
   // --- Global delay to HTTP response ---
   http.all("*", async () => {
     await delay(250); // 250ms
   }),
+
   // --- Authentication Routes ---
-  http.post("/api/auth/login", async ({ request }) => {
-    try {
-      const { email, password } = await request.json();
-      // console.log(`🔑 Login Attempt: ${email} with password: ${password}`);
+  http.post(
+    "/api/auth/login",
+    catchError(async ({ request }) => {
+      const json = await request.json();
+      const { email, password } = await authSchema.validate(json);
+      console.log(`🔑 Login Attempt: ${email} with password: ${password}`);
       const user = db.users.find((u) => u.email === email);
 
-      if (!user) {
-        return generateApiResponse({
-          success: false,
-          errors: ["User not found"],
-          message: "User not found",
-          status: 404,
-        });
-      }
+      if (!user) throw new ApiError(404, "User not found");
 
-      if (user.password !== password) {
-        return generateApiResponse({
-          success: false,
-          errors: ["Invalid credentials"],
-          message: "Invalid credentials",
-          status: 401,
-        });
-      }
+      if (user.password !== password)
+        throw new ApiError(401, "Invalid credentials");
 
       // console.log(`🔑 Login Success: ${email}`);
 
-      // Get full user data with counts
-      const userPosts = db.posts.filter((post) => post.author === user._id);
-      const userFriends = db.friendships.filter(
-        (fs) =>
-          (fs.from === user._id || fs.to === user._id) &&
-          fs.status === "accepted"
-      );
-
-      const { password: userPassword, ...userData } = user; // Remove password from user data
-      const fullUser = {
-        ...userData,
-        postCount: userPosts.length,
-        friendCount: userFriends.length,
-      };
+      const { _id, name, avatarUrl } = user;
 
       const accessToken = await new SignJWT({ _id: user._id })
         .setProtectedHeader({ alg: "HS256" })
@@ -116,46 +95,153 @@ const handlers = [
       return generateApiResponse({
         success: true,
         data: {
-          user: fullUser,
+          user: { _id, name, avatarUrl },
           accessToken,
         },
         message: "Login successfully",
         status: 200,
       });
-    } catch (error) {
-      console.error("❌ Error logging in:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to login",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
-  // --- Post Routes ---
+  // --- User Routes ---
   http.get(
-    "/api/posts",
-    withAuth(async ({ request }) => {
-      try {
+    "/api/users",
+    catchError(
+      withAuth(async ({ request }) => {
         const accessToken = request.headers.get("Authorization").split(" ")[1];
         const payload = await extractJWT(accessToken);
         const currentUserId = payload._id;
-        const friends = db.friendships
-          .filter(
-            (f) =>
-              f.status === "ACCEPTED" &&
-              (f.from === currentUserId || f.to === currentUserId)
-          )
-          .map((f) => (f.from === currentUserId ? f.to : f.from));
-        const allowedAuthors = [currentUserId, ...friends];
 
-        let filteredPosts = db.posts.filter((p) =>
-          allowedAuthors.includes(p.author)
+        const users = db.users.filter((u) => u._id !== currentUserId);
+
+        return generateApiResponse({
+          success: true,
+          data: { users },
+          message: "Users fetched successfully",
+          status: 200,
+        });
+      })
+    )
+  ),
+
+  http.get(
+    "/api/users/:userId",
+    catchError(
+      withAuth(async ({ params }) => {
+        const { userId } = params;
+        const user = findUser(userId);
+
+        if (!user) throw new ApiError(404, "User not found");
+
+        const postCount = db.posts.reduce((count, post) => {
+          if (post.author === userId) {
+            count++;
+          }
+          return count;
+        }, 0);
+
+        const { password, ...userWithoutPassword } = user;
+        const userData = { ...userWithoutPassword, postCount };
+
+        return generateApiResponse({
+          success: true,
+          data: { user: userData },
+          message: "User fetched successfully",
+          status: 200,
+        });
+      })
+    )
+  ),
+
+  http.get(
+    "/api/users/me",
+    catchError(
+      withAuth(async ({ request }) => {
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUserId = payload._id;
+
+        const { password, ...user } = db.users.find(
+          (u) => u._id === currentUserId
         );
 
-        // Add comment count and reactions
-        filteredPosts = filteredPosts.map((post) => {
+        if (!user) throw new ApiError(404, "User not found");
+
+        return generateApiResponse({
+          success: true,
+          data: { user },
+          message: "Fetch my profile successfully",
+          status: 200,
+        });
+      })
+    )
+  ),
+
+  http.put(
+    "/api/users/me",
+    catchError(
+      withAuth(async ({ request }) => {
+        const accessToken = request.headers.get("Authorization").split(" ")[1];
+        const payload = await extractJWT(accessToken);
+        const currentUserId = payload._id;
+
+        const userIndex = db.users.findIndex((u) => u._id === currentUserId);
+
+        if (userIndex === -1) {
+          return generateApiResponse({
+            success: false,
+            errors: ["User not found"],
+            message: "User not found",
+            status: 404,
+          });
+        }
+
+        const json = await request.json();
+
+        const updateUserInput = await updateUserSchema.validate(json);
+
+        // Remove password from user object
+        const { password, ...user } = (db.users[userIndex] = {
+          ...db.users[userIndex],
+          ...updateUserInput,
+        });
+
+        saveToStorage();
+
+        return generateApiResponse({
+          success: true,
+          data: { user },
+          message: "Update profile successfully",
+          status: 200,
+        });
+      })
+    )
+  ),
+
+  // --- Post Routes ---
+
+  http.get(
+    "/api/posts/user/:userId",
+    catchError(
+      withAuth(({ params, request }) => {
+        const { userId } = params;
+
+        const userExists = db.users.findIndex((u) => u._id === userId) > -1;
+
+        if (!userExists) {
+          return generateApiResponse({
+            success: false,
+            errors: ["User not found"],
+            message: "User not found",
+            status: 404,
+          });
+        }
+
+        let userPosts = db.posts.filter((p) => p.author === userId);
+
+        // Add counts/reactions
+        userPosts = userPosts.map((post) => {
           const author = db.users.find((u) => u._id === post.author);
 
           const postWithAuthor = {
@@ -190,74 +276,6 @@ const handlers = [
           };
         });
 
-        filteredPosts.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
-
-        return generateApiResponse({
-          success: true,
-          data: {
-            posts: filteredPosts,
-            totalPages: 1,
-            count: filteredPosts.length,
-          },
-          status: 200,
-        });
-      } catch (error) {
-        console.error("❌ Error getting posts:", error);
-        return generateApiResponse({
-          success: false,
-          errors: [error],
-          message: error.message || "Failed to get posts",
-          status: error.status || 500,
-        });
-      }
-    })
-  ),
-
-  http.get(
-    "/api/posts/user/:userId",
-    withAuth(({ params, request }) => {
-      try {
-        const { userId } = params;
-
-        const userExists = db.users.findIndex((u) => u._id === userId) > -1;
-
-        if (!userExists) {
-          return generateApiResponse({
-            success: false,
-            errors: ["User not found"],
-            message: "User not found",
-            status: 404,
-          });
-        }
-
-        let userPosts = db.posts.filter((p) => p.author === userId);
-
-        // Add counts/reactions
-        userPosts = userPosts.map((post) => {
-          const author = db.users.find((u) => u._id === post.author);
-
-          const postWithAuthor = {
-            ...post,
-            author: {
-              _id: author._id,
-              name: author.name,
-              avatarUrl: author.avatarUrl,
-            },
-          };
-
-          const reactions = db.reactions.filter(
-            (r) => r.targetType === "POST" && r.targetId === post._id
-          );
-
-          return {
-            ...postWithAuthor,
-            commentCount: db.comments.filter((c) => c.post === post._id).length,
-            reactions,
-          };
-        });
-
         userPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         return generateApiResponse({
@@ -265,25 +283,14 @@ const handlers = [
           data: { posts: userPosts, totalPages: 1, count: userPosts.length },
           status: 200,
         });
-      } catch (error) {
-        console.error(
-          `❌ Error getting posts for user ${params.userId}:`,
-          error
-        );
-        return generateApiResponse({
-          success: false,
-          errors: [error],
-          message: error.message || "Failed to get user posts",
-          status: error.status || 500,
-        });
-      }
-    })
+      })
+    )
   ),
 
   http.post(
     "/api/posts",
-    withAuth(async ({ request }) => {
-      try {
+    catchError(
+      withAuth(async ({ request }) => {
         const accessToken = request.headers.get("Authorization").split(" ")[1];
         const { content, image } = await request.json();
         const payload = await extractJWT(accessToken);
@@ -314,14 +321,12 @@ const handlers = [
           author: currentUser._id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-
           reactions: [],
           commentCount: 0,
         };
 
         db.posts.unshift(newPost);
         saveToStorage();
-        // console.log("  -> New post created:", newPost._id);
 
         return generateApiResponse({
           success: true,
@@ -338,23 +343,15 @@ const handlers = [
           message: "Post created successfully",
           status: 200,
         });
-      } catch (error) {
-        console.error("❌ Error creating post:", error);
-        return generateApiResponse({
-          success: false,
-          errors: [error],
-          message: error.message || "Failed to create post",
-          status: error.status || 500,
-        });
-      }
-    })
+      })
+    )
   ),
 
   // --- Comment Routes ---
-  http.get("/api/posts/:postId/comments", ({ params }) => {
-    try {
+  http.get(
+    "/api/posts/:postId/comments",
+    catchError(({ params }) => {
       const postId = params.postId;
-      // console.log(`💬 Get Comments for Post: ${postId}`);
 
       let postComments = db.comments.filter((c) => c.post === postId);
 
@@ -401,28 +398,17 @@ const handlers = [
         },
         status: 200,
       });
-    } catch (error) {
-      console.error(
-        `❌ Error getting comments for post ${params.postId}:`,
-        error
-      );
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to get comments",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
-  http.post("/api/posts/:postId/comments", async ({ request, params }) => {
-    try {
+  http.post(
+    "/api/posts/:postId/comments",
+    catchError(async ({ request, params }) => {
       const postId = params.postId;
       const { content } = await request.json();
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
       const currentUser = findUser(payload._id);
-      // console.log(`💬 Create Comment: User=${currentUser._id}, Post=${postId}`);
 
       if (!content) {
         return generateApiResponse({
@@ -453,42 +439,36 @@ const handlers = [
         reactions: [],
       };
 
-      db.comments.push(newComment); // Add to the comments collection
-      saveToStorage(); // Save changes to storage
-      // console.log("  -> New comment added:", newComment._id);
+      db.comments.push(newComment);
+      saveToStorage();
 
       return generateApiResponse({
         success: true,
-        data: newComment,
+        data: {
+          comment: {
+            ...newComment,
+            author: {
+              _id: currentUser._id,
+              name: currentUser.name,
+              avatarUrl: currentUser.avatarUrl,
+            },
+          },
+        },
         message: "Comment added successfully",
         status: 200,
       });
-    } catch (error) {
-      console.error(
-        `❌ Error creating comment for post ${params.postId}:`,
-        error
-      );
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to create comment",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
   // --- Reaction Routes ---
   http.post(
     "/api/reactions",
-    withAuth(async ({ request }) => {
-      try {
+    catchError(
+      withAuth(async ({ request }) => {
         const { targetType, targetId, emoji } = await request.json();
         const accessToken = request.headers.get("Authorization").split(" ")[1];
         const payload = await extractJWT(accessToken);
         const currentUser = findUser(payload._id);
-        // console.log(
-        //   `👍 Reaction: User=${currentUser._id}, Type=${targetType}, ID=${targetId}, Emoji=${emoji}`
-        // );
 
         if (!["POST", "COMMENT"].includes(targetType) || !targetId || !emoji) {
           return generateApiResponse({
@@ -508,7 +488,6 @@ const handlers = [
         );
 
         // Upsert reaction
-
         let updatedReaction;
 
         if (existingReactionIndex > -1) {
@@ -552,24 +531,16 @@ const handlers = [
           },
           status: 200,
         });
-      } catch (error) {
-        console.error("❌ Error handling reaction:", error);
-        return generateApiResponse({
-          success: false,
-          errors: [error],
-          message: error.message || "Failed to handle reaction",
-          status: error.status || 500,
-        });
-      }
-    })
+      })
+    )
   ),
 
-  // --- Friendship Routes (User1's perspective) ---
-  http.get("/api/friends", async ({ request }) => {
-    try {
+  // --- Friendship Routes (User's perspective) ---
+  http.get(
+    "/api/friends",
+    catchError(async ({ request }) => {
       const url = new URL(request.url);
       const name = url.searchParams.get("name") || "";
-      // console.log(`👫 Get Friends: name='${name}'`);
 
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
@@ -596,20 +567,12 @@ const handlers = [
         data: { users: friendUsers, totalPages: 1, count: friendUsers.length },
         status: 200,
       });
-    } catch (error) {
-      console.error("❌ Error getting friends:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to get friends",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
-  http.get("/api/friends/requests", async ({ request }) => {
-    try {
-      // console.log(`🔔 Get All Requests`);
+  http.get(
+    "/api/friends/requests",
+    catchError(async ({ request }) => {
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
       const currentUserId = payload._id;
@@ -633,22 +596,14 @@ const handlers = [
         data: { incoming: incomingRequests, outgoing: outgoingRequests },
         status: 200,
       });
-    } catch (error) {
-      console.error("❌ Error getting friend requests:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to get friend requests",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
-  http.get("/api/friends/requests/incoming", async ({ request }) => {
-    try {
+  http.get(
+    "/api/friends/requests/incoming",
+    catchError(async ({ request }) => {
       const url = new URL(request.url);
       const name = url.searchParams.get("name") || "";
-      // console.log(`📩 Get Incoming Requests: name='${name}'`);
 
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
@@ -679,25 +634,17 @@ const handlers = [
         },
         status: 200,
       });
-    } catch (error) {
-      console.error("❌ Error getting incoming friend requests:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to get incoming friend requests",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
-  http.get("/api/friends/requests/outgoing", async ({ request }) => {
-    try {
+  http.get(
+    "/api/friends/requests/outgoing",
+    catchError(async ({ request }) => {
       const url = new URL(request.url);
       const name = url.searchParams.get("name") || "";
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
       const currentUserId = payload._id;
-      // console.log(`📤 Get Outgoing Requests: name='${name}'`);
 
       let outgoingRequests = db.friendships.filter(
         (fs) => fs.from === currentUserId && fs.status === "PENDING"
@@ -724,22 +671,14 @@ const handlers = [
         },
         status: 200,
       });
-    } catch (error) {
-      console.error("❌ Error getting outgoing friend requests:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to get outgoing friend requests",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
   // --- Friendship Action Routes ---
-  http.post("/api/friends/requests", async ({ request }) => {
-    try {
+  http.post(
+    "/api/friends/requests",
+    catchError(async ({ request }) => {
       const { to: targetUserId } = await request.json();
-      // console.log(`✉️ Send Friend Request: user1 -> ${targetUserId}`);
 
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
@@ -771,7 +710,7 @@ const handlers = [
           updatedAt: new Date().toISOString(),
         };
         db.friendships.push(newFriendshipRaw);
-        saveToStorage(); // Save changes to storage
+        saveToStorage();
         // Return the populated new friendship object
         return generateApiResponse({
           success: true,
@@ -805,143 +744,110 @@ const handlers = [
         message: "Cannot send friend request.",
         status: 400,
       });
-    } catch (error) {
-      console.error("❌ Error sending friend request:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to send friend request",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 
   http.put(
     "/api/friends/requests/:requesterId",
-    async ({ params, request }) => {
-      try {
-        const { requesterId } = params;
-        const url = new URL(request.url);
-        const action = url.searchParams.get("action"); // 'accept' or 'decline'
-        const accessToken = request.headers.get("Authorization").split(" ")[1];
-        const payload = await extractJWT(accessToken);
-        const currentUserId = payload._id;
+    catchError(async ({ params, request }) => {
+      const { requesterId } = params;
+      const url = new URL(request.url);
+      const action = url.searchParams.get("action"); // 'accept' or 'decline'
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-        // console.log(
-        //   `👫 Action on Request: requester=${requesterId}, action=${action}`
-        // );
+      const requestIndex = db.friendships.findIndex(
+        (fs) =>
+          fs.from === requesterId &&
+          fs.to === currentUserId &&
+          fs.status === "PENDING"
+      );
 
-        const requestIndex = db.friendships.findIndex(
-          (fs) =>
-            fs.from === requesterId &&
-            fs.to === currentUserId &&
-            fs.status === "PENDING"
-        );
-
-        if (requestIndex === -1) {
-          return generateApiResponse({
-            success: false,
-            errors: ["Incoming friend request not found or already handled."],
-            message: "Incoming friend request not found or already handled.",
-            status: 404,
-          });
-        }
-
-        if (action === "ACCEPT") {
-          db.friendships[requestIndex].status = "ACCEPTED";
-          db.friendships[requestIndex].updatedAt = new Date().toISOString();
-          saveToStorage(); // Save changes to storage
-          // Return the updated friendship record, populated
-          return generateApiResponse({
-            success: true,
-            data: {
-              friendship: populateFriendshipUsers(db.friendships[requestIndex]),
-            },
-            message: "Friend request accepted",
-            status: 200,
-          });
-        }
-
-        if (action === "DECLINE") {
-          const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
-          saveToStorage(); // Save changes to storage
-          // Return the ID of the declined/removed friendship
-          return generateApiResponse({
-            success: true,
-            data: { declinedFriendshipId: declinedRequest._id },
-            message: "Friend request declined",
-            status: 200,
-          });
-        }
-
+      if (requestIndex === -1) {
         return generateApiResponse({
           success: false,
-          errors: ["Invalid action."],
-          message: "Invalid action.",
-          status: 400,
-        });
-      } catch (error) {
-        console.error("❌ Error handling friend request action:", error);
-        return generateApiResponse({
-          success: false,
-          errors: [error],
-          message: error.message || "Failed to handle friend request action",
-          status: error.status || 500,
+          errors: ["Incoming friend request not found or already handled."],
+          message: "Incoming friend request not found or already handled.",
+          status: 404,
         });
       }
-    }
+
+      if (action === "ACCEPT") {
+        db.friendships[requestIndex].status = "ACCEPTED";
+        db.friendships[requestIndex].updatedAt = new Date().toISOString();
+        saveToStorage();
+        // Return the updated friendship record, populated
+        return generateApiResponse({
+          success: true,
+          data: {
+            friendship: populateFriendshipUsers(db.friendships[requestIndex]),
+          },
+          message: "Friend request accepted",
+          status: 200,
+        });
+      }
+
+      if (action === "DECLINE") {
+        const declinedRequest = db.friendships.splice(requestIndex, 1)[0];
+        saveToStorage();
+        // Return the ID of the declined/removed friendship
+        return generateApiResponse({
+          success: true,
+          data: { declinedFriendshipId: declinedRequest._id },
+          message: "Friend request declined",
+          status: 200,
+        });
+      }
+
+      return generateApiResponse({
+        success: false,
+        errors: ["Invalid action."],
+        message: "Invalid action.",
+        status: 400,
+      });
+    })
   ),
 
   http.delete(
     "/api/friends/requests/:recipientId",
-    async ({ params, request }) => {
-      try {
-        const { recipientId } = params;
-        const accessToken = request.headers.get("Authorization").split(" ")[1];
-        const payload = await extractJWT(accessToken);
-        const currentUserId = payload._id;
-        // console.log(`❌ Cancel Outgoing Request: user1 -> ${recipientId}`);
+    catchError(async ({ params, request }) => {
+      const { recipientId } = params;
+      const accessToken = request.headers.get("Authorization").split(" ")[1];
+      const payload = await extractJWT(accessToken);
+      const currentUserId = payload._id;
 
-        const requestIndex = db.friendships.findIndex(
-          (fs) =>
-            fs.from === currentUserId &&
-            fs.to === recipientId &&
-            fs.status === "PENDING"
-        );
+      const requestIndex = db.friendships.findIndex(
+        (fs) =>
+          fs.from === currentUserId &&
+          fs.to === recipientId &&
+          fs.status === "PENDING"
+      );
 
-        if (requestIndex === -1) {
-          return generateApiResponse({
-            success: false,
-            errors: ["Outgoing friend request not found."],
-            message: "Outgoing friend request not found.",
-            status: 404,
-          });
-        }
-
-        db.friendships.splice(requestIndex, 1); // Remove the pending request
-        saveToStorage(); // Save changes to storage
-
-        return generateApiResponse({
-          success: true,
-          message: "Friend request cancelled",
-          status: 204,
-        });
-      } catch (error) {
-        console.error("❌ Error cancelling friend request:", error);
+      if (requestIndex === -1) {
         return generateApiResponse({
           success: false,
-          errors: [error],
-          message: error.message || "Failed to cancel friend request",
-          status: error.status || 500,
+          errors: ["Outgoing friend request not found."],
+          message: "Outgoing friend request not found.",
+          status: 404,
         });
       }
-    }
+
+      db.friendships.splice(requestIndex, 1); // Remove the pending request
+      saveToStorage();
+
+      return generateApiResponse({
+        success: true,
+        message: "Friend request cancelled",
+        status: 204,
+      });
+    })
   ),
 
-  http.delete("/api/friends/:friendId", async ({ params, request }) => {
-    try {
+  http.delete(
+    "/api/friends/:friendId",
+    catchError(async ({ params, request }) => {
       const { friendId } = params;
-      // console.log(`👋 Unfriend: user1 <-> ${friendId}`);
 
       const accessToken = request.headers.get("Authorization").split(" ")[1];
       const payload = await extractJWT(accessToken);
@@ -964,27 +870,19 @@ const handlers = [
       }
 
       db.friendships.splice(friendshipIndex, 1); // Remove the friendship
-      saveToStorage(); // Save changes to storage
+      saveToStorage();
 
       return generateApiResponse({
         success: true,
         message: "Friend removed successfully",
         status: 204,
       });
-    } catch (error) {
-      console.error("❌ Error removing friend:", error);
-      return generateApiResponse({
-        success: false,
-        errors: [error],
-        message: error.message || "Failed to remove friend",
-        status: error.status || 500,
-      });
-    }
-  }),
+    })
+  ),
 ];
 
 // Create and return the MSW browser server
-const browserServer = setupWorker(...handlers);
+const browserServer = setupWorker(...controllers);
 
 // Initialize database on first visit
 const initializeDatabase = () => {
@@ -1003,7 +901,7 @@ const initializeDatabase = () => {
 
 // Call initialization when browser server starts
 browserServer.start = async (options) => {
-  await setupWorker(...handlers).start(options);
+  await setupWorker(...controllers).start(options);
   initializeDatabase();
 };
 

@@ -7,7 +7,7 @@ import HomePage from "./HomePage";
 import LoginPage from "./LoginPage";
 import AccountPage from "./AccountPage";
 import NotFoundPage from "./NotFoundPage";
-import UserProfilePage from "./UserProfilePage";
+import UserPage from "./UserPage";
 import FriendsPage from "./FriendsPage";
 import FriendRequestsPage from "./FriendRequestsPage";
 
@@ -30,7 +30,7 @@ function Router() {
         {/* Core authenticated routes */}
         <Route index element={<HomePage />} />
         <Route path="account" element={<AccountPage />} />
-        <Route path="users/:userId" element={<UserProfilePage />} />
+        <Route path="users/:userId" element={<UserPage />} />
         <Route path="friends" element={<FriendsPage />} />
         <Route path="requests" element={<FriendRequestsPage />} />
       </Route>

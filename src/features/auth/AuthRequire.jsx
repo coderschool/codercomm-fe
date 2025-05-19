@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate, useLocation } from "react-router";
 
 import LoadingCircle from "@/components/LoadingCircle";
-import { useAuth } from "./authSlice";
+import { useAuth } from "./authStore";
 /**
  * Route Guard: AuthRequire
  * - Renders children (e.g., Home page) only if the user IS authenticated.

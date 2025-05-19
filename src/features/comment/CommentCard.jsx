@@ -1,5 +1,4 @@
 import React from "react";
-import PropTypes from "prop-types";
 import { Link } from "react-router";
 import { formatDistanceToNow } from "date-fns";
 
@@ -8,12 +7,13 @@ import { cn } from "@/lib/mergeClassName";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CommentReactions from "./CommentReaction";
+
 function CommentCard({ comment }) {
   const { _id, author, content, createdAt, updatedAt, reactions } = comment;
 
   return (
     <div className={cn("flex gap-2 py-1 group")}>
-      <Link to={`/user/${comment.author._id}`} className="flex-shrink-0 ">
+      <Link to={`/users/${comment.author._id}`} className="flex-shrink-0">
         <Avatar className="h-8 w-8 border">
           <AvatarImage src={author.avatarUrl || ""} alt={author.name} />
           <AvatarFallback>{getInitials(author.name)}</AvatarFallback>
@@ -23,7 +23,7 @@ function CommentCard({ comment }) {
       <div className="-mt-0.5 grow flex flex-col bg-muted rounded-lg relative text-sm px-3 pt-2 pb-3">
         <Link
           to={`/users/${comment.author._id}`}
-          className="font-semibold hover:underline"
+          className="font-semibold hover:underline w-fit"
         >
           {author.name}
         </Link>

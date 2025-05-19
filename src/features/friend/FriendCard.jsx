@@ -10,7 +10,7 @@ import { Clock } from "lucide-react";
 
 import { getInitials } from "@/lib/getInitials";
 import { cn } from "@/lib/mergeClassName";
-import { useAuth } from "../auth/authSlice";
+import { useAuth } from "../auth/authStore";
 
 /**
  * Displays a user card for a friend or a friend request.
@@ -97,7 +97,7 @@ function FriendCard({ friendship, request }) {
       <div className="flex items-center justify-between gap-2">
         {/* Left side: Avatar and Info */}
         <div className="flex items-center gap-2 overflow-hidden">
-          <Link to={`/user/${targetUserId}`} className="flex-shrink-0">
+          <Link to={`/users/${targetUserId}`} className="flex-shrink-0">
             <Avatar className="w-10 h-10 border">
               <AvatarImage src={avatarUrl || ""} alt={name || "User"} />
               <AvatarFallback>{getInitials(name || "")}</AvatarFallback>
@@ -105,7 +105,7 @@ function FriendCard({ friendship, request }) {
           </Link>
           <div className="flex-1 min-w-0">
             <Link
-              to={`/user/${targetUserId}`}
+              to={`/users/${targetUserId}`}
               className="font-semibold text-sm hover:underline block truncate"
               title={name || "Unknown User"} // Show full name on hover
             >

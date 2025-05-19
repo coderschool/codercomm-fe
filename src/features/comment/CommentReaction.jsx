@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useComments } from "./commentStore";
+import { useComments } from "./CommentStoreProvider";
 import { REACTION_EMOJIS } from "@/lib/config";
-import { useAuth } from "../auth/authSlice";
+import { useAuth } from "../auth/authStore";
 import { cn } from "@/lib/mergeClassName";
 import {
   TooltipProvider,
@@ -25,11 +25,11 @@ function CommentReactions({ commentId, commentReactions = [] }) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger className="text-muted-foreground hover:underline px-0.5">
+        <TooltipTrigger asChild>
           {myEmoji ? (
             <myEmoji.icon
               size={14}
-              className={`${myEmoji.textColor}`}
+              className={`cursor-pointer ${myEmoji.textColor}`}
               onClick={() => reactToComment(commentId, myReaction.emoji)}
             />
           ) : (

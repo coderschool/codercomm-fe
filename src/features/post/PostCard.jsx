@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import PostReaction from "./PostReaction";
 import CommentForm from "@/features/comment/CommentForm";
 import CommentList from "@/features/comment/CommentList";
-import { CommentStore } from "../comment/CommentStore";
+import { CommentStoreProvider } from "../comment/CommentStoreProvider";
 
 function PostCard({ post }) {
   const { author, _id, content, image, createdAt, reactions } = post;
@@ -40,10 +40,6 @@ function PostCard({ post }) {
             {formatTimeAgo(createdAt)}
           </p>
         </div>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <MoreVertical className="h-5 w-5" />
-          <span className="sr-only">More</span>
-        </Button>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -77,10 +73,10 @@ function PostCard({ post }) {
         {showingComments && (
           <div className="w-full grow flex flex-col gap-6 mt-4">
             <Separator />
-            <CommentStore postId={_id}>
+            <CommentStoreProvider postId={_id}>
               <CommentList />
-              {/* <CommentForm postId={_id} /> */}
-            </CommentStore>
+              <CommentForm />
+            </CommentStoreProvider>
           </div>
         )}
       </CardFooter>

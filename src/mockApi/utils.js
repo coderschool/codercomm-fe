@@ -1,6 +1,13 @@
-import { MOCK_JWT_SECRET } from "@/lib/config";
+import { MOCK_JWT_SECRET } from "./config";
 import { jwtVerify } from "jose";
 import { HttpResponse } from "msw";
+
+export class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
 export const generateApiResponse = ({
   status,

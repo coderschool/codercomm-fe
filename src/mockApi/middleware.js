@@ -1,9 +1,10 @@
+import { ValidationError } from "yup";
 import { extractJWT, generateApiResponse } from "./utils";
 
-export function withAuth(resolver) {
+export const withAuth = (resolver) => {
   return async (input) => {
     const { request } = input;
-    const accessToken = request.headers.get("Authorization").split(" ")[1];
+    const accessToken = request.headers.get("Authorization")?.split(" ")[1];
 
     const payload = await extractJWT(accessToken);
 
@@ -18,4 +19,30 @@ export function withAuth(resolver) {
 
     return resolver(input);
   };
-}
+};
+
+export const catchError = (handler) => {
+  return async (ctx) => {
+    try {
+      return await handler(ctx);
+    } catch (error) {
+      console.error("❌ Error:", error);
+
+      if (error instanceof ValidationError) {
+        return generateApiResponse({
+          success: false,
+          errors: error.errors,
+          message: error.message,
+          status: 422,
+        });
+      }
+
+      return generateApiResponse({
+        success: false,
+        errors: [error.message],
+        message: error.message || "Internal server error",
+        status: error.status || 500,
+      });
+    }
+  };
+};

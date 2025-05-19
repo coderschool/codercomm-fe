@@ -12,21 +12,22 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Image, Send, Loader2 } from "lucide-react";
+import { Image, Send, Loader2, Trash } from "lucide-react";
 import { Link } from "react-router";
-import { toast } from "sonner";
 
 import { getInitials } from "@/lib/getInitials";
-import { useAuth } from "../auth/authSlice";
-import { usePosts } from "./postSlice";
+import { useAuth } from "../auth/authStore";
+import { usePosts } from "./postStore";
+import { Input } from "@/components/ui/input";
+import { uploadImage } from "@/lib/cloudinary";
 
 const postSchema = yup
   .object({
-    // Require content, allow optional image later
     content: yup.string().required("Post content cannot be empty.").trim(),
-    // image: yup.string().url("Invalid image URL"), // Add later if implementing image uploads
+    image: yup.string().optional(),
   })
   .required();
 
@@ -38,20 +39,26 @@ function PostForm() {
     resolver: yupResolver(postSchema),
     defaultValues: {
       content: "",
-      // image: "",
+      image: "",
     },
   });
 
   const {
     control,
+    watch,
     handleSubmit,
+    setValue,
     formState: { isSubmitting },
   } = form;
 
   const onSubmit = async (data) => {
-    console.log("Submitting post:", data);
     try {
-      await createPost(data);
+      const { image, content } = data;
+      let imageUrl;
+      if (image) {
+        imageUrl = await uploadImage(image);
+      }
+      await createPost({ content, image: imageUrl });
       form.reset();
     } catch (error) {
       console.error("Error submitting post form:", error);
@@ -59,16 +66,17 @@ function PostForm() {
   };
 
   const firstName = currentUser?.name?.split(" ")[0] || "User";
+  const imageUrl = watch("image");
 
   return (
     <Card className="mb-6 shadow-sm">
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="pt-6">
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               {currentUser && (
                 <Link
-                  to={`/user/${currentUser._id}`}
+                  to={`/users/${currentUser._id}`}
                   className="flex-shrink-0 mt-1"
                 >
                   <Avatar className="h-10 w-10 border">
@@ -92,29 +100,73 @@ function PostForm() {
                       <FormControl>
                         <Textarea
                           placeholder={`What's on your mind, ${firstName}?`}
-                          className="resize-none min-h-[80px] border-none focus-visible:ring-0 shadow-none p-2"
+                          className="resize-none min-h-[70px] border-none focus-visible:ring-0 shadow-none px-0"
                           {...field}
+                          disabled={isSubmitting}
                         />
                       </FormControl>
-                      <FormMessage className="px-2 text-xs" />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
+
+                {/* Display image if it exists */}
+                {imageUrl && (
+                  <div className="rounded-md overflow-hidden h-[400px]">
+                    <img
+                      src={imageUrl}
+                      alt="post image"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
 
-          <CardFooter className="flex justify-between border-t px-4 py-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-primary p-2"
-              onClick={() => toast.info("Image upload coming soon!")}
-            >
-              <Image className="h-5 w-5 mr-2" />
-              <span className="text-xs">Add Image</span>
-            </Button>
+          <CardFooter className="flex justify-between border-t px-6 py-3">
+            <FormField
+              control={control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <FormLabel className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted rounded-md">
+                      <Image className="h-5 w-5" />
+                      <span className="text-xs">
+                        {imageUrl ? "Change Image" : "Add Image"}
+                      </span>
+                    </FormLabel>
+
+                    {imageUrl && (
+                      <button
+                        type="button"
+                        className="hover:bg-muted flex items-center gap-2 rounded-md p-2"
+                        onClick={() => setValue("image", "")}
+                      >
+                        <Trash className="h-5 w-5" />
+                        <span className="text-xs">Remove Image</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const objectUrl = URL.createObjectURL(file);
+                          field.onChange(objectUrl);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <Button
               type="submit"

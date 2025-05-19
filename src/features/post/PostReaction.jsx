@@ -1,8 +1,8 @@
 import React from "react";
 
 import { Button } from "@/components/ui/button";
-import { usePosts } from "./postSlice";
-import { useAuth } from "../auth/authSlice";
+import { usePosts } from "./postStore";
+import { useAuth } from "../auth/authStore";
 import { cn } from "@/lib/mergeClassName";
 import { REACTION_EMOJIS } from "@/lib/config";
 import {
@@ -29,7 +29,7 @@ function PostReactions({ postId, postReactions = [] }) {
         return (
           <TooltipProvider key={reaction.emoji}>
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger asChild>
                 <Button
                   variant="icon"
                   key={reaction.emoji}

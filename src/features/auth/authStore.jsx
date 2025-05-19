@@ -1,6 +1,6 @@
 import apiService from "@/lib/apiService";
 import { toast } from "sonner";
-import { create } from "zustand";
+import { createStore, useStore } from "zustand";
 // import { useShallow } from "zustand/shallow";
 import { devtools, persist } from "zustand/middleware";
 
@@ -10,7 +10,7 @@ const initialState = {
   error: null,
 };
 
-export const useAuth = create(
+const authStore = createStore(
   devtools(
     persist(
       (set, get) => ({
@@ -36,7 +36,7 @@ export const useAuth = create(
             console.error("Login Error:", error);
             const errorMessage = error?.message || "Login failed";
             set({ isLoading: false, error: errorMessage });
-            toast.error("Login failed");
+            toast.error(errorMessage);
             throw error;
           }
         },
@@ -52,9 +52,15 @@ export const useAuth = create(
         name: "codercomm-current-user",
         partialize: (state) => ({ currentUser: state.currentUser }),
       }
-    )
+    ),
+    { name: "authStore", store: "authStore" }
   )
 );
+
+export const useAuth = (selector) => {
+  const store = useStore(authStore, selector);
+  return store;
+};
 
 /*
  * Advanced selector usage with useShallow:

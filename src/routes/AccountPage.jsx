@@ -9,17 +9,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/getInitials";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/features/auth/authSlice";
+import { useAuth } from "@/features/auth/authStore";
 
-/**
- * Account Settings Page (Read-Only)
- * Displays basic user info. Editing functionality is planned for the future.
- */
 function AccountPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
 
   // Display loading state if currentUser isn't available yet
-  if (!currentUser) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -35,9 +31,7 @@ function AccountPage() {
       <Card>
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
-          <CardDescription>
-            Your basic profile details. Profile editing is coming soon!
-          </CardDescription>
+          <CardDescription>Your basic profile details.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-4">
           {/* Avatar and Name/Email */}
@@ -51,22 +45,11 @@ function AccountPage() {
                 {getInitials(currentUser.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <p className="text-lg font-semibold truncate">
-                {currentUser.name}
-              </p>
-              <p className="text-sm text-muted-foreground truncate">
-                {currentUser.email}
-              </p>
-            </div>
+            <p className="text-lg font-semibold truncate">{currentUser.name}</p>
           </div>
 
           {/* Details Section */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-            <div>
-              <p className="font-medium text-muted-foreground">Username</p>
-              <p>{currentUser.username || "N/A"}</p>
-            </div>
             {/* Add other read-only fields if desired (City, Country, Company, Job) */}
             {(currentUser.city || currentUser.country) && (
               <div>
@@ -105,10 +88,8 @@ function AccountPage() {
       {/* Placeholder for Other Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Other Settings</CardTitle>
-          <CardDescription>
-            Password change, notifications, etc. (Coming Soon)
-          </CardDescription>
+          <CardTitle>Socials</CardTitle>
+          <CardDescription>Add your social media links here.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground italic">

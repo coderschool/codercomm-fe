@@ -36,7 +36,6 @@ export const COMMENT_IDS = {
 export const users = [
   {
     _id: USER_IDS.user1,
-    username: "learnreact",
     name: "Nguyen Van React",
     email: "reactlover@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=nguyen",
@@ -55,7 +54,6 @@ export const users = [
   },
   {
     _id: USER_IDS.user2,
-    username: "cssqueen",
     name: "Tran Thi CSS",
     email: "styling@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=tran",
@@ -74,7 +72,6 @@ export const users = [
   },
   {
     _id: USER_IDS.user3,
-    username: "nodemaster",
     name: "Le Thanh Backend",
     email: "serverside@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=lethanh",
@@ -93,7 +90,6 @@ export const users = [
   },
   {
     _id: USER_IDS.user4,
-    username: "fullstackdev",
     name: "Pham Minh Code",
     email: "fullstack@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=phamminh",
@@ -112,7 +108,6 @@ export const users = [
   },
   {
     _id: USER_IDS.user5,
-    username: "devopswhiz",
     name: "Hoang The Cloud",
     email: "cloudguru@coderschool.vn",
     avatarUrl: "https://i.pravatar.cc/150?u=hoangcloud",

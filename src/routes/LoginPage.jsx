@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
 
-import { useAuth } from "@/features/auth/authSlice";
+import { useAuth } from "@/features/auth/authStore";
 import { toast } from "sonner";
 
 /**

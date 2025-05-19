@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useAuth } from "@/features/auth/authSlice";
+import { useAuth } from "@/features/auth/authStore";
 
 function MainHeader() {
   const navigate = useNavigate();
@@ -66,9 +66,6 @@ function MainHeader() {
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
                     {currentUser.name || "User"}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {currentUser.email || "No email"}
                   </p>
                 </div>
               </DropdownMenuLabel>

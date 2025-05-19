@@ -1,10 +1,8 @@
-import React, { useState } from "react";
-import PropTypes from "prop-types";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
-// Hooks & Components
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,79 +15,64 @@ import {
 } from "@/components/ui/form";
 import { Send, Loader2 } from "lucide-react";
 
-// Utilities
 import { getInitials } from "@/lib/getInitials";
-import { useAuth } from "../auth/authSlice";
-import { useComments } from "./CommentStore";
+import { useAuth } from "../auth/authStore";
+import { useComments } from "./CommentStoreProvider";
+import { Textarea } from "@/components/ui/textarea";
 
-/**
- * Yup validation schema for the comment form.
- */
 const commentSchema = yup
   .object({
     content: yup.string().required("Comment cannot be empty").trim(),
   })
   .required();
 
-/**
- * Comment form for creating a new comment on a post
- * @param {Object} props - Component props
- * @param {string} props.postId - ID of the post to comment on
- */
-function CommentForm({ postId }) {
-  // Select user and action from store
+function CommentForm() {
   const { currentUser } = useAuth();
-  // const { createComment } = useComments();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { createComment } = useComments();
+  const { avatarUrl, name } = currentUser;
 
   const form = useForm({
     resolver: yupResolver(commentSchema),
     defaultValues: { content: "" },
   });
 
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting, isValid },
+  } = form;
+
   const onSubmit = async (data) => {
-    console.log("Submitting comment:", data);
-    setIsSubmitting(true);
     try {
-      // await createComment(postId, data); // Use store action
-      form.reset(); // Reset form on success
+      const { content } = data;
+      await createComment(content);
+      form.reset();
     } catch (error) {
-      // Error is handled/toasted in the store action
-      console.error("Comment submission failed in form:", error);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error submitting comment form:", error);
     }
   };
-
-  if (!currentUser) return null; // Don't show form if not logged in
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit)}
         className="flex items-start gap-3 py-2"
       >
-        {/* Current User Avatar */}
         <Avatar className="h-8 w-8 border mt-1 flex-shrink-0">
-          <AvatarImage
-            src={currentUser.avatarUrl || ""}
-            alt={currentUser.name}
-          />
-          <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
+          <AvatarImage src={avatarUrl || ""} alt={name} />
+          <AvatarFallback>{getInitials(name)}</AvatarFallback>
         </Avatar>
 
-        {/* Comment Input Field */}
         <FormField
-          control={form.control}
+          control={control}
           name="content"
           render={({ field }) => (
             <FormItem className="flex-1 relative">
-              {/* <FormLabel className="sr-only">Comment</FormLabel> */}
               <FormControl>
                 <div className="relative">
-                  <Input
+                  <Textarea
                     placeholder="Write a comment..."
-                    className="pr-10 h-9 text-sm"
+                    className="pr-10 text-sm"
                     {...field}
                     disabled={isSubmitting}
                   />
@@ -97,7 +80,7 @@ function CommentForm({ postId }) {
                     type="submit"
                     size="icon"
                     variant="ghost"
-                    disabled={isSubmitting || !form.formState.isValid}
+                    disabled={isSubmitting || !isValid}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-primary"
                   >
                     {isSubmitting ? (
@@ -117,9 +100,5 @@ function CommentForm({ postId }) {
     </Form>
   );
 }
-
-CommentForm.propTypes = {
-  postId: PropTypes.string.isRequired,
-};
 
 export default CommentForm;

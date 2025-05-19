@@ -55,24 +55,20 @@ apiService.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // Handle errors (non-2xx status codes)
-    console.error("❌ API Response Error:", error.response || error.message);
+    const { response } = error;
+    const { data } = response;
 
-    // Try to extract a meaningful error message from the response
-    // This depends on how your backend (or mock server) structures error responses
-    const message =
-      error.response?.data?.message || // Check direct message property first (common practice)
-      error.response?.data?.errors?.message || // Check nested structure
-      error.message || // Use the generic Axios error message
-      "An unexpected API error occurred"; // Fallback message
+    // Handle errors (non-2xx status codes)
+    console.error("❌ API Response:", response);
 
     if (error.response?.status === 401) {
       localStorage.removeItem("accessToken");
+      localStorage.removeItem("codercomm-current-user");
     }
 
     // Reject the promise with a standardized error object including the message
-    // Components catching this can rely on error.message
-    return Promise.reject({ message });
+
+    return Promise.reject({ ...data });
   }
 );
 

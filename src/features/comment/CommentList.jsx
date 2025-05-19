@@ -2,7 +2,7 @@ import React from "react";
 
 import CommentCard from "./CommentCard";
 
-import { useComments } from "./CommentStore";
+import { useComments } from "./CommentStoreProvider";
 import { Loader2 } from "lucide-react";
 
 function CommentList() {
