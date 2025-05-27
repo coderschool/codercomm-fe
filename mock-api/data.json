@@ -1,0 +1,545 @@
+{
+  "users": [
+    {
+      "_id": "coderschool",
+      "name": "CoderSchool",
+      "email": "coderschool@coderschool.vn",
+      "avatarUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4wYRJfmTNfxEL77K4o7WZiUU_a4V-VfjulA&s",
+      "coverUrl": "https://cdn.prod.website-files.com/63bd2733c7e2f16bd005016f/63c659bdb8a2d24b7a112b07_image%2093.webp",
+      "aboutMe": "Bringing world‑class coding education accessible to Vietnamese talents, giving them the skills and portfolio needed to break into top‑tier tech companies.",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "company": "Coderschool",
+      "jobTitle": "Educator",
+      "facebookLink": "https://www.facebook.com/coderschoolvn/",
+      "instagramLink": "https://www.instagram.com/coderschoolvietnam/",
+      "linkedinLink": "https://vn.linkedin.com/school/coderschool/",
+      "twitterLink": "https://www.coderschool.vn",
+      "createdAt": "2023-03-19T00:00:00.000Z",
+      "password": "password"
+    },
+    {
+      "_id": "youni",
+      "name": "Youni",
+      "email": "youni@youni.vn",
+      "avatarUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvdRDQa66h_v5eB7jM8U7IxSE549z34B-JGA&s",
+      "coverUrl": "https://cdn.youni.ai/uploads/1736481463822-20250109-180629.jpeg",
+      "aboutMe": "Youni is a learning platform aims to connect industry-skilled influencers with students in Vietnam",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "company": "Coderschool",
+      "jobTitle": "Educator",
+      "facebookLink": "https://www.facebook.com/youniai/",
+      "instagramLink": "https://www.instagram.com/coderschoolvietnam/",
+      "linkedinLink": "https://vn.linkedin.com/school/coderschool/",
+      "twitterLink": "https://youni.ai/",
+      "password": "password"
+    },
+    {
+      "_id": "user1",
+      "name": "Nguyen Van React",
+      "email": "reactlover@coderschool.vn",
+      "avatarUrl": "https://i.pravatar.cc/150?u=nguyen",
+      "coverUrl": "https://picsum.photos/id/1018/800/200",
+      "aboutMe": "React developer by day, phở connoisseur by night",
+      "city": "Ho Chi Minh City",
+      "country": "Vietnam",
+      "company": "CoderSchool",
+      "jobTitle": "Frontend Developer",
+      "facebookLink": "https://facebook.com",
+      "instagramLink": "https://instagram.com",
+      "linkedinLink": "https://linkedin.com",
+      "twitterLink": "https://twitter.com",
+      "createdAt": "2023-03-19T00:00:00.000Z",
+      "password": "password"
+    },
+    {
+      "_id": "user2",
+      "name": "Tran Thi CSS",
+      "email": "styling@coderschool.vn",
+      "avatarUrl": "https://i.pravatar.cc/150?u=tran",
+      "coverUrl": "https://picsum.photos/id/1019/800/200",
+      "aboutMe": "Making divs pretty since 2015. Can center anything vertically.",
+      "city": "Hanoi",
+      "country": "Vietnam",
+      "company": "Design Divas",
+      "jobTitle": "UI/UX Designer",
+      "facebookLink": "https://facebook.com",
+      "instagramLink": "https://instagram.com",
+      "linkedinLink": "https://linkedin.com",
+      "twitterLink": "https://twitter.com",
+      "createdAt": "2023-02-22T00:00:00.000Z",
+      "password": "password"
+    },
+    {
+      "_id": "user3",
+      "name": "Le Thanh Backend",
+      "email": "serverside@coderschool.vn",
+      "avatarUrl": "https://i.pravatar.cc/150?u=lethanh",
+      "coverUrl": "https://picsum.photos/id/1025/800/200",
+      "aboutMe": "I make APIs so fast even my coffee can't keep up",
+      "city": "Da Nang",
+      "country": "Vietnam",
+      "company": "Server Solutions",
+      "jobTitle": "Backend Developer",
+      "facebookLink": "https://facebook.com",
+      "instagramLink": "https://instagram.com",
+      "linkedinLink": "https://linkedin.com",
+      "twitterLink": "https://twitter.com",
+      "createdAt": "2023-02-13T00:00:00.000Z",
+      "password": "password"
+    },
+    {
+      "_id": "user4",
+      "name": "Pham Minh Code",
+      "email": "fullstack@coderschool.vn",
+      "avatarUrl": "https://i.pravatar.cc/150?u=phamminh",
+      "coverUrl": "https://picsum.photos/id/1031/800/200",
+      "aboutMe": "I do frontend, backend, and can fix the office printer",
+      "city": "Hue",
+      "country": "Vietnam",
+      "company": "Viet Tech",
+      "jobTitle": "Full-stack Developer",
+      "facebookLink": "https://facebook.com",
+      "instagramLink": "https://instagram.com",
+      "linkedinLink": "https://linkedin.com",
+      "twitterLink": "https://twitter.com",
+      "createdAt": "2023-01-16T00:00:00.000Z",
+      "password": "password"
+    },
+    {
+      "_id": "user5",
+      "name": "Hoang The Cloud",
+      "email": "cloudguru@coderschool.vn",
+      "avatarUrl": "https://i.pravatar.cc/150?u=hoangcloud",
+      "coverUrl": "https://picsum.photos/id/1039/800/200",
+      "aboutMe": "If it works on your machine, I'll make it work in production",
+      "city": "Can Tho",
+      "country": "Vietnam",
+      "company": "Cloud Crusaders",
+      "jobTitle": "DevOps Engineer",
+      "facebookLink": "https://facebook.com",
+      "instagramLink": "https://instagram.com",
+      "linkedinLink": "https://linkedin.com",
+      "twitterLink": "https://twitter.com",
+      "createdAt": "2023-01-09T00:00:00.000Z",
+      "password": "password"
+    }
+  ],
+  "posts": [
+    {
+      "_id": "post1",
+      "content": "🎓 Exciting news! Our new Full-stack Web Development bootcamp is now open for enrollment. Learn React, Node.js, and more in just 16 weeks! #CodingBootcamp #WebDev",
+      "image": "https://picsum.photos/id/1/800/400",
+      "author": "coderschool",
+      "createdAt": "2024-03-17T00:00:00.000Z",
+      "updatedAt": "2024-03-17T00:00:00.000Z"
+    },
+    {
+      "_id": "post2",
+      "content": "🌟 Success Story: Meet our graduate who just landed a job at a top tech company! From zero coding experience to full-stack developer in 6 months. Your journey could be next! #SuccessStory #CodingCareer",
+      "image": "https://picsum.photos/id/2/800/400",
+      "author": "coderschool",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post3",
+      "content": "📚 Free Workshop Alert! Join us this Saturday for a hands-on session on React Hooks and State Management. Perfect for beginners! Register now at coderschool.vn/workshops #LearnToCode #ReactJS",
+      "image": "https://picsum.photos/id/3/800/400",
+      "author": "coderschool",
+      "createdAt": "2024-03-11T00:00:00.000Z",
+      "updatedAt": "2024-03-11T00:00:00.000Z"
+    },
+    {
+      "_id": "post4",
+      "content": "Just built my first React component! Took me 5 cups of cà phê sữa đá but it was worth it! 🚀",
+      "image": "https://picsum.photos/id/237/800/400",
+      "author": "user1",
+      "createdAt": "2024-03-16T00:00:00.000Z",
+      "updatedAt": "2024-03-16T00:00:00.000Z"
+    },
+    {
+      "_id": "post5",
+      "content": "Created a beautiful UI for a bánh mì ordering app. Swipe for the design! 🥖",
+      "image": "https://picsum.photos/id/292/800/400",
+      "author": "user2",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "post6",
+      "content": "🎯 Just completed our AI & Machine Learning workshop! Amazing to see students building their first ML models. #AI #MachineLearning",
+      "image": "https://picsum.photos/id/4/800/400",
+      "author": "coderschool",
+      "createdAt": "2024-03-10T00:00:00.000Z",
+      "updatedAt": "2024-03-10T00:00:00.000Z"
+    },
+    {
+      "_id": "post7",
+      "content": "💡 New blog post: '10 Tips for Landing Your First Tech Job in Vietnam'. Check it out on our website! #TechCareers #VietnamTech",
+      "image": "https://picsum.photos/id/5/800/400",
+      "author": "coderschool",
+      "createdAt": "2024-03-08T00:00:00.000Z",
+      "updatedAt": "2024-03-08T00:00:00.000Z"
+    },
+    {
+      "_id": "post8",
+      "content": "Finally got my Redux store working! Time to celebrate with some bún chả 🍜 #React #Redux #WebDev",
+      "image": "https://picsum.photos/id/238/800/400",
+      "author": "user1",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "post9",
+      "content": "Just learned about CSS Grid! Mind blown 🤯 #CSS #WebDesign",
+      "image": "https://picsum.photos/id/239/800/400",
+      "author": "user1",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post10",
+      "content": "My first TypeScript project is live! Check out my portfolio website 🚀 #TypeScript #WebDev",
+      "image": "https://picsum.photos/id/240/800/400",
+      "author": "user1",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    },
+    {
+      "_id": "post11",
+      "content": "Just finished a new design system for our client. Clean, modern, and accessible! 🎨 #DesignSystem #UIUX",
+      "image": "https://picsum.photos/id/293/800/400",
+      "author": "user2",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post12",
+      "content": "Working on some cool animations using Framer Motion. This library is amazing! ✨ #FramerMotion #React",
+      "image": "https://picsum.photos/id/294/800/400",
+      "author": "user2",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    },
+    {
+      "_id": "post13",
+      "content": "Just completed a dark mode implementation for our app. The users love it! 🌙 #DarkMode #UIUX",
+      "image": "https://picsum.photos/id/295/800/400",
+      "author": "user2",
+      "createdAt": "2024-03-12T00:00:00.000Z",
+      "updatedAt": "2024-03-12T00:00:00.000Z"
+    },
+    {
+      "_id": "post14",
+      "content": "Built a new microservice architecture today. The performance improvement is incredible! 🚀 #Backend #Microservices",
+      "image": "https://picsum.photos/id/1026/800/400",
+      "author": "user3",
+      "createdAt": "2024-03-16T00:00:00.000Z",
+      "updatedAt": "2024-03-16T00:00:00.000Z"
+    },
+    {
+      "_id": "post15",
+      "content": "Just optimized our database queries. Response time reduced by 60%! 💪 #Database #Performance",
+      "image": "https://picsum.photos/id/1027/800/400",
+      "author": "user3",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "post16",
+      "content": "Implemented JWT authentication in our API. Security first! 🔒 #Security #Backend",
+      "image": "https://picsum.photos/id/1028/800/400",
+      "author": "user3",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post17",
+      "content": "Just deployed our new GraphQL API. The flexibility is amazing! 🎯 #GraphQL #API",
+      "image": "https://picsum.photos/id/1029/800/400",
+      "author": "user3",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    },
+    {
+      "_id": "post18",
+      "content": "Built a full-stack app with Next.js and Prisma. The developer experience is incredible! 🚀 #NextJS #Prisma",
+      "image": "https://picsum.photos/id/1032/800/400",
+      "author": "user4",
+      "createdAt": "2024-03-16T00:00:00.000Z",
+      "updatedAt": "2024-03-16T00:00:00.000Z"
+    },
+    {
+      "_id": "post19",
+      "content": "Just implemented real-time features using Socket.io. The possibilities are endless! ⚡ #WebSockets #RealTime",
+      "image": "https://picsum.photos/id/1033/800/400",
+      "author": "user4",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "post20",
+      "content": "Working on a new project using the MERN stack. MongoDB + Express + React + Node.js = ❤️ #MERN #FullStack",
+      "image": "https://picsum.photos/id/1034/800/400",
+      "author": "user4",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post21",
+      "content": "Just set up CI/CD pipeline with GitHub Actions. Automation is the future! 🤖 #DevOps #CI_CD",
+      "image": "https://picsum.photos/id/1040/800/400",
+      "author": "user5",
+      "createdAt": "2024-03-16T00:00:00.000Z",
+      "updatedAt": "2024-03-16T00:00:00.000Z"
+    },
+    {
+      "_id": "post22",
+      "content": "Migrated our infrastructure to AWS. The scalability is impressive! ☁️ #AWS #Cloud",
+      "image": "https://picsum.photos/id/1041/800/400",
+      "author": "user5",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "post23",
+      "content": "Just implemented Kubernetes for our microservices. The orchestration is smooth! 🎯 #Kubernetes #DevOps",
+      "image": "https://picsum.photos/id/1042/800/400",
+      "author": "user5",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "post24",
+      "content": "Set up monitoring with Prometheus and Grafana. Now we can track everything! 📊 #Monitoring #DevOps",
+      "image": "https://picsum.photos/id/1043/800/400",
+      "author": "user5",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    }
+  ],
+  "comments": [
+    {
+      "_id": "comment1",
+      "content": "This is amazing! Can't wait to join the bootcamp! 🚀",
+      "author": "user1",
+      "post": "post1",
+      "createdAt": "2024-03-18T00:00:00.000Z",
+      "updatedAt": "2024-03-18T00:00:00.000Z"
+    },
+    {
+      "_id": "comment2",
+      "content": "The design looks fantastic! What tools did you use? 🎨",
+      "author": "user2",
+      "post": "post5",
+      "createdAt": "2024-03-16T00:00:00.000Z",
+      "updatedAt": "2024-03-16T00:00:00.000Z"
+    },
+    {
+      "_id": "comment3",
+      "content": "That's some impressive API performance! Mind sharing your optimization techniques? 💪",
+      "author": "user4",
+      "post": "post3",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    },
+    {
+      "_id": "comment4",
+      "content": "Great job on the microservices architecture! Would love to learn more about your setup. 🏗️",
+      "author": "user5",
+      "post": "post14",
+      "createdAt": "2024-03-16T01:00:00.000Z",
+      "updatedAt": "2024-03-16T01:00:00.000Z"
+    },
+    {
+      "_id": "comment5",
+      "content": "The dark mode implementation looks sleek! Did you use CSS variables? 🌙",
+      "author": "user1",
+      "post": "post13",
+      "createdAt": "2024-03-12T02:00:00.000Z",
+      "updatedAt": "2024-03-12T02:00:00.000Z"
+    },
+    {
+      "_id": "comment6",
+      "content": "Your CI/CD pipeline setup is impressive! Mind sharing your GitHub Actions workflow? 🤖",
+      "author": "user3",
+      "post": "post21",
+      "createdAt": "2024-03-16T03:00:00.000Z",
+      "updatedAt": "2024-03-16T03:00:00.000Z"
+    },
+    {
+      "_id": "comment7",
+      "content": "The MERN stack is perfect for this project! How's the performance? 🚀",
+      "author": "user2",
+      "post": "post20",
+      "createdAt": "2024-03-14T04:00:00.000Z",
+      "updatedAt": "2024-03-14T04:00:00.000Z"
+    },
+    {
+      "_id": "comment8",
+      "content": "Kubernetes is a game-changer! How are you handling service discovery? 🎯",
+      "author": "user4",
+      "post": "post23",
+      "createdAt": "2024-03-14T05:00:00.000Z",
+      "updatedAt": "2024-03-14T05:00:00.000Z"
+    },
+    {
+      "_id": "comment9",
+      "content": "Your design system looks amazing! Are you using Storybook? 🎨",
+      "author": "user3",
+      "post": "post11",
+      "createdAt": "2024-03-14T06:00:00.000Z",
+      "updatedAt": "2024-03-14T06:00:00.000Z"
+    },
+    {
+      "_id": "comment10",
+      "content": "The GraphQL API looks clean! How are you handling caching? 🔄",
+      "author": "user5",
+      "post": "post17",
+      "createdAt": "2024-03-13T07:00:00.000Z",
+      "updatedAt": "2024-03-13T07:00:00.000Z"
+    }
+  ],
+  "reactions": [
+    {
+      "_id": "reaction1",
+      "targetType": "POST",
+      "targetId": "post1",
+      "emoji": "LIKE",
+      "author": "user2",
+      "createdAt": "2024-03-16T01:00:00.000Z"
+    },
+    {
+      "_id": "reaction2",
+      "targetType": "POST",
+      "targetId": "post2",
+      "emoji": "LOVE",
+      "author": "user3",
+      "createdAt": "2024-03-15T00:00:00.000Z"
+    }
+  ],
+  "friendships": [
+    {
+      "_id": "friendship1",
+      "from": "user1",
+      "to": "user2",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-01T00:00:00.000Z",
+      "updatedAt": "2024-03-01T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship2",
+      "from": "user1",
+      "to": "user3",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-05T00:00:00.000Z",
+      "updatedAt": "2024-03-05T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship3",
+      "from": "user2",
+      "to": "user4",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-10T00:00:00.000Z",
+      "updatedAt": "2024-03-10T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship4",
+      "from": "user3",
+      "to": "user5",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-12T00:00:00.000Z",
+      "updatedAt": "2024-03-12T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship5",
+      "from": "coderschool",
+      "to": "user1",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-15T00:00:00.000Z",
+      "updatedAt": "2024-03-15T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship6",
+      "from": "coderschool",
+      "to": "user2",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-14T00:00:00.000Z",
+      "updatedAt": "2024-03-14T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship7",
+      "from": "coderschool",
+      "to": "user3",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-13T00:00:00.000Z",
+      "updatedAt": "2024-03-13T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship8",
+      "from": "coderschool",
+      "to": "user4",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-12T00:00:00.000Z",
+      "updatedAt": "2024-03-12T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship9",
+      "from": "coderschool",
+      "to": "user5",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-11T00:00:00.000Z",
+      "updatedAt": "2024-03-11T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship10",
+      "from": "user1",
+      "to": "user4",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-09T00:00:00.000Z",
+      "updatedAt": "2024-03-09T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship11",
+      "from": "user1",
+      "to": "user5",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-08T00:00:00.000Z",
+      "updatedAt": "2024-03-08T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship12",
+      "from": "user2",
+      "to": "user3",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-07T00:00:00.000Z",
+      "updatedAt": "2024-03-07T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship13",
+      "from": "user2",
+      "to": "user5",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-06T00:00:00.000Z",
+      "updatedAt": "2024-03-06T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship14",
+      "from": "user3",
+      "to": "user4",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-05T00:00:00.000Z",
+      "updatedAt": "2024-03-05T00:00:00.000Z"
+    },
+    {
+      "_id": "friendship15",
+      "from": "user4",
+      "to": "user5",
+      "status": "ACCEPTED",
+      "createdAt": "2024-03-04T00:00:00.000Z",
+      "updatedAt": "2024-03-04T00:00:00.000Z"
+    }
+  ]
+}

@@ -1,27 +1,29 @@
 // src/mockApi/server.js
 import { delay, http } from "msw";
-import { setupWorker } from "msw/browser";
-import { users, posts, comments, friendships, reactions } from "./data";
 import { SignJWT } from "jose";
 import {
   MOCK_ACCESS_TOKEN_EXPIRATION,
   MOCK_ACCESS_TOKEN_SECRET,
-} from "./config";
+} from "./config.js";
 import { v4 as uuidv4 } from "uuid";
 import {
   ApiError,
   extractJWT,
   generateApiResponse,
   queryParams,
-} from "./utils";
-import { withAuth, catchError } from "./middleware";
-import { loginSchema, registerSchema } from "./schema/auth.schema";
-import { updateUserSchema } from "./schema/user.schema";
+} from "./utils.js";
+import { withAuth, catchError } from "./middleware.js";
+import { loginSchema, registerSchema } from "./schema/auth.schema.js";
+import { updateUserSchema } from "./schema/user.schema.js";
 import {
   cursorPaginationSchema,
   offsetPaginationSchema,
-} from "./schema/pagination.schema";
+} from "./schema/pagination.schema.js";
 import { addMilliseconds } from "date-fns";
+// import db from "./data.json" with { type: "json" };
+import { createServer } from "@mswjs/http-middleware";
+import fs from "fs";
+import process from "process";
 
 /**
  * Configures and starts the MSW API server.
@@ -30,23 +32,28 @@ import { addMilliseconds } from "date-fns";
  * Feel free to uncomment console.log statements to see the inner workings of the server.
  */
 
-// Initialize data storage with localStorage as persistent database
-let db = {
-  users: [...users],
-  posts: [...posts],
-  comments: [...comments],
-  friendships: [...friendships],
-  reactions: [...reactions],
+let db = {};
+
+// Initialize database with data.json
+const initializeDatabase = () => {
+  const storedData = fs.readFileSync("mock-api/data.json", "utf8");
+  db = JSON.parse(storedData);
+
+  db.users = db.users || [];
+  db.posts = db.posts || [];
+  db.comments = db.comments || [];
+  db.reactions = db.reactions || [];
+  db.friendships = db.friendships || [];
+
+  console.log("📊 Data loaded from storage");
 };
 
-// Save current data to localStorage
+// Save current data to data.json
 const saveToStorage = () => {
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      localStorage.setItem("codercomm-server-data", JSON.stringify(db));
-    } catch (error) {
-      console.error("❌ Error saving data to storage:", error);
-    }
+  try {
+    fs.writeFileSync("mock-api/data.json", JSON.stringify(db));
+  } catch (error) {
+    console.error("❌ Error saving data to storage:", error);
   }
 };
 
@@ -79,6 +86,19 @@ const controllers = [
   // --- Global delay to HTTP response ---
   http.all("*", async () => {
     await delay(250); // 250ms
+  }),
+
+  http.options("*", () => {
+    const port = process.env.PORT || 3000;
+    return new Response(null, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": `http://localhost:${port}`,
+        "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+      },
+    });
   }),
 
   // --- Authentication Routes ---
@@ -378,7 +398,9 @@ const controllers = [
 
         const feedPosts = [...friendPosts, ...currentUserPosts];
 
-        feedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Recent first
+        feedPosts.sort((a, b) => {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
 
         const count = feedPosts.length;
 
@@ -1187,28 +1209,7 @@ const controllers = [
   ),
 ];
 
-// Create and return the MSW browser server
-const browserServer = setupWorker(...controllers);
-
-// Initialize database on first visit
-const initializeDatabase = () => {
-  const storedData = localStorage.getItem("codercomm-server-data");
-  if (!storedData) {
-    console.log("📊 No data found: Initializing database in localStorage");
-    saveToStorage();
-  } else {
-    const storedData = localStorage.getItem("codercomm-server-data");
-    if (storedData) {
-      db = JSON.parse(storedData);
-      console.log("📊 Data loaded from storage");
-    }
-  }
-};
-
-// Call initialization when browser server starts
-browserServer.start = async (options) => {
-  await setupWorker(...controllers).start(options);
-  initializeDatabase();
-};
-
-export { browserServer };
+const httpServer = createServer(...controllers);
+initializeDatabase();
+httpServer.listen(4000);
+console.log("Server is running on port 4000");

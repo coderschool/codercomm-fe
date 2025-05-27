@@ -1,11 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router";
 import { Search, User, Settings, Hash, Users, Handshake } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/utils/get-initials";
-import { SUGGESTED_USERS } from "@/lib/mock-api/data";
 import HomePostSection from "./HomePostSection";
 import { PostStoreProvider } from "@/features/post/PostStoreProvider";
 
@@ -22,6 +21,11 @@ const navItems = [
   { icon: Handshake, label: "Requests", href: "/friend-requests" },
   { icon: Users, label: "Friends", href: "/friends" },
   { icon: Settings, label: "Settings", href: "/settings" },
+];
+
+const SUGGESTED_USERS = [
+  { _id: "coderschool", name: "Coderschool" },
+  { _id: "youni", name: "Youni" },
 ];
 
 function HomePage() {

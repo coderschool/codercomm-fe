@@ -1,9 +1,10 @@
 import {
   MOCK_ACCESS_TOKEN_EXPIRATION,
   MOCK_ACCESS_TOKEN_SECRET,
-} from "./config";
+} from "./config.js";
 import { jwtVerify } from "jose";
 import { HttpResponse } from "msw";
+import process from "process";
 
 export class ApiError extends Error {
   constructor(status, message) {
@@ -22,7 +23,14 @@ export const generateApiResponse = ({
   removeAccessToken,
 }) => {
   const response = {};
-  let headers = {};
+  const port = process.env.PORT || 3000;
+
+  let headers = {
+    "Access-Control-Allow-Origin": `http://localhost:${port}`,
+    "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Credentials": "true",
+  };
 
   if (success) response.success = success;
   if (data) response.data = data;
@@ -30,12 +38,14 @@ export const generateApiResponse = ({
   if (message) response.message = message;
   if (accessToken) {
     headers = {
+      ...headers,
       "Set-Cookie": `codercomm-access-token=${accessToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MOCK_ACCESS_TOKEN_EXPIRATION}`,
     };
   }
 
   if (removeAccessToken) {
     headers = {
+      ...headers,
       "Set-Cookie": `codercomm-access-token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
     };
   }

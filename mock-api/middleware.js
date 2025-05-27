@@ -1,5 +1,5 @@
 import { ValidationError } from "yup";
-import { extractJWT, generateApiResponse } from "./utils";
+import { extractJWT, generateApiResponse } from "./utils.js";
 
 export const withAuth = (resolver) => {
   return async (input) => {

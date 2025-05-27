@@ -18,14 +18,4 @@ const renderApp = () => {
   );
 };
 
-async function enableMocking() {
-  const { browserServer } = await import("./lib/mock-api/server");
-
-  // `worker.start()` returns a Promise that resolves
-  // once the Service Worker is up and ready to intercept requests.
-  return browserServer.start();
-}
-
-enableMocking().then(() => {
-  renderApp();
-});
+renderApp();
