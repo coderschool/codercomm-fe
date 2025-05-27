@@ -1,10 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
-import App from "./routes/App";
 
-// Import Tailwind CSS
 import "./index.css";
+import App from "./App";
 
 const container = document.getElementById("root");
 const root = createRoot(container);
@@ -20,7 +19,7 @@ const renderApp = () => {
 };
 
 async function enableMocking() {
-  const { browserServer } = await import("./mockApi/server");
+  const { browserServer } = await import("./lib/mock-api/server");
 
   // `worker.start()` returns a Promise that resolves
   // once the Service Worker is up and ready to intercept requests.

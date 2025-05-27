@@ -2,14 +2,14 @@ import React from "react";
 import { Link } from "react-router";
 import { formatDistanceToNow } from "date-fns";
 
-import { getInitials } from "@/lib/getInitials";
-import { cn } from "@/lib/mergeClassName";
+import { getInitials } from "@/utils/get-initials";
+import { cn } from "@/utils/merge-class-name";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CommentReactions from "./CommentReaction";
 
 function CommentCard({ comment }) {
-  const { _id, author, content, createdAt, updatedAt, reactions } = comment;
+  const { _id, author, content, createdAt, reactions } = comment;
 
   return (
     <div className={cn("flex gap-2 py-1 group")}>
@@ -41,11 +41,6 @@ function CommentCard({ comment }) {
               addSuffix: true,
             })}
           </span>
-
-          {/* Indicate if edited */}
-          {updatedAt && createdAt !== updatedAt && (
-            <span className="italic text-muted-foreground/70">(Edited)</span>
-          )}
         </div>
       </div>
     </div>

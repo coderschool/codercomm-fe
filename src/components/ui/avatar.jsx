@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
-import { cn } from "@/lib/mergeClassName";
+import { cn } from "@/utils/merge-class-name";
 
 const Avatar = React.forwardRef(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root

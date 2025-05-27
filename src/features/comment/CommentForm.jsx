@@ -5,7 +5,6 @@ import * as yup from "yup";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -15,9 +14,9 @@ import {
 } from "@/components/ui/form";
 import { Send, Loader2 } from "lucide-react";
 
-import { getInitials } from "@/lib/getInitials";
-import { useAuth } from "../auth/authStore";
-import { useComments } from "./CommentStoreProvider";
+import { getInitials } from "@/utils/get-initials";
+import { useAuthState } from "@/lib/auth/useAuth";
+import { useCommentAction } from "./CommentStoreProvider";
 import { Textarea } from "@/components/ui/textarea";
 
 const commentSchema = yup
@@ -27,8 +26,8 @@ const commentSchema = yup
   .required();
 
 function CommentForm() {
-  const { currentUser } = useAuth();
-  const { createComment } = useComments();
+  const { currentUser } = useAuthState();
+  const { createComment } = useCommentAction();
   const { avatarUrl, name } = currentUser;
 
   const form = useForm({

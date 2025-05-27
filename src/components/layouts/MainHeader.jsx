@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
-import { getInitials } from "@/lib/getInitials";
+import { getInitials } from "@/utils/get-initials";
 import { LogOut, Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,11 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useAuth } from "@/features/auth/authStore";
+import { useAuthAction, useAuthState } from "@/lib/auth/useAuth";
 
 function MainHeader() {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuthState();
+  const { logout } = useAuthAction();
 
   const handleLogout = () => {
     logout();
@@ -71,9 +72,9 @@ function MainHeader() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/account" className="cursor-pointer">
+                <Link to="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Account Settings</span>
+                  <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

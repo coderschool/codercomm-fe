@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link as RouterLink } from "react-router";
-import { formatTimeAgo } from "@/lib/formatTime";
-import { MoreVertical } from "lucide-react";
+import { formatTimeAgo } from "@/utils/format-time";
 
 import {
   Card,

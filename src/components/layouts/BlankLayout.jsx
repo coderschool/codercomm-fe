@@ -1,17 +1,23 @@
+import { useAuthState } from "@/lib/auth/useAuth";
 import React from "react";
-import { Outlet } from "react-router";
-import Logo from "../Logo";
+import { Navigate, Outlet, useLocation } from "react-router";
 
 /**
  * BlankLayout - A simple layout component that centers its content with a logo
  * Used for pages like login and registration where we want minimal UI elements
  */
 function BlankLayout() {
+  const { currentUser } = useAuthState();
+  const location = useLocation();
+
+  if (currentUser) {
+    return <Navigate to={location.state?.from?.pathname || "/"} replace />;
+  }
+
   return (
     <main className="min-h-screen flex flex-col justify-center">
       <div className="flex gap-5 items-center justify-center">
-        <Logo className="w-16 h-16 mx-auto" />
-        <h1 className="text-2xl font-bold">CoderComm</h1>
+        <h1 className="text-2xl font-bold text-primary">CoderComm</h1>
       </div>
       <Outlet />
     </main>

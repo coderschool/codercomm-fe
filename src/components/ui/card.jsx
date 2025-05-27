@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/mergeClassName";
+import { cn } from "@/utils/merge-class-name";
 
 const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div

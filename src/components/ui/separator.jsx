@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 
-import { cn } from "@/lib/mergeClassName";
+import { cn } from "@/utils/merge-class-name";
 
 const Separator = React.forwardRef(
   (

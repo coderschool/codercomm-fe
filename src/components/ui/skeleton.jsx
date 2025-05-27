@@ -1,4 +1,4 @@
-import { cn } from "@/lib/mergeClassName";
+import { cn } from "@/utils/merge-class-name";
 
 function Skeleton({ className, ...props }) {
   return (

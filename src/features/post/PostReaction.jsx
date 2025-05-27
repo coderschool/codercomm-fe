@@ -1,9 +1,9 @@
 import React from "react";
 
 import { Button } from "@/components/ui/button";
-import { usePosts } from "./postStore";
-import { useAuth } from "../auth/authStore";
-import { cn } from "@/lib/mergeClassName";
+import { usePostAction } from "./PostStoreProvider";
+import { useAuthState } from "@/lib/auth/useAuth";
+import { cn } from "@/utils/merge-class-name";
 import { REACTION_EMOJIS } from "@/lib/config";
 import {
   TooltipProvider,
@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/tooltip";
 
 function PostReactions({ postId, postReactions = [] }) {
-  const { reactToPost } = usePosts();
-  const { currentUser } = useAuth();
+  const { reactToPost } = usePostAction();
+  const { currentUser } = useAuthState();
 
   const reactions = Object.groupBy(postReactions, ({ emoji }) => emoji);
 

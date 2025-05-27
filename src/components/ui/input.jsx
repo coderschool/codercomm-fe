@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { cn } from "@/lib/mergeClassName";
+import { cn } from "@/utils/merge-class-name";
 
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   return (
