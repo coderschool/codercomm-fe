@@ -9,29 +9,17 @@ const defaultState = {
   hasMore: false,
 };
 
-export const commentStore = () =>
+export const commentStore = (postId) =>
   createStore((set, get) => ({
     // initial states
     ...defaultState,
-    postId: null,
     isInitialized: false,
 
     // actions
     actions: {
-      initialize: async (postId) => {
-        const {
-          isInitialized,
-          actions: { fetchComments },
-        } = get();
-        if (isInitialized) return;
-
-        set({ isInitialized: true, postId });
-        await fetchComments();
-      },
-
       fetchComments: async (cursorCommentId = null, limit = 5) => {
-        const { comments, postId } = get();
-        set({ isLoading: true });
+        const { comments } = get();
+        set({ isLoading: true, isInitialized: true });
 
         const {
           comments: newComments,
@@ -56,8 +44,8 @@ export const commentStore = () =>
       },
 
       createComment: async (content) => {
-        const { comments, postId } = get();
-        set({ isLoading: true });
+        const { comments } = get();
+        set({ isLoading: true, isInitialized: true });
         const { comment, error } = await api.post(`/posts/${postId}/comments`, {
           content,
         });

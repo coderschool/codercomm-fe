@@ -7,8 +7,8 @@ import { commentStore } from "./commentStore";
 const CommentStoreContext = createContext();
 
 // Provider for individual comment store
-const CommentStoreProvider = ({ children }) => {
-  const [store] = useState(commentStore);
+const CommentStoreProvider = ({ children, postId }) => {
+  const [store] = useState(commentStore(postId));
 
   return (
     <CommentStoreContext.Provider value={store}>

@@ -26,7 +26,7 @@ function PostList() {
     <div className="space-y-4">
       {posts.map((post) => {
         return (
-          <CommentStoreProvider key={post._id}>
+          <CommentStoreProvider key={post._id} postId={post._id}>
             <PostCard post={post} />
           </CommentStoreProvider>
         );

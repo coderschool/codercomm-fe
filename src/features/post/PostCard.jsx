@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import { formatTimeAgo } from "@/utils/format-time";
 
@@ -13,19 +13,26 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
-import { useCommentAction } from "../comment/CommentStoreProvider";
+import {
+  useCommentAction,
+  useCommentState,
+} from "../comment/CommentStoreProvider";
 import CommentList from "../comment/CommentList";
 import CommentForm from "../comment/CommentForm";
 
 function PostCard({ post }) {
   const { author, _id, content, image, createdAt, reactions } = post;
   const [showingComments, setShowingComments] = useState(false);
-  const { initialize } = useCommentAction();
+  const { fetchComments } = useCommentAction();
+  const { isInitialized } = useCommentState();
 
-  const handleShowComments = useCallback(() => {
-    initialize(_id);
+  const handleShowComments = () => {
+    if (!isInitialized) {
+      fetchComments();
+    }
+
     setShowingComments(!showingComments);
-  }, [initialize, _id, showingComments]);
+  };
 
   return (
     <Card>
