@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Link as RouterLink } from "react-router";
 import { formatTimeAgo } from "@/utils/format-time";
 
@@ -13,12 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
-import PostCommentSection from "./PostCommentSection";
-import { CommentStoreProvider } from "../comment/CommentStoreProvider";
+import { useCommentAction } from "../comment/CommentStoreProvider";
+import CommentList from "../comment/CommentList";
+import CommentForm from "../comment/CommentForm";
 
 function PostCard({ post }) {
   const { author, _id, content, image, createdAt, reactions } = post;
   const [showingComments, setShowingComments] = useState(false);
+  const { initialize } = useCommentAction();
+
+  const handleShowComments = useCallback(() => {
+    initialize(_id);
+    setShowingComments(!showingComments);
+  }, [initialize, _id, showingComments]);
 
   return (
     <Card>
@@ -62,7 +69,7 @@ function PostCard({ post }) {
             variant="ghost"
             size="sm"
             className="text-muted-foreground text-xs"
-            onClick={() => setShowingComments(!showingComments)}
+            onClick={handleShowComments}
           >
             {`${post.commentCount} comments`}
           </Button>
@@ -71,9 +78,8 @@ function PostCard({ post }) {
         {showingComments && (
           <div className="w-full grow flex flex-col gap-6 mt-4">
             <Separator />
-            <CommentStoreProvider postId={_id}>
-              <PostCommentSection />
-            </CommentStoreProvider>
+            <CommentList />
+            <CommentForm />
           </div>
         )}
       </CardFooter>

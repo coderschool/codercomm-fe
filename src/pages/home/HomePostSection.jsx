@@ -4,7 +4,7 @@ import { usePostAction, usePostState } from "@/features/post/PostStoreProvider";
 import { useEffect } from "react";
 
 function HomePostSection() {
-  const { hasMore, posts, isLoading } = usePostState();
+  const { hasMore, isLoading } = usePostState();
   const { fetchPosts } = usePostAction();
 
   useEffect(() => {

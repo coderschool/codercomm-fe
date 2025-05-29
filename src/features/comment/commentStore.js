@@ -2,7 +2,6 @@ import { createStore } from "zustand";
 import api from "@/lib/api";
 
 const defaultState = {
-  postId: null,
   comments: [],
   isLoading: false,
   error: null,
@@ -10,16 +9,28 @@ const defaultState = {
   hasMore: false,
 };
 
-export const commentStore = (postId) =>
+export const commentStore = () =>
   createStore((set, get) => ({
     // initial states
     ...defaultState,
-    postId,
+    postId: null,
+    isInitialized: false,
 
     // actions
     actions: {
+      initialize: async (postId) => {
+        const {
+          isInitialized,
+          actions: { fetchComments },
+        } = get();
+        if (isInitialized) return;
+
+        set({ isInitialized: true, postId });
+        await fetchComments();
+      },
+
       fetchComments: async (cursorCommentId = null, limit = 5) => {
-        const { comments } = get();
+        const { comments, postId } = get();
         set({ isLoading: true });
 
         const {
@@ -45,7 +56,7 @@ export const commentStore = (postId) =>
       },
 
       createComment: async (content) => {
-        const { comments } = get();
+        const { comments, postId } = get();
         set({ isLoading: true });
         const { comment, error } = await api.post(`/posts/${postId}/comments`, {
           content,

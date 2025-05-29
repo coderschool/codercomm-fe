@@ -7,8 +7,8 @@ import { commentStore } from "./commentStore";
 const CommentStoreContext = createContext();
 
 // Provider for individual comment store
-const CommentStoreProvider = ({ children, postId }) => {
-  const [store] = useState(commentStore(postId));
+const CommentStoreProvider = ({ children }) => {
+  const [store] = useState(commentStore);
 
   return (
     <CommentStoreContext.Provider value={store}>
@@ -29,6 +29,8 @@ const useCommentState = () => {
     error: state.error,
     cursorCommentId: state.cursorCommentId,
     hasMore: state.hasMore,
+    isInitialized: state.isInitialized,
+    postId: state.postId,
   });
 
   const memoizedSelector = useShallow(selector);

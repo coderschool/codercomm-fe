@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { usePostState } from "./PostStoreProvider";
 import PostCard from "./PostCard";
 import { Loader2 } from "lucide-react";
+import { CommentStoreProvider } from "../comment/CommentStoreProvider";
 
 function PostList() {
   const { posts, isLoading } = usePostState();
@@ -24,7 +25,11 @@ function PostList() {
   return (
     <div className="space-y-4">
       {posts.map((post) => {
-        return <PostCard post={post} key={post._id} />;
+        return (
+          <CommentStoreProvider key={post._id}>
+            <PostCard post={post} />
+          </CommentStoreProvider>
+        );
       })}
       {isLoading && (
         <div className="flex justify-center py-4 h-full w-full">
