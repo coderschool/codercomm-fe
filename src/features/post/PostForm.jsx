@@ -100,7 +100,8 @@ function PostForm() {
                       <FormControl>
                         <Textarea
                           placeholder={`What's on your mind, ${firstName}?`}
-                          className="resize-none min-h-[70px] border-none focus-visible:ring-0 shadow-none px-0"
+                          className="resize-none min-h-[70px] border-none focus-visible:ring-0
+                          focus-visible:ring-offset-0 shadow-none px-0"
                           {...field}
                           disabled={isSubmitting}
                         />

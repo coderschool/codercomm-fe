@@ -19,7 +19,7 @@ import {
   cursorPaginationSchema,
   offsetPaginationSchema,
 } from "./schema/pagination.schema.js";
-import { addMilliseconds } from "date-fns";
+import { addSeconds } from "date-fns";
 // import db from "./data.json" with { type: "json" };
 import { createServer } from "@mswjs/http-middleware";
 import fs from "fs";
@@ -124,7 +124,7 @@ const controllers = [
       const accessToken = await new SignJWT({ _id: user._id })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt(now)
-        .setExpirationTime(addMilliseconds(now, MOCK_ACCESS_TOKEN_EXPIRATION))
+        .setExpirationTime(addSeconds(now, MOCK_ACCESS_TOKEN_EXPIRATION))
         .sign(MOCK_ACCESS_TOKEN_SECRET);
 
       return generateApiResponse({
@@ -180,7 +180,7 @@ const controllers = [
       const accessToken = await new SignJWT({ _id: newUser._id })
         .setProtectedHeader({ alg: "HS256" })
         .setIssuedAt(now)
-        .setExpirationTime(addMilliseconds(now, MOCK_ACCESS_TOKEN_EXPIRATION))
+        .setExpirationTime(addSeconds(now, MOCK_ACCESS_TOKEN_EXPIRATION))
         .sign(MOCK_ACCESS_TOKEN_SECRET);
 
       return generateApiResponse({

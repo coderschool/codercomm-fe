@@ -28,8 +28,4 @@ const useAuthAction = () => {
   return store;
 };
 
-const onAuthStateChange = (callback) => {
-  authStore.subscribe(callback);
-};
-
-export { useAuthState, useAuthAction, onAuthStateChange };
+export { useAuthState, useAuthAction };
