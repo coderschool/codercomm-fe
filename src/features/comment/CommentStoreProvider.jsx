@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 import { useStore } from "zustand";
 import { useShallow } from "zustand/shallow";
@@ -9,10 +9,6 @@ const CommentStoreContext = createContext();
 // Provider for individual comment store
 const CommentStoreProvider = ({ children, postId }) => {
   const [store] = useState(commentStore(postId));
-
-  useEffect(() => {
-    store.getState().actions.fetchComments();
-  }, [store, postId]);
 
   return (
     <CommentStoreContext.Provider value={store}>

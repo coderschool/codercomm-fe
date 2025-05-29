@@ -13,8 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
-import CommentForm from "@/features/comment/CommentForm";
-import CommentList from "@/features/comment/CommentList";
+import PostCommentSection from "./PostCommentSection";
 import { CommentStoreProvider } from "../comment/CommentStoreProvider";
 
 function PostCard({ post }) {
@@ -73,8 +72,7 @@ function PostCard({ post }) {
           <div className="w-full grow flex flex-col gap-6 mt-4">
             <Separator />
             <CommentStoreProvider postId={_id}>
-              <CommentList />
-              <CommentForm />
+              <PostCommentSection />
             </CommentStoreProvider>
           </div>
         )}
