@@ -16,8 +16,9 @@ import { Send, Loader2 } from "lucide-react";
 
 import { getInitials } from "@/utils/get-initials";
 import { useAuthState } from "@/lib/auth/useAuth";
-import { useCommentAction } from "./CommentStoreProvider";
+import { useCommentAction, useCommentState } from "./CommentStoreProvider";
 import { Textarea } from "@/components/ui/textarea";
+import { usePostAction } from "../post/PostStoreProvider";
 
 const commentSchema = yup
   .object({
@@ -27,7 +28,10 @@ const commentSchema = yup
 
 function CommentForm() {
   const { currentUser } = useAuthState();
+  const { postId } = useCommentState();
   const { createComment } = useCommentAction();
+  const { addPostCommentCount } = usePostAction();
+
   const { avatarUrl, name } = currentUser;
 
   const form = useForm({
@@ -45,6 +49,7 @@ function CommentForm() {
     try {
       const { content } = data;
       await createComment(content);
+      await addPostCommentCount(postId);
       form.reset();
     } catch (error) {
       console.error("Error submitting comment form:", error);

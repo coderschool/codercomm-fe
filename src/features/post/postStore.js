@@ -150,5 +150,20 @@ export const postStore = () =>
           posts: [...posts],
         });
       },
+      addPostCommentCount: async (postId) => {
+        const posts = get().posts;
+
+        const postIndex = posts.findIndex((post) => post._id === postId);
+        const { commentCount } = posts[postIndex];
+        const newCommentCount = commentCount + 1;
+        posts[postIndex] = {
+          ...posts[postIndex],
+          commentCount: newCommentCount,
+        };
+
+        set({
+          posts: [...posts],
+        });
+      },
     },
   }));

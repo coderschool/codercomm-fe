@@ -21,7 +21,8 @@ import CommentList from "../comment/CommentList";
 import CommentForm from "../comment/CommentForm";
 
 function PostCard({ post }) {
-  const { author, _id, content, image, createdAt, reactions } = post;
+  const { author, _id, content, image, createdAt, reactions, commentCount } =
+    post;
   const [showingComments, setShowingComments] = useState(false);
   const { fetchComments } = useCommentAction();
   const { isInitialized } = useCommentState();
@@ -78,7 +79,7 @@ function PostCard({ post }) {
             className="text-muted-foreground text-xs"
             onClick={handleShowComments}
           >
-            {`${post.commentCount} comments`}
+            {`${commentCount} comments`}
           </Button>
         </div>
 

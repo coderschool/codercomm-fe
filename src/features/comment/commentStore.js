@@ -7,6 +7,7 @@ const defaultState = {
   error: null,
   cursorCommentId: null,
   hasMore: false,
+  postId: null,
 };
 
 export const commentStore = (postId) =>
@@ -14,6 +15,7 @@ export const commentStore = (postId) =>
     // initial states
     ...defaultState,
     isInitialized: false,
+    postId,
 
     // actions
     actions: {

@@ -18,8 +18,8 @@ const trendingTopics = [
 const navItems = [
   { icon: Search, label: "Explore", href: "/explore" },
   { icon: User, label: "Profile", href: `/users/me` },
-  { icon: Handshake, label: "Requests", href: "/friend-requests" },
-  { icon: Users, label: "Friends", href: "/friends" },
+  // { icon: Handshake, label: "Requests", href: "/friend-requests" },
+  // { icon: Users, label: "Friends", href: "/friends" },
   { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
