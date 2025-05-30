@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
 
-import { useAuthAction } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 const RegisterSchema = Yup.object().shape({
   name: Yup.string()
@@ -42,7 +42,7 @@ const defaultValues = {
 };
 
 function RegisterPage() {
-  const { register } = useAuthAction();
+  const { register } = useAuth((state) => state.actions);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 

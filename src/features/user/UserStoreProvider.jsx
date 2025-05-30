@@ -1,5 +1,4 @@
 import { useStore } from "zustand";
-import { useShallow } from "zustand/shallow";
 import { createContext, useContext, useState } from "react";
 import { userStore } from "./userStore";
 
@@ -11,31 +10,14 @@ const UserStoreProvider = ({ children }) => {
   return <UserContext.Provider value={store}>{children}</UserContext.Provider>;
 };
 
-const useUserState = () => {
-  const store = useContext(UserContext);
-  if (!store) {
-    throw new Error("useUserState must be used within a UserProvider");
+const useUser = (selector) => {
+  const userStoreContext = useContext(UserContext);
+
+  if (!userStoreContext) {
+    throw new Error("useUser must be used within a UserStoreProvider");
   }
 
-  const selector = (state) => ({
-    user: state.user,
-    isLoading: state.isLoading,
-    error: state.error,
-  });
-
-  const memoizedSelector = useShallow(selector);
-  const useState = useStore(store, memoizedSelector);
-  return useState;
+  return useStore(userStoreContext, selector);
 };
 
-const useUserAction = () => {
-  const store = useContext(UserContext);
-  if (!store) {
-    throw new Error("useUserAction must be used within a UserProvider");
-  }
-
-  const useAction = useStore(store, (state) => state.actions);
-  return useAction;
-};
-
-export { useUserState, useUserAction, UserStoreProvider };
+export { useUser, UserStoreProvider };

@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useCommentAction } from "./CommentStoreProvider";
+import { useComment } from "./CommentStoreProvider";
 import { REACTION_EMOJIS } from "@/lib/config";
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 import { cn } from "@/utils/merge-class-name";
 import {
   TooltipProvider,
@@ -11,8 +11,8 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 function CommentReactions({ commentId, commentReactions = [] }) {
-  const { reactToComment } = useCommentAction();
-  const { currentUser } = useAuthState();
+  const { reactToComment } = useComment((state) => state.actions);
+  const currentUser = useAuth((state) => state.currentUser);
 
   const reactions = Object.groupBy(commentReactions, ({ emoji }) => emoji);
 

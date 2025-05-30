@@ -1,11 +1,13 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router";
 
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 import { Loader2 } from "lucide-react";
 
 function AuthRequire({ children }) {
-  const { isLoading, currentUser, isInitialized } = useAuthState();
+  const isInitialized = useAuth((state) => state.isInitialized);
+  const isLoading = useAuth((state) => state.isLoading);
+  const currentUser = useAuth((state) => state.currentUser);
 
   const location = useLocation();
 

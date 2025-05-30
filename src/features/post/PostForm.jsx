@@ -19,8 +19,8 @@ import { Image, Send, Loader2, Trash } from "lucide-react";
 import { Link } from "react-router";
 
 import { getInitials } from "@/utils/get-initials";
-import { useAuthState } from "@/lib/auth/useAuth";
-import { usePostAction } from "./PostStoreProvider";
+import { useAuth } from "@/lib/auth/useAuth";
+import { usePost } from "./PostStoreProvider";
 import { Input } from "@/components/ui/input";
 import { uploadImage } from "@/lib/cloudinary";
 
@@ -32,8 +32,8 @@ const postSchema = yup
   .required();
 
 function PostForm() {
-  const { currentUser } = useAuthState();
-  const { createPost } = usePostAction();
+  const currentUser = useAuth((state) => state.currentUser);
+  const { createPost } = usePost((state) => state.actions);
 
   const form = useForm({
     resolver: yupResolver(postSchema),

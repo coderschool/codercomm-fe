@@ -15,10 +15,10 @@ import {
 import { Send, Loader2 } from "lucide-react";
 
 import { getInitials } from "@/utils/get-initials";
-import { useAuthState } from "@/lib/auth/useAuth";
-import { useCommentAction, useCommentState } from "./CommentStoreProvider";
+import { useAuth } from "@/lib/auth/useAuth";
+import { useComment } from "./CommentStoreProvider";
 import { Textarea } from "@/components/ui/textarea";
-import { usePostAction } from "../post/PostStoreProvider";
+import { usePost } from "../post/PostStoreProvider";
 
 const commentSchema = yup
   .object({
@@ -27,10 +27,10 @@ const commentSchema = yup
   .required();
 
 function CommentForm() {
-  const { currentUser } = useAuthState();
-  const { postId } = useCommentState();
-  const { createComment } = useCommentAction();
-  const { addPostCommentCount } = usePostAction();
+  const currentUser = useAuth((state) => state.currentUser);
+  const postId = useComment((state) => state.postId);
+  const { createComment } = useComment((state) => state.actions);
+  const { addPostCommentCount } = usePost((state) => state.actions);
 
   const { avatarUrl, name } = currentUser;
 

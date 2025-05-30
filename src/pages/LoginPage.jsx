@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Eye, EyeOff } from "lucide-react";
 
-import { useAuthAction } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 /**
  * LoginPage - User login page component
@@ -36,7 +36,7 @@ const defaultValues = {
 };
 
 function LoginPage() {
-  const { login } = useAuthAction();
+  const { login } = useAuth((state) => state.actions);
 
   const [showPassword, setShowPassword] = useState(false);
 

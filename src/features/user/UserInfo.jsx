@@ -1,11 +1,12 @@
 import React from "react";
-import { useUserState } from "./UserStoreProvider";
+import { useUser } from "./UserStoreProvider";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import { Link } from "react-router";
 import UserInfoFallback from "./UserInfoFallback";
 
 function UserInfo() {
-  const { user, isLoading } = useUserState();
+  const user = useUser((state) => state.user);
+  const isLoading = useUser((state) => state.isLoading);
 
   if (isLoading) {
     return <UserInfoFallback />;

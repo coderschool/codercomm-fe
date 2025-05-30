@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import * as y from "yup";
 import useMutateCurrentUser from "./useMutateCurrentUser";
 import { toast } from "sonner";
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 const formSchema = y.object({
   facebookLink: y.string().optional(),
@@ -25,7 +25,7 @@ const formSchema = y.object({
 });
 
 function SocialDetailForm() {
-  const { currentUser } = useAuthState();
+  const currentUser = useAuth((state) => state.currentUser);
   const form = useForm({
     resolver: yupResolver(formSchema),
     defaultValues: {

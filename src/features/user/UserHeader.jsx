@@ -4,11 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { getInitials } from "@/utils/get-initials";
 
-import { useUserState } from "./UserStoreProvider";
+import { useUser } from "./UserStoreProvider";
 import UserHeaderFallback from "./UserHeaderFallback";
 
 function UserHeader() {
-  const { user, isLoading } = useUserState();
+  const user = useUser((state) => state.user);
+  const isLoading = useUser((state) => state.isLoading);
 
   if (isLoading) {
     return <UserHeaderFallback />;

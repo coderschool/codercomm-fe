@@ -1,14 +1,14 @@
 import PostList from "@/features/post/PostList";
-import { usePostAction, usePostState } from "@/features/post/PostStoreProvider";
-import { useAuthState } from "@/lib/auth/useAuth";
+import { usePost } from "@/features/post/PostStoreProvider";
+import { useAuth } from "@/lib/auth/useAuth";
 import { useEffect } from "react";
 import PostForm from "@/features/post/PostForm";
 import { useParams } from "react-router";
 
 function UserPostSection() {
-  const { hasMore } = usePostState();
-  const { fetchUserPosts } = usePostAction();
-  const { currentUser } = useAuthState();
+  const hasMore = usePost((state) => state.hasMore);
+  const { fetchUserPosts } = usePost((state) => state.actions);
+  const currentUser = useAuth((state) => state.currentUser);
   const { userId } = useParams();
 
   const isCurrentUser = currentUser._id === userId;

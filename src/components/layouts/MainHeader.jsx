@@ -13,12 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { useAuthAction, useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 function MainHeader() {
   const navigate = useNavigate();
-  const { currentUser } = useAuthState();
-  const { logout } = useAuthAction();
+  const currentUser = useAuth((state) => state.currentUser);
+  const { logout } = useAuth((state) => state.actions);
 
   const handleLogout = () => {
     logout();

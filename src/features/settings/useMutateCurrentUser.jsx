@@ -1,11 +1,11 @@
 import api from "@/lib/api";
 import { useState } from "react";
-import { useAuthAction } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 const useMutateCurrentUser = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { setCurrentUser } = useAuthAction();
+  const { setCurrentUser } = useAuth((state) => state.actions);
 
   const mutate = async (updateData) => {
     setIsLoading(true);

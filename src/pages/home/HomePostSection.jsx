@@ -1,11 +1,12 @@
 import PostForm from "@/features/post/PostForm";
 import PostList from "@/features/post/PostList";
-import { usePostAction, usePostState } from "@/features/post/PostStoreProvider";
+import { usePost } from "@/features/post/PostStoreProvider";
 import { useEffect } from "react";
 
 function HomePostSection() {
-  const { hasMore, isLoading } = usePostState();
-  const { fetchPosts } = usePostAction();
+  const hasMore = usePost((state) => state.hasMore);
+  const isLoading = usePost((state) => state.isLoading);
+  const { fetchPosts } = usePost((state) => state.actions);
 
   useEffect(() => {
     fetchPosts();

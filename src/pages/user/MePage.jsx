@@ -1,8 +1,8 @@
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 import { Navigate } from "react-router";
 
 function MePage() {
-  const { currentUser } = useAuthState();
+  const { currentUser } = useAuth();
 
   return <Navigate to={`/users/${currentUser._id}`} replace />;
 }

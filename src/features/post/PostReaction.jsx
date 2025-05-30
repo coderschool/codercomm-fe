@@ -1,8 +1,8 @@
 import React from "react";
 
 import { Button } from "@/components/ui/button";
-import { usePostAction } from "./PostStoreProvider";
-import { useAuthState } from "@/lib/auth/useAuth";
+import { usePost } from "./PostStoreProvider";
+import { useAuth } from "@/lib/auth/useAuth";
 import { cn } from "@/utils/merge-class-name";
 import { REACTION_EMOJIS } from "@/lib/config";
 import {
@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/tooltip";
 
 function PostReactions({ postId, postReactions = [] }) {
-  const { reactToPost } = usePostAction();
-  const { currentUser } = useAuthState();
+  const { reactToPost } = usePost((state) => state.actions);
+  const currentUser = useAuth((state) => state.currentUser);
 
   const reactions = Object.groupBy(postReactions, ({ emoji }) => emoji);
 

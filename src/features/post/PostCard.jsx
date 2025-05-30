@@ -13,10 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import PostReaction from "./PostReaction";
-import {
-  useCommentAction,
-  useCommentState,
-} from "../comment/CommentStoreProvider";
+import { useComment } from "../comment/CommentStoreProvider";
 import CommentList from "../comment/CommentList";
 import CommentForm from "../comment/CommentForm";
 
@@ -24,8 +21,8 @@ function PostCard({ post }) {
   const { author, _id, content, image, createdAt, reactions, commentCount } =
     post;
   const [showingComments, setShowingComments] = useState(false);
-  const { fetchComments } = useCommentAction();
-  const { isInitialized } = useCommentState();
+  const { fetchComments } = useComment((state) => state.actions);
+  const isInitialized = useComment((state) => state.isInitialized);
 
   const handleShowComments = () => {
     if (!isInitialized) {

@@ -9,10 +9,10 @@ import {
 
 import PersonalDetailForm from "@/features/settings/PersonalDetailForm";
 import SocialDetailForm from "@/features/settings/SocialDetailForm";
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 
 function SettingsPage() {
-  const { currentUser } = useAuthState();
+  const currentUser = useAuth((state) => state.currentUser);
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-10">

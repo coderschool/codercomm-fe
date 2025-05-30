@@ -2,12 +2,15 @@ import React from "react";
 
 import CommentCard from "./CommentCard";
 
-import { useCommentAction, useCommentState } from "./CommentStoreProvider";
+import { useComment } from "./CommentStoreProvider";
 import { Loader2 } from "lucide-react";
 
 function CommentList() {
-  const { comments, isLoading, cursorCommentId, hasMore } = useCommentState();
-  const { fetchComments } = useCommentAction();
+  const comments = useComment((state) => state.comments);
+  const isLoading = useComment((state) => state.isLoading);
+  const cursorCommentId = useComment((state) => state.cursorCommentId);
+  const hasMore = useComment((state) => state.hasMore);
+  const { fetchComments } = useComment((state) => state.actions);
 
   if (!isLoading && comments.length === 0) {
     return (

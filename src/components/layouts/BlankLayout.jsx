@@ -1,4 +1,4 @@
-import { useAuthState } from "@/lib/auth/useAuth";
+import { useAuth } from "@/lib/auth/useAuth";
 import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 
@@ -7,7 +7,7 @@ import { Navigate, Outlet, useLocation } from "react-router";
  * Used for pages like login and registration where we want minimal UI elements
  */
 function BlankLayout() {
-  const { currentUser } = useAuthState();
+  const currentUser = useAuth((state) => state.currentUser);
   const location = useLocation();
 
   if (currentUser) {

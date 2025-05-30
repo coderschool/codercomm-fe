@@ -4,13 +4,13 @@ import UserHeader from "@/features/user/UserHeader";
 import UserInfo from "@/features/user/UserInfo";
 import UserPostSection from "./UserPostSection";
 import { useEffect } from "react";
-import { useUserAction, useUserState } from "@/features/user/UserStoreProvider";
+import { useUser } from "@/features/user/UserStoreProvider";
 
 function UserPage() {
   const navigate = useNavigate();
   const { userId } = useParams();
-  const { fetchUser } = useUserAction();
-  const { error } = useUserState();
+  const { fetchUser } = useUser((state) => state.actions);
+  const error = useUser((state) => state.error);
 
   useEffect(() => {
     fetchUser(userId);

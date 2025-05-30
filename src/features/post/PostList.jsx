@@ -2,13 +2,14 @@ import React from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 
-import { usePostState } from "./PostStoreProvider";
+import { usePost } from "./PostStoreProvider";
 import PostCard from "./PostCard";
 import { Loader2 } from "lucide-react";
 import { CommentStoreProvider } from "../comment/CommentStoreProvider";
 
 function PostList() {
-  const { posts, isLoading } = usePostState();
+  const posts = usePost((state) => state.posts);
+  const isLoading = usePost((state) => state.isLoading);
 
   if (!isLoading && posts.length === 0) {
     return (
